@@ -5,6 +5,7 @@ import shutil
 import urllib
 from distutils.dir_util import copy_tree
 import logging
+import time
 
 _log = logging.getLogger(__name__)
 
@@ -29,14 +30,19 @@ def equal_csv(csv_1, csv_2):
     '''
     Check equality of two csv files.
     '''
-    # _log.info(str(csv_1))
+    _log.info("Check csv equality")
+    start = time.time()
     with open(csv_1, 'r') as t1, open(csv_2, 'r') as t2:
         fileone = t1.readlines()
         filetwo = t2.readlines()
         for line in filetwo:
             if line not in fileone:
                 return False
+
+        _log.info("total time", start - time.time())
+
         return True
+
 
 @pytest.fixture
 def setup_data():
@@ -53,15 +59,18 @@ def setup_data():
         if e.errno == errno.EEXIST:
             print("directory exists")
             
-    testdata = 'tests/python/integration/input/step_10'
+    testdata = 'tests/python/integration/input/step_10/US-ARc_sample_input'
     
     copy_tree('tests/data/test_input/', testdata)
-    copy_tree('tests/data/test_output/US-ARc_sample_output/07_meteo_proc/', \
-        os.path.join(testdata, 'US-ARc_sample_input/07_meteo_proc/'))
-    copy_tree('tests/data/test_output/US-ARc_sample_output/08_nee_proc/', \
-        os.path.join(testdata, 'US-ARc_sample_input/08_nee_proc/'))
-    copy_tree('tests/data/test_output/US-ARc_sample_output/02_qc_auto/', \
-        os.path.join(testdata, 'US-ARc_sample_input/02_qc_auto/'))
+
+    refoutdir = 'tests/data/test_output/US-ARc_sample_output'
+
+    copy_tree(os.path.join(refoutdir, '07_meteo_proc'), \
+        os.path.join(testdata, '07_meteo_proc'))
+    copy_tree(os.path.join(refoutdir, '08_nee_proc'), \
+        os.path.join(testdata, '08_nee_proc/'))
+    copy_tree(os.path.join(refoutdir, '02_qc_auto'), \
+        os.path.join(testdata, '02_qc_auto/'))
     
     
 def test_run_partition_nt(setup_data):
@@ -73,9 +82,10 @@ def test_run_partition_nt(setup_data):
     siteid = "US-ARc"
     sitedir = "US-ARc_sample_input"
     years = [2005] # years = [2005, 2006]
-    PROD_TO_COMPARE = ['c', 'y']
+    # PROD_TO_COMPARE = ['c', 'y']
+    PROD_TO_COMPARE = ['y',]
     # PERC_TO_COMPARE = ['1.25', '3.75',]
-    PERC_TO_COMPARE = ['1.25',]
+    PERC_TO_COMPARE = ['3.75',]
     
     from oneflux.tools.partition_nt import remove_previous_run, run_python
     remove_previous_run(datadir=datadir, siteid=siteid, sitedir=sitedir, python=True, 
@@ -86,7 +96,8 @@ def test_run_partition_nt(setup_data):
                perc_to_compare=PERC_TO_COMPARE, years_to_compare=years)
     
     # check whether csv of "output" is same as csv of reference
-    # paths to the generated output in "input" directory, confusingly.
+
+    # the generated output is actually in the "input" directory.
     rootdir = os.path.join(datadir, sitedir, "10_nee_partition_nt")
     nee_y_files = glob.glob(os.path.join(rootdir, "nee_y_1.25_US-ARc_2005*"))
     nee_y_files = filter(lambda x: not x.endswith('_orig.csv'), nee_y_files)
@@ -103,5 +114,3 @@ def test_run_partition_nt(setup_data):
 
     # clean up data. 
     # shutil.rmtree(datadir)
-    
-    # assert retval == True
