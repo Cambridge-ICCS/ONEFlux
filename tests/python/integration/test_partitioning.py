@@ -11,7 +11,7 @@ _log = logging.getLogger(__name__)
 @pytest.fixture(scope="module")
 def get_data():
     '''
-    Utilising python to obtain sample test data. Function currently not used
+    Utilising python to obtain sample test data. Function currently unused. 
     as a fixture in this class. 
     '''
     from zipfile import ZipFile
@@ -98,10 +98,10 @@ def test_run_partition_nt(setup_data):
     assert len(nee_y_files) == len(ref_nee_y_files)
     retval = True 
     for f, b in zip(nee_y_files, ref_nee_y_files):
-        if not equal_csv(f, b):
-            retval = False
+        print(f, b)
+        assert equal_csv(f, b) == True
 
     # clean up data. 
-    shutil.rmtree(datadir)
+    # shutil.rmtree(datadir)
     
-    return retval
+    # assert retval == True
