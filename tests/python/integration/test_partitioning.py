@@ -85,7 +85,7 @@ def test_run_partition_nt(setup_data):
     # PROD_TO_COMPARE = ['c', 'y']
     PROD_TO_COMPARE = ['y',]
     # PERC_TO_COMPARE = ['1.25', '3.75',]
-    PERC_TO_COMPARE = ['3.75',]
+    PERC_TO_COMPARE = ['1.25',]
     
     from oneflux.tools.partition_nt import remove_previous_run, run_python
     remove_previous_run(datadir=datadir, siteid=siteid, sitedir=sitedir, python=True, 
