@@ -1,11 +1,11 @@
 import pytest
 import os, glob
 import errno
-import shutil
-import urllib
-from distutils.dir_util import copy_tree
+import urllib.request
+from shutil import copytree
 import logging
 import time
+
 
 _log = logging.getLogger(__name__)
 
@@ -16,8 +16,8 @@ def get_data():
     as a fixture in this class. 
     '''
     from zipfile import ZipFile
-    urllib.urlopen('ftp://ftp.fluxdata.org/.ameriflux_downloads/.test/US-ARc_sample_output.zip') 
-    urllib.urlopen('ftp://ftp.fluxdata.org/.ameriflux_downloads/.test/US-ARc_sample_input.zip') 
+    urllib.request.urlopen('ftp://ftp.fluxdata.org/.ameriflux_downloads/.test/US-ARc_sample_output.zip')
+    urllib.request.urlopen('ftp://ftp.fluxdata.org/.ameriflux_downloads/.test/US-ARc_sample_input.zip')
   
     input_zip = "US-ARc_sample_input.zip"
     output_zip = "US-ARc_sample_output.zip"
@@ -61,19 +61,19 @@ def setup_data():
             
     testdata = 'tests/python/integration/input/step_10/US-ARc_sample_input'
     
-    copy_tree('tests/data/test_input/', testdata)
+    copytree('tests/data/test_input/', testdata)
 
     refoutdir = 'tests/data/test_output/US-ARc_sample_output'
 
-    copy_tree(os.path.join(refoutdir, '07_meteo_proc'), \
+    copytree(os.path.join(refoutdir, '07_meteo_proc'), \
         os.path.join(testdata, '07_meteo_proc'))
-    copy_tree(os.path.join(refoutdir, '08_nee_proc'), \
+    copytree(os.path.join(refoutdir, '08_nee_proc'), \
         os.path.join(testdata, '08_nee_proc/'))
-    copy_tree(os.path.join(refoutdir, '02_qc_auto'), \
+    copytree(os.path.join(refoutdir, '02_qc_auto'), \
         os.path.join(testdata, '02_qc_auto/'))
     
     
-def test_run_partition_nt(setup_data):
+def test_run_partition_nt(get_data, setup_data):
     '''
     Run partition_nt on single percentile.
     '''
