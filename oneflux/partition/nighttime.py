@@ -246,7 +246,7 @@ def flux_partition(data, lat, tempvar='tair', nomsg=False, temp_output_filename=
     julmin, julmax = int(juldays[0]), int(numpy.max(juldays))  ### first/last day of year
     n_regr = 0                                                 ### counter of number of regressions/optimizations
 
-    window_steps = range(julmin, julmax + 1, STEP_SIZE)
+    window_steps = list(range(julmin, julmax + 1, STEP_SIZE))
 
     # TODO: (potential) add e0_1_list, e0_2_list, e0_3_list, and corresponding se and idx to track individual
 

@@ -1,0 +1,108 @@
+/Library/Frameworks/Python.framework/Versions/3.12/bin/2to3:3: DeprecationWarning: lib2to3 package is deprecated and may not be able to parse Python 3.10+
+  from lib2to3.main import main
+RefactoringTool: Skipping optional fixer: buffer
+RefactoringTool: Skipping optional fixer: idioms
+RefactoringTool: Skipping optional fixer: set_literal
+RefactoringTool: Skipping optional fixer: ws_comma
+RefactoringTool: No changes to ./oneflux/partition/__init__.py
+RefactoringTool: Refactored ./oneflux/partition/auxiliary.py
+--- ./oneflux/partition/auxiliary.py	(original)
++++ ./oneflux/partition/auxiliary.py	(refactored)
+@@ -112,7 +112,7 @@
+     s_string = s_string.replace(' ', '')
+     s_string = s_string.replace('-1.#IND000', '-9999')
+     s_string = s_string.replace('\r', '')
+-    u_string = unicode(s_string)
++    u_string = str(s_string)
+     pw_array = numpy.genfromtxt(StringIO(u_string), dtype=FLOAT_PREC, delimiter=',', skip_header=0, missing_values='-9999,-9999.0,-6999,-6999.0, ', usemask=True)
+     pw_array = numpy.ma.filled(pw_array, numpy.NaN)
+     # **************************************************************************************************************************************************
+@@ -205,7 +205,7 @@
+             figure_basename = figure_basename.replace('_PW', '') # remove _PW from PW data source filename
+
+         record_interval = (timedelta(minutes=30) if resolution == 'hh' else timedelta(minutes=60))
+-        timestamp_list = [datetime(year, 1, 1, 0, 0) + (record_interval * i) for i in xrange(1, py_array.size + 1)]
++        timestamp_list = [datetime(year, 1, 1, 0, 0) + (record_interval * i) for i in range(1, py_array.size + 1)]
+
+         _log.debug("Using year={y}, resolution={r}, first timestamp={f}, last timestamp={l}".format(y=year, r=resolution, f=timestamp_list[0], l=timestamp_list[-1]))
+
+RefactoringTool: No changes to ./oneflux/partition/compu.py
+RefactoringTool: Refactored ./oneflux/partition/daytime.py
+--- ./oneflux/partition/daytime.py	(original)
++++ ./oneflux/partition/daytime.py	(refactored)
+@@ -909,7 +909,7 @@
+     ###############################################
+
+     #### Creating the arrays we're going to use
+-    n_parasets = long(365 / winsize) * 2
++    n_parasets = int(365 / winsize) * 2
+     params = numpy.zeros((3, 2 * len(fguess), n_parasets), dtype=FLOAT_PREC)
+     params_ok = numpy.zeros((2 * len(fguess), n_parasets), dtype=FLOAT_PREC)
+     params_nok = numpy.zeros((2 * len(fguess), n_parasets), dtype=FLOAT_PREC)
+@@ -1041,7 +1041,7 @@
+         #ind[i, :, :] = long((day_begin + winsize / 2.0) * 48.0)
+
+         #### Calculate the first index of the window we're using now
+-        ind[:, :, i] = long((day_begin + winsize / 2.0) * 48.0)
++        ind[:, :, i] = int((day_begin + winsize / 2.0) * 48.0)
+
+         '''
+         #print("ind[:, :, i]")
+@@ -1938,12 +1938,12 @@
+
+         #### Setting ind to the percentile wanted
+         if values[i] <= 0.5:
+-            ind = long(values[i] * n_elements)
++            ind = int(values[i] * n_elements)
+         else:
+-            ind = long(values[i] * (n_elements + 1))
++            ind = int(values[i] * (n_elements + 1))
+
+         if ind >= n_elements:
+-            ind = n_elements - long(1)
++            ind = n_elements - int(1)
+
+         if i == 0:
+             result = data[columns[0]][sorted_index_arr[ind]]
+RefactoringTool: No changes to ./oneflux/partition/ecogeo.py
+RefactoringTool: No changes to ./oneflux/partition/library.py
+RefactoringTool: Refactored ./oneflux/partition/nighttime.py
+--- ./oneflux/partition/nighttime.py	(original)
++++ ./oneflux/partition/nighttime.py	(refactored)
+@@ -246,7 +246,7 @@
+     julmin, julmax = int(juldays[0]), int(numpy.max(juldays))  ### first/last day of year
+     n_regr = 0                                                 ### counter of number of regressions/optimizations
+
+-    window_steps = range(julmin, julmax + 1, STEP_SIZE)
++    window_steps = list(range(julmin, julmax + 1, STEP_SIZE))
+
+     # TODO: (potential) add e0_1_list, e0_2_list, e0_3_list, and corresponding se and idx to track individual
+
+RefactoringTool: Files that were modified:
+RefactoringTool: ./oneflux/partition/__init__.py
+RefactoringTool: ./oneflux/partition/auxiliary.py
+RefactoringTool: ./oneflux/partition/compu.py
+RefactoringTool: ./oneflux/partition/daytime.py
+RefactoringTool: ./oneflux/partition/ecogeo.py
+RefactoringTool: ./oneflux/partition/library.py
+RefactoringTool: ./oneflux/partition/nighttime.py
+(venv) ap766@VR2T59LTWJ ONEFlux % git status
+On branch trying-2-to-3-tool
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   oneflux/partition/auxiliary.py
+	modified:   oneflux/partition/daytime.py
+	modified:   oneflux/partition/nighttime.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	.idea/
+	oneflux/partition/auxiliary.py.bak
+	oneflux/partition/daytime.py.bak
+	oneflux/partition/nighttime.py.bak
+	tests/data/
+	tests/python/integration/input/
+
+no changes added to commit (use "git add" and/or "git commit -a")
+(venv) ap766@VR2T59LTWJ ONEFlux %
