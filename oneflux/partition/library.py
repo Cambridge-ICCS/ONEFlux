@@ -23,7 +23,7 @@ from scipy.stats import rankdata
 from oneflux import ONEFluxError
 from oneflux.partition.ecogeo import lloyd_taylor, lloyd_taylor_dt, hlrc_lloyd, hlrc_lloydvpd
 from oneflux.partition.ecogeo import hlrc_lloyd_afix, hlrc_lloydvpd_afix, lloydt_e0fix
-from oneflux.partition.auxiliary import FLOAT_PREC, DOUBLE_PREC, NAN, nan, not_nan
+from oneflux.partition.auxiliary import FLOAT_PREC, DOUBLE_PREC, STRING_VARIABLE_LENGTH, NAN, nan, not_nan
 
 from oneflux.graph.compare import plot_comparison
 from oneflux.utils.files import file_exists_not_empty
@@ -76,7 +76,7 @@ def load_output(filename, delimiter=',', skip_header=1):
     _log.debug("Finished loading headers: {h}".format(h=headers))
 
     _log.debug("Started loading data")
-    dtype = [(i, ('U12' if i.lower() in STRING_HEADERS else FLOAT_PREC)) for i in headers]
+    dtype = [(i, (STRING_VARIABLE_LENGTH if i.lower() in STRING_HEADERS else FLOAT_PREC)) for i in headers]
     vfill = [('' if i.lower() in STRING_HEADERS else numpy.NaN) for i in headers]
     data = numpy.genfromtxt(fname=filename, dtype=dtype, names=headers, delimiter=delimiter, skip_header=skip_header, missing_values='-9999,-9999.0,-6999,-6999.0, ', usemask=True)
     data = numpy.ma.filled(data, vfill)

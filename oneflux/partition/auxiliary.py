@@ -28,6 +28,7 @@ NAN_EXT_TEST = -6990.0
 #FLOAT_PREC = 'f8'
 FLOAT_PREC = 'f4'
 DOUBLE_PREC = 'f8'
+STRING_VARIABLE_LENGTH = 'U12'
 
 
 _log = logging.getLogger(__name__)
