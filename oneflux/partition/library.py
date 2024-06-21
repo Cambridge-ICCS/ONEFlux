@@ -1299,7 +1299,7 @@ def load_outputs(filename, delimiter=',', skip_header=1, is_not_hourly=True, is_
     _log.debug("Loaded headers: {h}".format(h=headers))
 
     _log.debug("Started loading data")
-    dtype = [(i, ('a25' if i.lower() in STRING_HEADERS else FLOAT_PREC)) for i in headers]
+    dtype = [(i, (STRING_VARIABLE_LENGTH if i.lower() in STRING_HEADERS else FLOAT_PREC)) for i in headers]
     vfill = [('' if i.lower() in STRING_HEADERS else numpy.NaN) for i in headers]
     data = numpy.genfromtxt(fname=filename, dtype=dtype, names=headers, delimiter=delimiter, skip_header=skip_header, missing_values='-9999,-9999.0,-6999,-6999.0, ', usemask=True)
     data = numpy.ma.filled(data, vfill)
