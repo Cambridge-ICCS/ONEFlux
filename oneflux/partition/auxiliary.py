@@ -28,6 +28,7 @@ NAN_EXT_TEST = -6990.0
 #FLOAT_PREC = 'f8'
 FLOAT_PREC = 'f4'
 DOUBLE_PREC = 'f8'
+STRING_VARIABLE_LENGTH = 'U12'
 
 
 _log = logging.getLogger(__name__)
@@ -111,7 +112,7 @@ def compare_col_to_pvwave(py_array, filename, label=None, diff=False, show_plot=
     s_string = s_string.replace(' ', '')
     s_string = s_string.replace('-1.#IND000', '-9999')
     s_string = s_string.replace('\r', '')
-    u_string = unicode(s_string)
+    u_string = str(s_string)
     pw_array = numpy.genfromtxt(StringIO(u_string), dtype=FLOAT_PREC, delimiter=',', skip_header=0, missing_values='-9999,-9999.0,-6999,-6999.0, ', usemask=True)
     pw_array = numpy.ma.filled(pw_array, numpy.NaN)
     # **************************************************************************************************************************************************
@@ -204,7 +205,7 @@ def compare_col_to_pvwave(py_array, filename, label=None, diff=False, show_plot=
             figure_basename = figure_basename.replace('_PW', '') # remove _PW from PW data source filename
 
         record_interval = (timedelta(minutes=30) if resolution == 'hh' else timedelta(minutes=60))
-        timestamp_list = [datetime(year, 1, 1, 0, 0) + (record_interval * i) for i in xrange(1, py_array.size + 1)]
+        timestamp_list = [datetime(year, 1, 1, 0, 0) + (record_interval * i) for i in range(1, py_array.size + 1)]
 
         _log.debug("Using year={y}, resolution={r}, first timestamp={f}, last timestamp={l}".format(y=year, r=resolution, f=timestamp_list[0], l=timestamp_list[-1]))
 

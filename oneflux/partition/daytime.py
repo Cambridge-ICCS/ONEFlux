@@ -909,7 +909,7 @@ def estimate_parasets(data, winsize, fguess, trimperc, name_out, dt_output_dir, 
     ###############################################
 
     #### Creating the arrays we're going to use
-    n_parasets = long(365 / winsize) * 2
+    n_parasets = int(365 / winsize) * 2
     params = numpy.zeros((3, 2 * len(fguess), n_parasets), dtype=FLOAT_PREC)
     params_ok = numpy.zeros((2 * len(fguess), n_parasets), dtype=FLOAT_PREC)
     params_nok = numpy.zeros((2 * len(fguess), n_parasets), dtype=FLOAT_PREC)
@@ -1041,7 +1041,7 @@ def estimate_parasets(data, winsize, fguess, trimperc, name_out, dt_output_dir, 
         #ind[i, :, :] = long((day_begin + winsize / 2.0) * 48.0)
 
         #### Calculate the first index of the window we're using now
-        ind[:, :, i] = long((day_begin + winsize / 2.0) * 48.0)
+        ind[:, :, i] = int((day_begin + winsize / 2.0) * 48.0)
 
         '''
         #print("ind[:, :, i]")
@@ -1938,12 +1938,12 @@ def percentiles_fn(data, columns, values=[0.0, 0.25, 0.5, 0.75, 1.0], remove_mis
 
         #### Setting ind to the percentile wanted
         if values[i] <= 0.5:
-            ind = long(values[i] * n_elements)
+            ind = int(values[i] * n_elements)
         else:
-            ind = long(values[i] * (n_elements + 1))
+            ind = int(values[i] * (n_elements + 1))
 
         if ind >= n_elements:
-            ind = n_elements - long(1)
+            ind = n_elements - int(1)
 
         if i == 0:
             result = data[columns[0]][sorted_index_arr[ind]]
