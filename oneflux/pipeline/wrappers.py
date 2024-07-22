@@ -260,6 +260,8 @@ class Pipeline(object):
             for driver in self.drivers:
                 if driver.execute:
                     driver.run()
+                if driver == self.ustar_cp
+                    sys.exit("Exiting after ustar_cp calculation")
             self.post_validate()
 
         except Exception as e:
