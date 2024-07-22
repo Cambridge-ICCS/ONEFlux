@@ -1,0 +1,38 @@
+# Functional Flow Diagram for `cpdBootstrapUStarTh4Season20100901` Function
+
+## Start
+|
+|-- **Initialize Function**
+|   - Define function with inputs: `t`, `NEE`, `uStar`, `T`, `fNight`, `fPlot`, `cSiteYr`, `nBoot`
+|
+|-- **Initialize Variables**
+|   - Calculate `nt` (length of `t`)
+|   - Determine `nPerDay` (number of periods per day based on median difference in `t`)
+|   - Identify night indices `iNight`
+|   - Filter out invalid `uStar` values (`uStar < 0` or `uStar > 4`)
+|   - Set parameters: `nSeasons = 4`, `nStrataN = 4`, `nStrataX = 8`, `nBins = 50`, `nPerBin = 5`
+|   - Adjust `nPerBin` based on `nPerDay` (24 or 48)
+|   - Calculate `nPerSeason` and `ntN`
+|
+|-- **Find Valid Data Indices**
+|   - Identify non-NaN indices for `NEE`, `uStar`, `T`
+|   - Intersect with night indices to get `itNee`
+|   - Initialize `StatsMT` structure with default NaN values
+|
+|-- **Initialize Result Arrays**
+|   - Initialize `Cp2`, `Cp3`, `Stats2`, `Stats3` arrays with NaN values
+|
+|-- **Check Sufficient Data**
+|   - If `ntNee` (valid nighttime data points) is greater than or equal to `ntN`
+|   |
+|   |-- **Bootstrap Loop**
+|   |   - For each bootstrap iteration `iBoot` from 1 to `nBoot`
+|   |   |   - Record start time `t0`
+|   |   |   - Generate random indices `it` for resampling
+|   |   |   - Calculate `ntNee` for resampled data
+|   |   |   - Set `fPlot` to 0 if `iBoot` > 1
+|   |   |   - Call `cpdEvaluateUStarTh4Season20100901` with resampled data
+|   |   |   - Store results in `Cp2`, `Cp3`, `Stats2`, `Stats3`
+|   |   |   - Calculate and log processing time
+|
+|-- **End**
