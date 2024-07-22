@@ -1,0 +1,48 @@
+# Functional Flow Diagram for Shell Script
+
+## Start
+|
+|-- **Initialize Script**
+|   - Define `exe_name` as `$0`
+|   - Define `exe_dir` as `dirname "$0"`
+|   - Print "------------------------------------------"
+|
+|-- **Check for Arguments**
+|   - If no arguments (`x$1 = "x"`):
+|   |   - Print "Usage:"
+|   |   - Print script name and expected arguments
+|   - Else:
+|   |   - Print "Setting up environment variables"
+|   |   - Set `MCRROOT` to the first argument
+|   |   - Print "---"
+|   |
+|   |-- **Setup Environment Variables**
+|   |   - Set `LD_LIBRARY_PATH` to include:
+|   |     - Current directory `.` 
+|   |     - `${MCRROOT}/runtime/glnxa64`
+|   |     - `${MCRROOT}/bin/glnxa64`
+|   |     - `${MCRROOT}/sys/os/glnxa64`
+|   |   - Set `MCRJRE` to `${MCRROOT}/sys/java/jre/glnxa64/jre/lib/amd64`
+|   |   - Extend `LD_LIBRARY_PATH` to include:
+|   |     - `${MCRJRE}/native_threads`
+|   |     - `${MCRJRE}/server`
+|   |     - `${MCRJRE}/client`
+|   |     - `${MCRJRE}`
+|   |   - Set `XAPPLRESDIR` to `${MCRROOT}/X11/app-defaults`
+|   |   - Export `LD_LIBRARY_PATH`
+|   |   - Export `XAPPLRESDIR`
+|   |   - Print `LD_LIBRARY_PATH`
+|
+|   |-- **Prepare Arguments for Execution**
+|   |   - Shift to remove the first argument
+|   |   - Initialize `args` as empty
+|   |   - While there are more arguments (`$# > 0`):
+|   |     - Escape spaces in the argument using `sed 's/ /\\\\ /g'`
+|   |     - Append escaped argument to `args`
+|   |     - Shift to next argument
+|   |
+|   |-- **Execute Command**
+|   |   - Run `"${exe_dir}"/launch $args`
+|
+|-- **End**
+|   - Exit script
