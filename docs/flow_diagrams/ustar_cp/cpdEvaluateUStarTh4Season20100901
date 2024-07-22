@@ -6,54 +6,62 @@
 |   - Define function with inputs: `t`, `NEE`, `uStar`, `T`, `fNight`, `fPlot`, `cSiteYr`
 |
 |-- **Initializations**
-|   - Calculate `nt` (length of `t`)
-|   - Extract year, month, day vectors from `t` using `fcDatevec`
-|   - Calculate `iYr` (median year) and `EndDOY` (end day of year)
-|   - Determine `nPerDay` (number of periods per day based on median difference in `t`)
+|   - Calculate `nt` as `length(t)`
+|   - Use `fcDatevec(t)` to extract `y`, `m`, `d`
+|   - Calculate `iYr` as `median(y)`
+|   - Calculate `EndDOY` using `fcDoy(datenum(iYr,12,31.5))`
+|   - Calculate `nPerDay` using `round(1/nanmedian(diff(t)))` (MATLAB stats toolbox)
 |
-|-- **Set Parameters**
-|   - Set parameters: `nSeasons = 4`, `nStrataN = 4`, `nStrataX = 8`, `nBins = 50`, `nPerBin = 5`
-|   - Adjust `nPerBin` based on `nPerDay` (24 or 48)
-|   - Calculate `nPerSeasonN` and `nN`
+|-- **Define Constants**
+|   - Define constants:
+|     - `nSeasons=4`
+|     - `nStrataN=4`
+|     - `nStrataX=8`
+|     - `nBins=50`
+|     - `nPerBin=3` (if `nPerDay=24`) or `nPerBin=5` (if `nPerDay=48`)
+|   - Calculate `nPerSeasonN` as `nStrataN * nBins * nPerBin`
+|   - Calculate `nN` as `nSeasons * nPerSeasonN`
 |
-|-- **Filter Invalid Data**
-|   - Find and filter out invalid `uStar` values (`uStar < 0` or `uStar > 3`)
-|   - Identify valid indices for annual nighttime data (`itAnnual`) and calculate `ntAnnual`
+|-- **Filter uStar Values**
+|   - Identify and set invalid `uStar` values to `NaN` using `find(uStar < 0 | uStar > 3)`
+|
+|-- **Find Valid Data Points**
+|   - Find valid indices `itAnnual` using `find(fNight == 1 & ~isnan(NEE + uStar + T))`
+|   - Calculate `ntAnnual` as `length(itAnnual)`
 |
 |-- **Initialize Outputs**
-|   - Initialize `Cp2`, `Cp3`, `Stats2`, `Stats3` arrays with NaN values
-|   - Initialize `StatsMT` structure with default NaN values
+|   - Initialize `Cp2` and `Cp3` as `NaN` arrays of size `nSeasons x nStrataX`
+|   - Initialize `Stats2` and `Stats3` as structures with fields:
+|     - `n`, `Cp`, `Fmax`, `p`, `b0`, `b1`, `b2`, `c2`, `cib0`, `cib1`, `cic2`, `mt`, `ti`, `tf`, `ruStarVsT`, `puStarVsT`, `mT`, `ciT` all set to `NaN`
 |
-|-- **Check Sufficient Data**
-|   - If `ntAnnual` (valid annual nighttime data points) is less than `nN`, return
+|-- **Check Data Sufficiency**
+|   - If `ntAnnual < nN`, return
+|   - Calculate `nPerSeason` as `round(ntAnnual / nSeasons)`
 |
-|-- **Reorder Data**
-|   - Move December data to the beginning of the year and reorder
+|-- **Reorder Data for Analysis**
+|   - Reorder data to move December to the beginning of the year
 |   - Update `t`, `T`, `uStar`, `NEE`, `fNight` accordingly
-|   - Recalculate `itAnnual` and `ntAnnual`
+|   - Recalculate `itAnnual` with the new order
 |
-|-- **Reset Parameters**
-|   - Calculate `nSeasons` based on actual number of good data
-|   - Recalculate `nPerSeason`
+|-- **Reset Seasons Based on Valid Data**
+|   - Calculate `nSeasons` as `round(ntAnnual / nPerSeason)`
+|   - Update `nPerSeason` as `round(ntAnnual / nSeasons)`
 |
-|-- **Stratify Data**
-|   - Stratify data by time using moving windows and by temperature class
-|   - For each season and temperature class, estimate change points `Cp2` and `Cp3`
-|
-|-- **Plotting (if enabled)**
-|   - Initialize plot settings if `fPlot` is set to 1
-|   - Plot results for each season and strata if `fPlot` is set to 1
-|
-|-- **Season Loop**
-|   - For each season `iSeason`
-|   |   - Determine indices for the season (`jtSeason`, `itSeason`)
-|   |   - Calculate number of strata based on `ntSeason`
-|   |   - Calculate temperature thresholds `TTh`
-|   |   - For each strata `iStrata`
-|   |   |   - Find indices for the strata (`itStrata`)
-|   |   |   - Bin `uStar` and `NEE` data and calculate mean values
-|   |   |   - Call `cpdFindChangePoint20100901` to find change points
-|   |   |   - Add additional fields to `xs2` and `xs3` not assigned by change-point function
-|   |   |   - Store results in `Cp2`, `Cp3`, `Stats2`, `Stats3`
+|-- **Stratify Data and Estimate Change Points**
+|   - For each season `iSeason`:
+|   |   - Define `jtSeason` range for the season
+|   |   - Find indices `itSeason` for the current season
+|   |   - Calculate `nStrata` based on data points per bin
+|   |   - Adjust `nStrata` within bounds `nStrataN` and `nStrataX`
+|   |   - Calculate temperature thresholds `TTh` using `prctile`
+|   |
+|   |-- **Process Each Temperature Stratum**
+|   |   - For each stratum `iStrata`:
+|   |   |   - Identify `itStrata` within temperature range
+|   |   |   - Bin `uStar` and `NEE` using `fcBin`
+|   |   |   - Call `cpdFindChangePoint20100901(muStar, mNEE, fPlot, cPlot)`
+|   |   |   - Calculate additional statistics: `mt`, `ti`, `tf`, `ruStarVsT`, `puStarVsT`, `mT`, `ciT`
+|   |   |   - Assign results to `Cp2(iSeason, iStrata)`, `Stats2(iSeason, iStrata)`, `Cp3(iSeason, iStrata)`, `Stats3(iSeason, iStrata)`
 |
 |-- **End**
+|   - Return `Cp2`, `Stats2`, `Cp3`, `Stats3`
