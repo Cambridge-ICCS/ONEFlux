@@ -6,51 +6,54 @@
 |   - Define function with inputs: `xx`, `yy`, `fPlot`, `cPlot`
 |
 |-- **Initialize Outputs**
-|   - Set `Cp2`, `Cp3` to NaN
-|   - Initialize `s2` and `s3` structures with default NaN values
+|   - Set `Cp2 = NaN`, `Cp3 = NaN`
+|   - Initialize structure `s2` and `s3` with fields: `n`, `Cp`, `Fmax`, `p`, `b0`, `b1`, `b2`, `c2`, `cib0`, `cib1`, `cic2` all set to `NaN`
 |
 |-- **Exclude Missing Data**
-|   - Reshape `xx` and `yy` to column vectors
-|   - Find and exclude NaN values in `xx` and `yy`
-|   - Calculate number of valid data points `n`
-|   - If `n` is less than 10, return
+|   - Reshape `xx` and `yy` to column vectors `x` and `y`
+|   - Identify and remove `NaN` values from `x` and `y`
+|   - Calculate `n` as `length(x + y)`
+|   - If `n < 10`, return
 |
 |-- **Exclude Extreme Linear Regression Outliers**
-|   - Perform linear regression on `x` and `y` to get regression coefficients `a`
-|   - Calculate predicted values `yHat` and residuals `dy`
-|   - Calculate mean `mdy` and standard deviation `sdy` of residuals
-|   - Find and exclude outliers beyond `ns` (4) standard deviations
-|   - Calculate number of valid data points `n`
-|   - If `n` is less than 10, return
+|   - Perform linear regression `a = [ones(n,1) x] \ y` (MATLAB regress)
+|   - Calculate `yHat`, `dy`, `mdy`, `sdy`
+|   - Identify outliers `iOut` based on `ns * sdy` threshold
+|   - Remove outliers from `x` and `y`
+|   - Recalculate `n` as `length(x + y)`
+|   - If `n < 10`, return
 |
-|-- **Compute Null Hypothesis Models**
-|   - Compute mean of `y` as `yHat2` and `SSERed2`
-|   - Perform linear regression on `x` and `y` to get `yHat3` and `SSERed3`
-|   - Set `nRed2 = 1`, `nFull2 = 2`, `nRed3 = 2`, `nFull3 = 3`
+|-- **Compute Statistics for Reduced Models**
+|   - Calculate `yHat2 = mean(y)`
+|   - Calculate `SSERed2 = sum((y - yHat2).^2)`
+|   - Perform linear regression `a = [ones(n,1) x] \ y` (MATLAB regress)
+|   - Calculate `yHat3`, `SSERed3`, `nRed2`, `nFull2`, `nRed3`, `nFull3`
 |
-|-- **Compute F Scores**
-|   - Initialize `MT`, `Fc2`, `Fc3` arrays with NaN values
-|   - Set `nEndPtsN = 3` and calculate `nEndPts`
-|   - Loop through each data point to compute F scores:
-|   |   - Fit 2-parameter model and compute `Fc2`
-|   |   - Fit 3-parameter model and compute `Fc3`
+|-- **Compute F Score for Each Data Point**
+|   - Initialize `Fc2`, `Fc3`, and `MT` as `NaN` arrays
+|   - Define `nEndPtsN = 3`, calculate `nEndPts`
+|   - For each data point `i`:
+|   |   - Fit 2-parameter model and calculate `Fc2(i)`
+|   |   - Fit 3-parameter model and calculate `Fc3(i)`
 |
-|-- **Assign Change Points**
-|   - Find `Fmax2` and `iCp2`, set `xCp2`
-|   - Perform linear regression for 2-parameter model and calculate `yHat2`
-|   - Calculate p-value `p2` and assign `Cp2` if significant
-|   - Find `Fmax3` and `iCp3`, set `xCp3`
-|   - Perform linear regression for 3-parameter model and calculate `yHat3`
-|   - Calculate p-value `p3` and assign `Cp3` if significant
+|-- **Assign Change Points and Test Significance**
+|   - Calculate `Fmax2` and `iCp2` from `Fc2`
+|   - Perform linear regression for `Cp2` and test significance using `cpdFmax2pCp2(Fmax2, n)`
+|   - Assign `Cp2`, if `p2 > pSig`, set `Cp2 = NaN`
+|   - Calculate `Fmax3` and `iCp3` from `Fc3`
+|   - Perform linear regression for `Cp3` and test significance using `cpdFmax2pCp3(Fmax3, n)`
+|   - Assign `Cp3`, if `p3 > pSig`, set `Cp3 = NaN`
 |
-|-- **Assign Values to s2 and s3**
-|   - Check if `iCp2` is within valid range, if so, assign values to `s2`
-|   - Check if `iCp3` is within valid range, if so, assign values to `s3`
+|-- **Assign Values to `s2` and `s3`**
+|   - If `iCp2` not too close to end points:
+|   |   - Assign values to `s2` fields: `n`, `Cp`, `Fmax`, `p`, `b0`, `b1`, `cib0`, `cib1`
+|   - If `iCp3` not too close to end points:
+|   |   - Assign values to `s3` fields: `n`, `Cp`, `Fmax`, `p`, `b0`, `b1`, `b2`, `c2`, `cib0`, `cib1`, `cic2`
 |
-|-- **Plot Results (if enabled)**
-|   - If `fPlot` is 1:
-|   |   - Plot `x`, `y`, `yHat2`, `yHat3`, `xCp2`, `xCp3`
-|   |   - Set plot title and adjust plot limits
-|   |   - Format plot appearance
+|-- **Plot Results (if `fPlot == 1`)**
+|   - Use `cla`, `hold on`, `plot`, `grid on`, `box on` for plotting
+|   - Plot `x`, `y`, `yHat2`, `yHat3`, change points `xCp2`, `xCp3`
+|   - Set plot title, axis limits, and font size
 |
 |-- **End**
+|   - Return `Cp2`, `s2`, `Cp3`, `s3`
