@@ -5,34 +5,49 @@
 |-- **Initialize Function**
 |   - Define function with inputs: `t`, `NEE`, `uStar`, `T`, `fNight`, `fPlot`, `cSiteYr`, `nBoot`
 |
-|-- **Initialize Variables**
-|   - Calculate `nt` (length of `t`)
-|   - Determine `nPerDay` (number of periods per day based on median difference in `t`)
-|   - Identify night indices `iNight`
-|   - Filter out invalid `uStar` values (`uStar < 0` or `uStar > 4`)
-|   - Set parameters: `nSeasons = 4`, `nStrataN = 4`, `nStrataX = 8`, `nBins = 50`, `nPerBin = 5`
-|   - Adjust `nPerBin` based on `nPerDay` (24 or 48)
-|   - Calculate `nPerSeason` and `ntN`
+|-- **Calculate Variables**
+|   - Calculate `nt` as `length(t)`
+|   - Calculate `nPerDay` using `round(1/nanmedian(diff(t)))` (MATLAB stats toolbox)
 |
-|-- **Find Valid Data Indices**
-|   - Identify non-NaN indices for `NEE`, `uStar`, `T`
-|   - Intersect with night indices to get `itNee`
-|   - Initialize `StatsMT` structure with default NaN values
+|-- **Initialize Arrays and Constants**
+|   - Identify night periods with `find(fNight)`
+|   - Identify invalid `uStar` values with `find(uStar<0 | uStar>4)` and set them to `NaN`
+|   - Define constants: 
+|     - `nSeasons=4`
+|     - `nStrataN=4`
+|     - `nStrataX=8`
+|     - `nBins=50`
+|     - `nPerBin=3` (if `nPerDay=24`) or `nPerBin=5` (if `nPerDay=48`)
+|   - Calculate `nPerSeason` as `nStrataN * nBins * nPerBin`
+|   - Calculate `ntN` as `nSeasons * nPerSeason`
 |
-|-- **Initialize Result Arrays**
-|   - Initialize `Cp2`, `Cp3`, `Stats2`, `Stats3` arrays with NaN values
+|-- **Find Valid Data Points**
+|   - Find valid indices `itNee` with `find(~isnan(NEE + uStar + T))`
+|   - Intersect with night periods `itNee = intersect(itNee, iNight)`
+|   - Calculate `ntNee` as `length(itNee)`
 |
-|-- **Check Sufficient Data**
-|   - If `ntNee` (valid nighttime data points) is greater than or equal to `ntN`
-|   |
-|   |-- **Bootstrap Loop**
-|   |   - For each bootstrap iteration `iBoot` from 1 to `nBoot`
-|   |   |   - Record start time `t0`
-|   |   |   - Generate random indices `it` for resampling
-|   |   |   - Calculate `ntNee` for resampled data
-|   |   |   - Set `fPlot` to 0 if `iBoot` > 1
-|   |   |   - Call `cpdEvaluateUStarTh4Season20100901` with resampled data
-|   |   |   - Store results in `Cp2`, `Cp3`, `Stats2`, `Stats3`
-|   |   |   - Calculate and log processing time
+|-- **Initialize Statistics Structures**
+|   - Define `StatsMT` structure with fields initialized to `NaN`
+|   - Initialize `Cp2`, `Cp3`, `Stats2`, and `Stats3` as arrays of `NaN`
+|
+|-- **Check Data Sufficiency**
+|   - Check if `ntNee >= ntN`, otherwise skip bootstrapping
+|
+|-- **Bootstrapping Loop**
+|   - For each bootstrap iteration `iBoot`:
+|   |   - Record start time with `t0 = now`
+|   |   - Generate random indices `it = sort(randi(nt, nt, 1))`
+|   |   - Calculate `ntNee` as `sum(ismember(it, itNee))`
+|   |   - Set `fPlot` to 0 after the first iteration
+|
+|   |-- **Evaluate uStar Thresholds**
+|   |   - Call `cpdEvaluateUStarTh4Season20100901(t(it), NEE(it), uStar(it), T(it), fNight(it), fPlot, cSiteYr)`
+|   |   - Assign results to `xCp2`, `xStats2`, `xCp3`, `xStats3`
+|   |   - Calculate elapsed time `dt = (now - t0) * 24 * 60 * 60`
+|
+|   |-- **Store Results**
+|   |   - Store results in `Cp2(:,:,iBoot) = xCp2`, `Stats2(:,:,iBoot) = xStats2`
+|   |   - Store results in `Cp3(:,:,iBoot) = xCp3`, `Stats3(:,:,iBoot) = xStats3`
 |
 |-- **End**
+|   - Return `Cp2`, `Stats2`, `Cp3`, `Stats3`
