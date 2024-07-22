@@ -1,0 +1,51 @@
+# Functional Flow Diagram for `launch` Function
+
+## Start
+|
+|-- **Initialize Function**
+|   - Set `exitcode` to 0
+|   - Turn off warnings
+|
+|-- **Check and Normalize Input Folder Path**
+|   - If `input_folder` not provided, use current directory
+|   - If relative path, convert to absolute path
+|   - Ensure path ends with a slash or backslash
+|
+|-- **Check and Normalize Output Folder Path**
+|   - If `output_folder` not provided, use current directory
+|   - If relative path, convert to absolute path
+|   - Ensure path ends with a slash or backslash
+|   - Create output directory if it doesn't exist
+|
+|-- **Identify Files to Process**
+|   - List all CSV files matching pattern `*_qca_ustar_*.csv`
+|
+|-- **Initialize Error String Array**
+|
+|-- **Process Each Identified File**
+|   |
+|   |-- **Open and Read File**
+|   |   - Extract metadata (site, year, lat, lon, timezone, htower, timeres, sc_negl, notes)
+|   |   - Import data from file
+|   |
+|   |-- **Identify Columns**
+|   |   - Identify indices for `USTAR`, `NEE`, `TA`, `PPFD_IN`, `SW_IN`
+|   |   - Handle errors if columns are not found
+|   |
+|   |-- **Extract and Validate Data**
+|   |   - Extract data for identified columns
+|   |   - Replace invalid data values with `NaN`
+|   |   - Handle `PPFD` data derived from `SW_IN` if necessary
+|   |
+|   |-- **uStar Threshold Computation**
+|   |   - Call `cpdBootstrapUStarTh4Season20100901` for 4-season analysis
+|   |   - Call `cpdAssignUStarTh20100901` to assign annual Cp arrays
+|   |
+|   |-- **Write Results**
+|   |   - Write computed results to output files
+|   |   - Append metadata and notes to result files
+|   |
+|   |-- **Handle Errors**
+|   |   - Collect error messages in `error_str`
+|   |
+|-- **End**
