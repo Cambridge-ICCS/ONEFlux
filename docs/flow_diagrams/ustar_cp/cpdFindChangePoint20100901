@@ -1,0 +1,59 @@
+# Functional Flow Diagram for `cpdFindChangePoint20100901` Function
+
+## Start
+|
+|-- **Initialize Function**
+|   - Define function with inputs: `xx`, `yy`, `fPlot`, `cPlot`
+|
+|-- **Initialize Outputs**
+|   - Set `Cp2 = NaN`, `Cp3 = NaN`
+|   - Initialize structure `s2` and `s3` with fields: `n`, `Cp`, `Fmax`, `p`, `b0`, `b1`, `b2`, `c2`, `cib0`, `cib1`, `cic2` all set to `NaN`
+|
+|-- **Exclude Missing Data**
+|   - Reshape `xx` and `yy` to column vectors `x` and `y`
+|   - Identify and remove `NaN` values from `x` and `y`
+|   - Calculate `n` as `length(x + y)`
+|   - If `n < 10`, return
+|
+|-- **Exclude Extreme Linear Regression Outliers**
+|   - Perform linear regression `a = [ones(n,1) x] \ y` (MATLAB regress)
+|   - Calculate `yHat`, `dy`, `mdy`, `sdy`
+|   - Identify outliers `iOut` based on `ns * sdy` threshold
+|   - Remove outliers from `x` and `y`
+|   - Recalculate `n` as `length(x + y)`
+|   - If `n < 10`, return
+|
+|-- **Compute Statistics for Reduced Models**
+|   - Calculate `yHat2 = mean(y)`
+|   - Calculate `SSERed2 = sum((y - yHat2).^2)`
+|   - Perform linear regression `a = [ones(n,1) x] \ y` (MATLAB regress)
+|   - Calculate `yHat3`, `SSERed3`, `nRed2`, `nFull2`, `nRed3`, `nFull3`
+|
+|-- **Compute F Score for Each Data Point**
+|   - Initialize `Fc2`, `Fc3`, and `MT` as `NaN` arrays
+|   - Define `nEndPtsN = 3`, calculate `nEndPts`
+|   - For each data point `i`:
+|   |   - Fit 2-parameter model and calculate `Fc2(i)`
+|   |   - Fit 3-parameter model and calculate `Fc3(i)`
+|
+|-- **Assign Change Points and Test Significance**
+|   - Calculate `Fmax2` and `iCp2` from `Fc2`
+|   - Perform linear regression for `Cp2` and test significance using `cpdFmax2pCp2(Fmax2, n)`
+|   - Assign `Cp2`, if `p2 > pSig`, set `Cp2 = NaN`
+|   - Calculate `Fmax3` and `iCp3` from `Fc3`
+|   - Perform linear regression for `Cp3` and test significance using `cpdFmax2pCp3(Fmax3, n)`
+|   - Assign `Cp3`, if `p3 > pSig`, set `Cp3 = NaN`
+|
+|-- **Assign Values to `s2` and `s3`**
+|   - If `iCp2` not too close to end points:
+|   |   - Assign values to `s2` fields: `n`, `Cp`, `Fmax`, `p`, `b0`, `b1`, `cib0`, `cib1`
+|   - If `iCp3` not too close to end points:
+|   |   - Assign values to `s3` fields: `n`, `Cp`, `Fmax`, `p`, `b0`, `b1`, `b2`, `c2`, `cib0`, `cib1`, `cic2`
+|
+|-- **Plot Results (if `fPlot == 1`)**
+|   - Use `cla`, `hold on`, `plot`, `grid on`, `box on` for plotting
+|   - Plot `x`, `y`, `yHat2`, `yHat3`, change points `xCp2`, `xCp3`
+|   - Set plot title, axis limits, and font size
+|
+|-- **End**
+|   - Return `Cp2`, `s2`, `Cp3`, `s3`

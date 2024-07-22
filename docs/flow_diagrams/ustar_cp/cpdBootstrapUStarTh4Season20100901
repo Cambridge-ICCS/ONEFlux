@@ -1,0 +1,53 @@
+# Functional Flow Diagram for `cpdBootstrapUStarTh4Season20100901` Function
+
+## Start
+|
+|-- **Initialize Function**
+|   - Define function with inputs: `t`, `NEE`, `uStar`, `T`, `fNight`, `fPlot`, `cSiteYr`, `nBoot`
+|
+|-- **Calculate Variables**
+|   - Calculate `nt` as `length(t)`
+|   - Calculate `nPerDay` using `round(1/nanmedian(diff(t)))` (MATLAB stats toolbox)
+|
+|-- **Initialize Arrays and Constants**
+|   - Identify night periods with `find(fNight)`
+|   - Identify invalid `uStar` values with `find(uStar<0 | uStar>4)` and set them to `NaN`
+|   - Define constants: 
+|     - `nSeasons=4`
+|     - `nStrataN=4`
+|     - `nStrataX=8`
+|     - `nBins=50`
+|     - `nPerBin=3` (if `nPerDay=24`) or `nPerBin=5` (if `nPerDay=48`)
+|   - Calculate `nPerSeason` as `nStrataN * nBins * nPerBin`
+|   - Calculate `ntN` as `nSeasons * nPerSeason`
+|
+|-- **Find Valid Data Points**
+|   - Find valid indices `itNee` with `find(~isnan(NEE + uStar + T))`
+|   - Intersect with night periods `itNee = intersect(itNee, iNight)`
+|   - Calculate `ntNee` as `length(itNee)`
+|
+|-- **Initialize Statistics Structures**
+|   - Define `StatsMT` structure with fields initialized to `NaN`
+|   - Initialize `Cp2`, `Cp3`, `Stats2`, and `Stats3` as arrays of `NaN`
+|
+|-- **Check Data Sufficiency**
+|   - Check if `ntNee >= ntN`, otherwise skip bootstrapping
+|
+|-- **Bootstrapping Loop**
+|   - For each bootstrap iteration `iBoot`:
+|   |   - Record start time with `t0 = now`
+|   |   - Generate random indices `it = sort(randi(nt, nt, 1))`
+|   |   - Calculate `ntNee` as `sum(ismember(it, itNee))`
+|   |   - Set `fPlot` to 0 after the first iteration
+|
+|   |-- **Evaluate uStar Thresholds**
+|   |   - Call `cpdEvaluateUStarTh4Season20100901(t(it), NEE(it), uStar(it), T(it), fNight(it), fPlot, cSiteYr)`
+|   |   - Assign results to `xCp2`, `xStats2`, `xCp3`, `xStats3`
+|   |   - Calculate elapsed time `dt = (now - t0) * 24 * 60 * 60`
+|
+|   |-- **Store Results**
+|   |   - Store results in `Cp2(:,:,iBoot) = xCp2`, `Stats2(:,:,iBoot) = xStats2`
+|   |   - Store results in `Cp3(:,:,iBoot) = xCp3`, `Stats3(:,:,iBoot) = xStats3`
+|
+|-- **End**
+|   - Return `Cp2`, `Stats2`, `Cp3`, `Stats3`

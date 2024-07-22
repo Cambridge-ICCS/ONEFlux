@@ -1,0 +1,124 @@
+# uStarTh Method Flow Diagram
+
+## Overview
+
+The `ustar_cp` method processes and evaluates the u* threshold (uStarTh) using change-point detection (cpd) for site-year data. The process involves the following main steps:
+
+1. **Initialization**
+2. **Input and Output Path Validation**
+3. **Data Loading and Parsing**
+4. **Data Filtering**
+5. **Data Transformation**
+6. **Model Fitting and Change-Point Detection**
+7. **Result Aggregation**
+8. **Output Writing**
+
+## Flow Diagram
+
+### Detailed Steps and Function Calls
+
+1. **Initialization**
+    - Set initial parameters and preallocate arrays for outputs.
+    - **Functions**: `nanmedian()`, `ones()`, `NaN()`
+    - **Purpose**: Prepares the environment and variables for subsequent computations.
+    - **Code Example**:
+    ```matlab
+    exitcode = 0;
+    warning off;
+    USTAR_INDEX = 1;
+    NEE_INDEX = 2;
+    TA_INDEX = 3;
+    PPFD_INDEX = 4;
+    RG_INDEX = 5;
+    input_columns_names = {'USTAR', 'NEE', 'TA', 'PPFD_IN', 'SW_IN'};
+    ```
+
+2. **Input and Output Path Validation**
+    - Validate and set input and output paths.
+    - **Functions**: `exist()`, `pwd()`, `mkdir()`
+    - **Purpose**: Ensures correct paths are used for reading input data and writing output data.
+    - **Code Example**:
+    ```matlab
+    if 0 == exist('input_folder')
+        input_folder = [pwd '\'];
+    end
+    if 0 == exist('output_folder')
+        output_folder = [pwd '\'];
+    end
+    mkdir(output_folder);
+    ```
+
+3. **Data Loading and Parsing**
+    - Load and parse data from input files.
+    - **Functions**: `dir()`, `fopen()`, `textscan()`, `importdata()`
+    - **Purpose**: Reads data from specified input files and prepares it for processing.
+    - **Code Example**:
+    ```matlab
+    d = dir([input_folder, '*_qca_ustar_*.csv']);
+    fid = fopen([input_folder, d(n).name], 'r');
+    dataset = textscan(fid, '%[^\n]');
+    imported_data = importdata([input_folder, d(n).name], ',', 9 + length(notes));
+    ```
+
+4. **Data Filtering**
+    - Exclude invalid data points and outliers.
+    - **Functions**: `find()`, `sum()`, `isnan()`
+    - **Purpose**: Ensures data quality by removing invalid or extreme values.
+    - **Code Example**:
+    ```matlab
+    uStar = data(:, columns_index(USTAR_INDEX));
+    NEE = data(:, columns_index(NEE_INDEX));
+    Ta = data(:, columns_index(TA_INDEX));
+    Rg = data(:, columns_index(RG_INDEX));
+    uStar(uStar == -9999) = NaN;
+    NEE(NEE == -9999) = NaN;
+    ```
+
+5. **Data Transformation**
+    - Perform necessary data transformations and calculations.
+    - **Functions**: `mod()`, `sum()`
+    - **Purpose**: Prepares data for change-point detection by normalizing or transforming it.
+    - **Code Example**:
+    ```matlab
+    nrPerDay = mod(numel(uStar), 365);
+    if nrPerDay == 0; nrPerDay = mod(numel(uStar), 364); end
+    t = 1 + (1 / nrPerDay);
+    ```
+
+6. **Model Fitting and Change-Point Detection**
+    - Fit models to the data and detect change-points.
+    - **Custom Functions**: `cpdBootstrapUStarTh4Season20100901()`, `cpdEvaluateUStarTh20100901()`
+    - **Purpose**: Models the relationship between variables and detects points where statistical properties change.
+    - **Code Example**:
+    ```matlab
+    [Cp2, Stats2, Cp3, Stats3] = cpdBootstrapUStarTh4Season20100901(t, NEE, uStar, T, fNight, fPlot, cSiteYr, nBoot);
+    [Cp, n, tW, CpW, cMode, cFailure, fSelect, sSine, FracSig, FracModeD, FracSelect] = cpdAssignUStarTh20100901(Stats2, fPlot, cSiteYr);
+    ```
+
+7. **Result Aggregation**
+    - Aggregate and summarize results.
+    - **Functions**: `dlmwrite()`, `fopen()`, `fprintf()`, `datestr()`
+    - **Purpose**: Summarizes and aggregates results for final output.
+    - **Code Example**:
+    ```matlab
+    dlmwrite([output_folder, char(site), '_uscp_', char(year), '.txt'], Cp, 'precision', 8);
+    fid = fopen([output_folder, char(site), '_uscp_', char(year), '.txt'], 'a');
+    fprintf(fid, '\n;processed with ustar_mp 1.0 on %s\n', datestr(clock));
+    fclose(fid);
+    ```
+
+8. **Output Writing**
+    - Write the final output to specified files.
+    - **Functions**: `dlmwrite()`, `fopen()`, `fprintf()`
+    - **Purpose**: Ensures the results are saved to the output files for further analysis or reporting.
+    - **Code Example**:
+    ```matlab
+    dlmwrite([output_folder, char(site), '_uscp_', char(year), '.txt'], Cp, 'precision', 8);
+    fid = fopen([output_folder, char(site), '_uscp_', char(year), '.txt'], 'a');
+    fprintf(fid, '\n;processed with ustar_mp 1.0 on %s\n', datestr(clock));
+    fclose(fid);
+    ```
+
+## Conclusion
+
+The `ustar_cp` method is a comprehensive process involving data loading, filtering, model fitting, change-point detection, and result aggregation to evaluate the u* threshold for site-year data. Each step involves specific function calls and MATLAB library functions to ensure accurate and efficient processing.

@@ -1,0 +1,79 @@
+# Functional Flow Diagram for `launch` Function
+
+## Start
+|
+|-- **Initialize Function**
+|   - Define function with inputs: `input_folder`, `output_folder`
+|   - Set `exitcode` to 0
+|   - Turn off warnings with `warning off`
+|
+|-- **Check Input Path**
+|   - Use `exist('input_folder')` to check if `input_folder` exists
+|   - If not, set `input_folder` to current directory using `pwd`
+|   - Ensure `input_folder` ends with a backslash or forward slash
+|
+|-- **Check Output Path**
+|   - Use `exist('output_folder')` to check if `output_folder` exists
+|   - If not, set `output_folder` to current directory using `pwd`
+|   - Ensure `output_folder` ends with a backslash or forward slash
+|   - Create output directory with `mkdir(output_folder)`
+|
+|-- **Initialize Variables**
+|   - Set indices: `USTAR_INDEX`, `NEE_INDEX`, `TA_INDEX`, `PPFD_INDEX`, `RG_INDEX`
+|   - Define `input_columns_names`
+|   - Print message with `fprintf`
+|   - Use `dir` to list files in `input_folder` matching pattern `*_qca_ustar_*.csv`
+|   - Print number of files found with `fprintf('%d files founded.\n\n', numel(d))`
+|
+|-- **Process Each File**
+|   - Loop through each file `d(n)`
+|   |   - Print processing message with `fprintf`
+|   |   - Open file with `fid = fopen([input_folder,d(n).name] ,'r')`
+|   |   - If file cannot be opened (`fid == -1`), print error message and continue
+|   |   - Read dataset with `textscan(fid,'%[^\n]')`
+|
+|   |-- **Extract Metadata**
+|   |   - Check and extract `site`, `year`, `lat`, `lon`, `timezone`, `htower`, `timeres`, `sc_negl`, `notes` using `strncmpi` and `strrep`
+|   |   - If any metadata is missing, print error message and continue
+|   |   - Close file with `fclose(fid)`
+|
+|   |-- **Import Data**
+|   |   - Import data using `importdata`
+|   |   - Extract `header` and `data` from `imported_data`
+|   |   - Initialize `columns_index`
+|   |   - Parse header to find column indices using `strcmpi`
+|   |   - If any required column is missing, print error message and continue
+|
+|   |-- **Assign Variables**
+|   |   - Extract data columns for `uStar`, `NEE`, `Ta`, `Rg`
+|   |   - If `PPFD` is missing, calculate from `Rg`
+|   |   - Handle missing data by setting invalid values to `NaN`
+|
+|   |-- **Check Data Validity**
+|   |   - Check if `NEE`, `uStar`, `Ta`, `Rg` are empty, print error message and continue if any are empty
+|
+|   |-- **Calculate Time Vector**
+|   |   - Calculate `t` based on `uStar` length and number of periods per day
+|
+|   |-- **Flag Nighttime Periods**
+|   |   - Set `fNight` where `Rg < 5`
+|   |   - Set `T` to `Ta`
+|
+|   |-- **Plot Inputs (if enabled)**
+|   |   - If `fPlot` is enabled, plot `t, uStar, NEE, Ta, PPFD, Rg` using `plot` and `mydatetick`
+|
+|   |-- **Call Bootstrap Program**
+|   |   - Call `cpdBootstrapUStarTh4Season20100901` with `t, NEE, uStar, T, fNight, fPlot, cSiteYr, nBoot`
+|   |   - Assign results to `Cp2`, `Stats2`, `Cp3`, `Stats3`
+|   |   - Call `cpdAssignUStarTh20100901` with `Stats2, fPlot, cSiteYr`
+|
+|   |-- **Save Results**
+|   |   - If no failure (`isempty(cFailure)`), save results using `dlmwrite` and `fopen`/`fprintf`/`fclose`
+|   |   - Print success message with `fprintf('ok\n')`
+|   |   - If failure, print error message and append to `error_str`
+|
+|-- **Clear Variables**
+|   - Clear variables used in loop with `clear`
+|
+|-- **End**
+|   - Return `exitcode`

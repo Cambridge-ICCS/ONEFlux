@@ -1,0 +1,57 @@
+# Functional Flow Diagram for `cpdAssignUStarTh20100901` Function
+
+## Start
+|
+|-- **Initialize Function**
+|   - Define function with inputs: `Stats`, `fPlot`, `cSiteYr`
+|
+|-- **Initialize Outputs**
+|   - Set initial values for outputs: `CpA`, `nA`, `tW`, `CpW`, `fSelect`, `cMode`, `cFailure`, `sSine`, `FracSig`, `FracModeD`, `FracSelect`
+|
+|-- **Compute Window Sizes**
+|   - Determine the dimensions of `Stats` using `ndims(Stats)`
+|   - Set parameters: `nWindowsN`, `nSelectN`
+|   - Initialize arrays for `CpA`, `nA`, `tW`, `CpW`
+|
+|-- **Extract Variable Arrays from Stats Structure**
+|   - Extract variables `mt`, `Cp`, `b1`, `c2`, `cib1`, `cic2`, `p` from `Stats` using `fcReadFields`
+|   - Convert extracted arrays to column vectors using `fcx2colvec`
+|   - Set significance flag `fP = (p <= 0.05)`
+|
+|-- **Determine Change-Point Model Type**
+|   - Check if `c2` values are NaN to determine if it's a 2-parameter model
+|   - Set `nPar` to 2 or 3 accordingly
+|
+|-- **Classify Change Points**
+|   - Identify indices for significant (`iSig`) and non-significant (`iNS`) change points
+|   - Classify significant change points into modes `ModeD` (`b1 >= c2`) and `ModeE` (`b1 < c2`)
+|
+|-- **Evaluate Primary Mode**
+|   - Determine the primary mode (Deficit or Excess) based on the number of significant change points in each mode
+|   - Update `fSelect`, `fModeD`, `fModeE`, and calculate `FracSig`, `FracModeD`, `FracSelect`
+|
+|-- **Abort if Too Few Detections**
+|   - Check if `FracSelect` is below 0.10, if so, set `cFailure` and return
+|
+|-- **Exclude Outliers**
+|   - Normalize variables and identify outliers using `nanmedian` and `fcNaniqr`
+|   - Update `fSelect` to exclude outliers
+|   - Recalculate `FracSig`, `FracModeD`, `FracSelect`
+|   - Check if the number of selected points is below `nSelectN`, if so, set `cFailure` and return
+|
+|-- **Aggregate Values to Season and Year**
+|   - Aggregate change points to season and year using `nanmean` and `reshape`
+|   - Calculate mean `tW` and `CpW` for each window using `fcBin`
+|
+|-- **Fit Annual Sine Curve**
+|   - Fit annual sine curve using `nlinfit` and `fcEqnAnnualSine`
+|   - Calculate goodness of fit `r2` using `fcr2Calc`
+|
+|-- **Plot Results (if enabled)**
+|   - If `fPlot` is 1:
+|   |   - Plot raw change points, selected change points, and annual sine curve using `plot`
+|   |   - Plot histograms of annual change points using `hist`
+|   |   - Plot fraction of selected points by window
+|   |   - Use functions `fcDatetick`, `fcFigLoc`
+|
+|-- **End**
