@@ -15,6 +15,7 @@ import sys
 import logging
 import argparse
 import traceback
+from oneflux import globals
 
 from oneflux import ONEFluxError, log_config, log_trace, VERSION_PROCESSING, VERSION_METADATA
 from oneflux.tools.partition_nt import run_partition_nt, PROD_TO_COMPARE, PERC_TO_COMPARE
@@ -49,6 +50,7 @@ if __name__ == '__main__':
     parser.add_argument('--versiond', help="Version of data (hardcoded default)", type=str, dest='versiond', default=str(VERSION_METADATA))
     parser.add_argument('--era-fy', help="ERA first year of data (default {y})".format(y=ERA_FIRST_YEAR), type=int, dest='erafy', default=int(ERA_FIRST_YEAR))
     parser.add_argument('--era-ly', help="ERA last year of data (default {y})".format(y=ERA_LAST_YEAR), type=int, dest='eraly', default=int(ERA_LAST_YEAR))
+    parser.add_argument('--earlyexit', help="Trigger to exit run after ustarcp calculations are complete (default = False)", type = bool, default = False)
     args = parser.parse_args()
 
     # setup logging file and stdout
@@ -84,6 +86,9 @@ if __name__ == '__main__':
         print os.path.join(args.datadir, args.sitedir)
         if not os.path.isdir(os.path.join(args.datadir, args.sitedir)):
             raise ONEFluxError("Site dir not found: {d}".format(d=args.sitedir))
+        
+        #set exit trigger flag
+        globals.set_exit_trigger(args.earlyexit)
 
         # run command
         log.info("Starting execution: {c}".format(c=args.command))

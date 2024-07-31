@@ -17,6 +17,7 @@ import re
 import numpy
 import socket
 import fnmatch
+import oneflux.globals as globals
 
 from datetime import datetime
 
@@ -260,6 +261,8 @@ class Pipeline(object):
             for driver in self.drivers:
                 if driver.execute:
                     driver.run()
+                if (driver == self.ustar_cp) and globals.early_exit_flag:
+                    sys.exit("Exiting after ustar_cp calculation")
             self.post_validate()
 
         except Exception as e:
