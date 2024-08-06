@@ -1,0 +1,36 @@
+function result = test_wrapper(input_path, output_path)
+    % Initialize the global struct to return intermediate variables
+    global_results();
+
+    % This function passes input and output paths to the launch.m function
+    result = launch(input_path, output_path);
+
+    global launchstruct
+    global cpdAssignStruct
+    global BS4S
+
+    list = {'launchStruct':launchstruct; 'cpdAssignStructcpdAssignStruct, BS4S};
+
+    for n=1: numel(list)
+
+        struct = list{n};
+    
+        % Encode the struct to a JSON string
+        jsonStruct = jsonencode(struct);
+
+        %specify the directory path and file name
+        directoryPath = output_path;
+        fileName = strcat(struct.name, '.json');
+
+        %Concatenate the directory path and file name
+        filePath = fullfile(directoryPath, fileName);
+
+        % Write the JSON string to a file
+        fid = fopen(filePath, 'w');
+        if fid == -1, error('Cannot create JSON file'); end
+        fwrite(fid, jsonStruct, 'char');
+        fclose(fid);
+    end
+
+
+end
