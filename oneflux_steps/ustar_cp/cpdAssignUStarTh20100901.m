@@ -64,20 +64,27 @@
 %	=======================================================================
 
 	CpA=[]; nA=[]; tW=[]; CpW=[]; fSelect=[]; cMode=''; cFailure=''; sSine=[]; 
-	FracSig=[]; FracModeD=[]; FracSelect=[]; 
+	FracSig=[]; FracModeD=[]; FracSelect=[];
+
 
 %	Compute window sizes etc.	
 
-	nDim=ndims(Stats); 
+	nDim=ndims(Stats);
+	cpdAssignStruct.nDim = nDim;
+
 	switch nDim; 
 		case 2; [nWindows,nBoot]=size(Stats); nStrata=1; nStrataN=0.5; 
 		case 3; [nWindows,nStrata,nBoot]=size(Stats); nStrataN=1;  
 		otherwise; cFailure='Stats must be 2D or 3D.'; return; 
 	end; 
 	nWindowsN=4; nSelectN=nWindowsN*nStrataN*nBoot; 
+	cpdAssignStruct.nSelectN = nSelectN;
 	
 	CpA=NaN*ones(nBoot,1); nA=NaN*ones(nBoot,1); tW=NaN*ones(nWindows,1); CpW=NaN*ones(nWindows,1);
-
+	cpdAssignStruct.CpA = CpA;
+	cpdAssignStruct.nA = nA;
+	cpdAssignStruct.tW = tW;
+	cpdAssignStruct.CpW = CpW
 %	Extract variable arrays from Stats structure.	
 %	Reassign mt and Cp as x* to retain array shape, 
 %	then convert the extracted arrays to column vectors. 
@@ -99,7 +106,8 @@
 %	and set c2 and cic2 to zero if 2-parameter 
 
 	nPar=3; if sum(~isnan(c2))==0; nPar=2; c2=0*b1; cic2=c2; end; 
-
+	cpdAssignStruct.c2 = c2;
+	cpdAssignStruct.cic2 = cic2;
 %	Classify Cp regressions by slopes of b1 and c2 regression coeff: 
 %	- NS: not sig, mfP=NaN, p>0.05
 %	- ModeE: atypical significant Cp (b1<c2)
@@ -111,6 +119,19 @@
 	iSig=find(fP==1 & ~isnan(b1+c2+Cp)); nSig=length(iSig); 
 	iModeE=find(fP==1 & b1<c2); nModeE=length(iModeE); 
 	iModeD=find(fP==1 & b1>=c2); nModeD=length(iModeD); 
+
+	cpdAssignStruct.iTry = iTry;
+	cpdAssignStruct.nTry = nTry;
+	cpdAssignStruct.iCp = iCp;
+	cpdAssignStruct.nCp = nCp;
+	cpdAssignStruct.iNS = iNS;
+	cpdAssignStruct.nNS = nNS;
+	cpdAssignStruct.iSig = iSig;
+	cpdAssignStruct.nSig = nSig;
+	cpdAssignStruct.iModeE = iModeE;
+	cpdAssignStruct.nModeE = nModeE;
+	cpdAssignStruct.iModeD = iModeD;
+	cpdAssignStruct.nModeD = nModeD;
 	
 %	Evaluate and accept primary mode of significant Cps
 				
@@ -118,20 +139,34 @@
 	fSelect=zeros(size(fP)); fSelect(iSelect)=1; fSelect=logical(fSelect); 
 	fModeD=NaN*ones(size(fP)); fModeD(iModeD)=1; 
 	fModeE=NaN*ones(size(fP)); fModeE(iModeE)=1; 
+
+	cpdAssignStruct.fSelect = fSelect;
+	cpdAssignStruct.fModeD = fModeD;
+	cpdAssignStruct.fModeE = fModeE;
 	
 	FracSig=nSig/nTry; FracModeD=nModeD/nSig; FracSelect=nSelect/nTry; 
 	
+	cpdAssignStruct.FracSig = FracSig;
+	cpdAssignStruct.FracModeD = FracModeD;
+	cpdAssignStruct.FracSelect = FracSelect;
+
 %	Abort analysis if too few of the regressions produce significant Cps. 
 
-	if FracSelect<0.10; cFailure='Less than 10% successful detections. '; return;  end; 
-				
+	if FracSelect<0.10; 
+		cFailure='Less than 10% successful detections. '; 
+		cpdAssignStruct.cFailure = cFailure;	
+		return; 
+	end; 
+
 %	Exclude outliers from Select mode based on Cp and regression stats
 
 	switch nPar; 
 		case 2; x=[Cp b1 cib1]; nx=3; 
 		case 3; x=[Cp b1 c2 cib1 cic2]; nx=5; 
-	end; 
+	end;
 	
+	cpdAssignStruct.x = x;
+
 	mx=nanmedian(x); sx=fcNaniqr(x); 
 	xNorm=NaN*x; for i=1:nx; xNorm(:,i)=(x(:,1)-mx(i))/sx(i); end; 
 	xNormX=max(abs(xNorm),[],2); 
@@ -144,17 +179,31 @@
 	
 	FracSig=nSig/nTry; FracModeD=nModeD/nSig; FracSelect=nSelect/nTry;
 	
-	if nSelect<nSelectN; cFailure=sprintf('Too few selected change points: %g/%g',nSelect,nSelectN); return;  end; 
+	cpdAssignStruct.FracSig_2 = FracSig;
+	cpdAssignStruct.FracModeD_2 = FracModeD;
+	cpdAssignStruct.FracSelect_2 = FracSelect;
+
+	if nSelect<nSelectN; 
+		cFailure=sprintf('Too few selected change points: %g/%g',nSelect,nSelectN);
+		cpdAssignStruct.cFailure_2 = cFailure;	 
+		return;  
+	end; 
 	
 %	Aggregate the values to season and year.
 
 	xCpSelect=NaN*xCp; xCpSelect(iSelect)=xCp(iSelect); xCpGF=xCpSelect; 
+	
+	cpdAssignStruct.xCpSelect = xCpSelect;
+	cpdAssignStruct.xCpGF = xCpGF;
+	
 	switch nDim;
 		case 2; CpA=fcx2colvec(nanmean(xCpGF)); 
 			nA=fcx2colvec(sum(~isnan(xCpSelect))); 
 		case 3; CpA=fcx2colvec(nanmean(reshape(xCpGF,nWindows*nStrata,nBoot))); 
 			nA=fcx2colvec(sum(~isnan(reshape(xCpSelect,nWindows*nStrata,nBoot)))); 
 	end;
+	cpdAssignStruct.CpA = CpA;
+	cpdAssignStruct.nA = nA;
 	
 %	Calculate mean tW and CpW for each window based on Select data only.  
 %	Because the bootstrap varies the number of windows among bootstraps, 
@@ -163,7 +212,16 @@
 	nW=nanmedian(sum(~isnan(reshape(xmt,nWindows,nStrata*nBoot)))); 
 	[mtSelect,i]=sort(mt(iSelect)); CpSelect=Cp(iSelect(i)); 
 	xBins=prctile(mtSelect,0:(100/nW):100); 
-	[n,tW,CpW]=fcBin(mtSelect,CpSelect,xBins,0); 
+
+	cpdAssignStruct.mtSelect = mtSelect;
+	cpdAssignStruct.CpSelect = CpSelect;
+	cpdAssignStruct.xBins = xBins;
+
+	[n,tW,CpW]=fcBin(mtSelect,CpSelect,xBins,0);
+
+	cpdAssignStruct.n = n;
+	cpdAssignStruct.tW = tW;
+	cpdAssignStruct.CpW = CpW;
 	
 %	Fit annual sine curve 
 	

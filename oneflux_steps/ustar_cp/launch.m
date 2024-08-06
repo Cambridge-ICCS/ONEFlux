@@ -10,6 +10,8 @@ function exitcode = launch(input_folder, output_folder)
 exitcode = 0;
 warning off;
 
+global launchstruct;
+
 % check input path
 if 0 == exist('input_folder')
     input_folder = [pwd '\'];
@@ -21,6 +23,8 @@ end
 if input_folder(length(input_folder)) ~= '\' && input_folder(length(input_folder)) ~= '/'
     input_folder = [input_folder '\'];
 end
+
+launchstruct.input_folder = input_folder;
 
 % check output path
 if 0 == exist('output_folder')
@@ -34,6 +38,7 @@ if output_folder(length(output_folder)) ~= '\' && output_folder(length(output_fo
     output_folder = [output_folder '\'];
 end
 mkdir(output_folder);
+launchstruct.output_folder = output_folder;
 
 %by alessio
 USTAR_INDEX = 1;
@@ -48,6 +53,7 @@ fprintf('\n\nUstar Threshold Computation by Alan Barr\n\ninput in %s\noutput in 
 d = dir([input_folder,'*_qca_ustar_*.csv']);
 error_str = {};
 
+launchstruct.d_array = d;
 % by alessio
 fprintf('%d files founded.\n\n', numel(d));
 
@@ -64,7 +70,7 @@ for n = 1:numel(d)
     end
     
     dataset = textscan(fid,'%[^\n]');dataset = dataset{1};
-    
+    launchstruct.dataset = dataset
     % get site
     r = strncmpi(dataset(1), 'site', 4);
     if 0 == r
@@ -167,7 +173,7 @@ for n = 1:numel(d)
         notes = [temp notes];
         i = i + 1;
     end
-    
+    launchstruct.notes = notes;
     
     fclose(fid);
     clear i temp r fid;
@@ -177,7 +183,10 @@ for n = 1:numel(d)
     header = imported_data.('textdata');
     data = imported_data.('data');
     columns_index = ones(numel(input_columns_names), 1) * -1;
-    
+    launchstruct.imported_data = imported_data;
+    launchstruct.header = header;
+    launchstruct.data = data;
+    launchstruct.columns_index = columns_index;
     % parse header, by alessio
     on_error = 0;
     for y = 1:length(header(9+length(notes),:))
@@ -224,6 +233,12 @@ for n = 1:numel(d)
     NEE = data(:, columns_index(NEE_INDEX));
     Ta = data(:, columns_index(TA_INDEX));
     Rg = data(:, columns_index(RG_INDEX));
+
+    launchstruct.uStar = uStar;
+    launchstruct.NEE = NEE;
+    launchstruct.Ta = Ta;
+    launchstruct.Rg = Rg;
+    
     if 0 == ppfd_from_rg
         PPFD = data(:, columns_index(PPFD_INDEX));
         % check if ppfd is invalid
@@ -240,7 +255,7 @@ for n = 1:numel(d)
         PPFD(p) = -9999;
         clear p;
     end
-
+    launchstruct.PPFD = PPFD;
     clear data;
     
     %[t,uStar,NEE,Ta,PPFD,Rg] = textread([cIn,d(n).name],'%f %f %f %f %f %f %f','headerlines',0,'delimiter',',');   
@@ -286,10 +301,12 @@ for n = 1:numel(d)
     t = 1 + (1 / nrPerDay);
     for n2 = 2:numel(uStar); t(n2,1) = t(n2-1,1)+ (1 / nrPerDay);end
     clear n2
+    launchstruct.t = t;
 	
 	fNight=Rg<5; % flag nighttime periods
 	T=Ta;
-	
+	launchstruct.fNight = fNight;
+    launchstruct.T = T;
 %	Look at inputs.	
 	
 	fPlot=0; 
@@ -300,6 +317,7 @@ for n = 1:numel(d)
 		plot(t,PPFD,'.'); mydatetick(t,'Mo',4,1); pause;
 		plot(t,Rg,'.'); mydatetick(t,'Mo',4,1); pause;
 	end;
+    launchstruct.fPlot = fPlot;
 	
 %	Call uStarTh bootstrappng program (2 versions) 
 %	and assign annual Cp arrays.	
@@ -307,7 +325,8 @@ for n = 1:numel(d)
 	fPlot=0; cSiteYr=strrep(d(n).name,'.txt','');%'CACa1-2001'; 
 	cSiteYr = strrep(cSiteYr, '_ut', '_barr');
 	nBoot=100;
-	
+	launchstruct.cSiteYr = cSiteYr;
+    launchstruct.nBoot = nBoot;
     
 	% 4-season analysis
     %by alessio
@@ -316,11 +335,15 @@ for n = 1:numel(d)
         [Cp2,Stats2,Cp3,Stats3] = ... 
             cpdBootstrapUStarTh4Season20100901 ...
                 (t,NEE,uStar,T,fNight,fPlot,cSiteYr,nBoot); 
-
+        launchstruct.Cp2 = Cp2;
+        launchstruct.Stats2 = Stats2;
+        launchstruct.Cp3 = Cp3;
+        launchstruct.Stats3 = Stats3;
     % 	print -djpeg100 Plot1_4Season_CACa1-2001; 
 
     [Cp,n,tW,CpW,cMode,cFailure,fSelect,sSine,FracSig,FracModeD,FracSelect] ... 
-        = cpdAssignUStarTh20100901(Stats2,fPlot,cSiteYr); 
+        = cpdAssignUStarTh20100901(Stats2,fPlot,cSiteYr);
+    
     if isempty(cFailure)
         %save([cOut,'4-season_analysis_',strrep(cSiteYr,'.txt',''),'.mat'],'Cp2','Stats2','Cp3','Stats3',...
         %    'Cp','n','tW','CpW','cMode','cFailure','fSelect','sSine','FracSig','FracModeD','FracSelect');
@@ -340,6 +363,7 @@ for n = 1:numel(d)
         error_str = [error_str; char(site),'_uscp_',char(year),' ',cFailure];
         fprintf('%s\n', cFailure);
         exitcode = 1;
+        launchstruct.existcode = exitcode;
     end
     % by alessio
     %end    

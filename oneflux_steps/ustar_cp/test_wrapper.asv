@@ -9,19 +9,18 @@ function result = test_wrapper(input_path, output_path)
     global cpdAssignStruct
     global BS4S
 
-    dataList = {'launchStruct',launchstruct; 'cpdAssignStruct',cpdAssignStruct; 'BS4s',BS4S};
+    list = {'launchStruct':launchstruct; 'cpdAssignStructcpdAssignStruct, BS4S};
 
-    for n = 1:size(dataList, 1)
+    for n=1: numel(list)
 
-        structName = dataList{n,1};
-        currentStruct = dataList{n, 2};
+        struct = list{n};
     
         % Encode the struct to a JSON string
-        jsonStruct = jsonencode(currentStruct);
+        jsonStruct = jsonencode(struct);
 
         %specify the directory path and file name
         directoryPath = output_path;
-        fileName = strcat(structName, '.json');
+        fileName = strcat(struct.name, '.json');
 
         %Concatenate the directory path and file name
         filePath = fullfile(directoryPath, fileName);

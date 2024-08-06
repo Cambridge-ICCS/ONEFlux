@@ -83,11 +83,16 @@
 	nPerSeason=nStrataN*nBins*nPerBin; 
 	ntN=nSeasons*nPerSeason;
 	
+
+	BS4S.nPerSeason = nPerSeason;
+	BS4S.ntN = ntN;
 %	===================================================================
 %	===================================================================
 		
 	itNee=find(~isnan(NEE+uStar+T));
 	itNee=intersect(itNee,iNight); ntNee=length(itNee);
+
+	BS4S.ntNee = ntNee;
 
 	StatsMT=[];
 	StatsMT.n=NaN; StatsMT.Cp=NaN; StatsMT.Fmax=NaN; StatsMT.p=NaN;
@@ -109,6 +114,9 @@
 			end; 
 		end; 
 	end;
+
+	BS4S.Stats2 = Stats2
+	BS4S.Stats3 = Stats3
 	
     % by alessio
 	%disp(' ');
@@ -127,11 +135,17 @@
 			ntNee=sum(ismember(it,itNee));
 			
 			if iBoot>1; fPlot=0; end;
+
 			
 			[xCp2,xStats2, xCp3,xStats3] = ...
 				cpdEvaluateUStarTh4Season20100901 ...
 					(t(it),NEE(it),uStar(it),T(it),fNight(it),fPlot,cSiteYr); 
 			
+			BS4S.xCp2 = xCp2;
+			BS4s.xStats2 = xStats2;
+			BS4s.xCp3 = xCp3;
+			BS4s.xStats3 = xStats3
+
 			dt=(now-t0)*24*60*60;
             %by alessio
 			%fprintf('Bootstrap uStarTh %s:  %g/%g   nObs %g  Cp2 %4.3f  Cp3 %4.3f   %3.1fs \n', ...
