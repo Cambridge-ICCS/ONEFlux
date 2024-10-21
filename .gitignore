@@ -114,8 +114,7 @@ tramp
 *.png
 .cursorignore
 
-.cursorignore
-
+ustar_cp_py/
 error_mistake/
 gap_fill/
 with_error_range/
