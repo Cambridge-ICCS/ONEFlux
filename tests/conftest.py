@@ -26,7 +26,6 @@ import shutil
 import glob
 import json
 import numpy as np
-import importlib
 
 @pytest.fixture(scope="session", params=[
     "translated",
@@ -54,8 +53,8 @@ def matlab_engine(request, refactored=True):
     After the tests complete, the MATLAB engine is closed automatically.
     """
     if request.param == "translated":  # return the translated python module
-        module_name = "oneflux_steps.ustar_cp_py"
-        yield importlib.import_module(module_name)
+        import oneflux_steps.ustar_cp_py as eng
+        yield eng
         return
 
     # Start MATLAB engine
