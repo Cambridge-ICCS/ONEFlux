@@ -28,7 +28,10 @@ import json
 import numpy as np
 import importlib
 
-@pytest.fixture(scope="session", params=["translated", "original"])
+@pytest.fixture(scope="session", params=[
+    "translated",
+    "original",
+])
 def matlab_engine(request, refactored=True):
     """
     Pytest fixture to start a MATLAB engine session, add a specified directory 
