@@ -27,8 +27,12 @@ import glob
 import json
 import numpy as np
 
-@pytest.fixture()
-def matlab_engine(refactored=True):
+@pytest.fixture(scope="session", params=[
+    "translated",
+    "refactored",
+    "original",
+])
+def matlab_engine(request):
     """
     Pytest fixture to start a MATLAB engine session, add a specified directory 
     to the MATLAB path, and clean up after the tests.
@@ -49,11 +53,20 @@ def matlab_engine(refactored=True):
 
     After the tests complete, the MATLAB engine is closed automatically.
     """
+    if request.param == "translated":
+        import oneflux_steps.ustar_cp_py as eng
+        yield eng  # yield the translated python module
+        return
+
     # Start MATLAB engine
     eng = matlab.engine.start_matlab()
 
     current_dir = os.getcwd()
-    code_path = 'oneflux_steps/ustar_cp_refactor_wip/' if refactored else 'oneflux_steps/ustar_cp'
+
+    if request.param == "refactored":
+        code_path = 'oneflux_steps/ustar_cp_refactor_wip/'
+    else:
+        code_path = 'oneflux_steps/ustar_cp'
 
     # Add the directory containing your MATLAB functions to the MATLAB path
     matlab_function_path = os.path.join(current_dir, code_path)
