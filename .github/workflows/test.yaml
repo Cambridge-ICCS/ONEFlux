@@ -26,11 +26,12 @@ jobs:
         with:
           python-version: 3.9
 
-      # Step 4: Install Python MATLAB Engine
+      # Step 4: Install MATLAB Engine for Python
       - name: Install MATLAB Engine for Python
         run: |
-          cd /usr/local/MATLAB/R2023a/extern/engines/python
-          python -m pip install --upgrade pip
+          mkdir -p $HOME/matlab_engine
+          cp -r /usr/local/MATLAB/R2023a/extern/engines/python/* $HOME/matlab_engine
+          cd $HOME/matlab_engine
           python setup.py install
 
       # Step 5: Install other Python dependencies
