@@ -1,0 +1,43 @@
+name: MATLAB Pytest Workflow
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up MATLAB (official MATLAB action)
+      - name: Set up MATLAB
+        uses: matlab-actions/setup-matlab@v1
+        with:
+          release: R2023a  # Adjust to the MATLAB version you need
+
+      # Step 3: Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+
+      # Step 4: Install Python MATLAB Engine
+      - name: Install MATLAB Engine for Python
+        run: |
+          cd /usr/local/MATLAB/R2023a/extern/engines/python
+          python -m pip install --upgrade pip
+          python setup.py install
+
+      # Step 5: Install other Python dependencies
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      # Step 6: Run pytest
+      - name: Run tests with pytest
+        run: pytest
