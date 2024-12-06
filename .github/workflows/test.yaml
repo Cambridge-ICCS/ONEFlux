@@ -3,7 +3,7 @@ name: MATLAB Pytest Workflow
 on:
   pull_request:
     branches:
-      - main
+      - ustar_cp_refactor_main
 
 jobs:
   test:
