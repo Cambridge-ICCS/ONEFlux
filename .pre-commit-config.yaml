@@ -10,6 +10,13 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.8.2  # Update to the desired version mno
     hooks:
+    # Run linting checks
+      - id: ruff
+        args: ["--select", "D,E,F,W"]
+        files: "^.*\\.py$"
+    hooks:
+    # Run linting checks
+    hooks:
     - id: ruff
       types_or: [ python ]
       args: [--fix, --select, "E4,E7,E9,F", --ignore, "F401,F405,F841,F403,E722,E402"]
