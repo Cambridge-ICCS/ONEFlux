@@ -91,4 +91,3 @@ def test_cpdAssignUStarTh20100901_edge_cases(matlab_engine, mock_data):
     # Assertions for edge cases
     assert len(results_all_sig[0]) > 0, "Should produce results for all significant change points"
     assert len(results_no_sig[5]) > 0, "Should produce a failure message for no significant change points"
-
