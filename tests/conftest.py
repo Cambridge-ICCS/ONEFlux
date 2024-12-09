@@ -1,5 +1,5 @@
 """
-This   module contains pytest fixtures and utility functions to set up the test environment,
+This module contains pytest fixtures and utility functions to set up the test environment,
 handle MATLAB engine interactions, and process text files for comparison in unit tests.
 
 Contents:
