@@ -1,170 +1,166 @@
-function [CpA, nA, tW, CpW, cMode, cFailure, fSelect, sSine, FracSig, FracModeD, FracSelect] = cpdAssignUStarTh20100901(Stats, fPlot, cSiteYr, varargin) 
+function [annualChangePoint, numAnnualSelected, seasonalTimeWindow, seasonalChangePoint, ...
+    dominantMode, failureMessage, selectedPointsFlag, sineCurve, ...
+    fractionSignificant, fractionModeD, fractionSelected] = cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, varargin)
 
-    % Initialize Variables
-    CpA = []; nA = []; tW = []; CpW = []; fSelect = []; cMode = ''; cFailure = ''; sSine = []; 
-    FracSig = []; FracModeD = []; FracSelect = []; 
-    
-    % Decode JSON if Needed
-    for i = 1:length(varargin)
-        a = varargin{i};
-        if iscell(a) && strcmp(a{1}, 'jsondecode')
-            for j = 2:length(a)
-                if a{j} == 1
-                    Stats = jsondecode(Stats);
-                end
+% Initialize Variables
+annualChangePoint = []; numAnnualSelected = []; seasonalTimeWindow = []; seasonalChangePoint = [];
+selectedPointsFlag = []; dominantMode = ''; failureMessage = ''; sineCurve = [];
+fractionSignificant = []; fractionModeD = []; fractionSelected = [];
+
+% Decode JSON if Needed
+for i = 1:length(varargin)
+    arg = varargin{i};
+    if iscell(arg) && strcmp(arg{1}, 'jsondecode')
+        for j = 2:length(arg)
+            if arg{j} == 1
+                Stats = jsondecode(Stats);
             end
         end
     end
-    
-    % Determine Window Sizes
-    nDim = ndims(Stats); 
-    if nDim == 2
-        [nWindows, nBoot] = size(Stats);
-        nStrata = 1; nStrataN = 0.5; 
-    elseif nDim == 3
-        [nWindows, nStrata, nBoot] = size(Stats); 
-        nStrataN = 1; 
-    else
-        cFailure = 'Stats must be 2D or 3D.'; 
-        return; 
-    end
-    
-    % Set Reference Values
-    nWindowsN = 4; 
-    nSelectN = nWindowsN * nStrataN * nBoot; 
-    
-    % Preallocate Outputs
-    CpA = NaN(nBoot, 1); 
-    nA = NaN(nBoot, 1); 
-    tW = NaN(nWindows, 1); 
-    CpW = NaN(nWindows, 1);
-    
-    % Extract Variables from Stats Structure
-    cVars = {'mt', 'Cp', 'b1', 'c2', 'cib1', 'cic2', 'p'}; 
-    nVars = length(cVars); 
-    
-    for i = 1:nVars
-        cv = cVars{i}; 
-        eval([cv ' = fcReadFields(Stats, ''' cv ''');']); 
-        
-        if strcmp(cv, 'mt')
-            xmt = mt; 
-        elseif strcmp(cv, 'Cp')
-            xCp = Cp; 
-        end
-        
-        eval([cv ' = fcx2colvec(' cv ');']); 
-    end
-    
-    % Identify Significant Change Points
-    pSig = 0.05; 
-    fP = p <= pSig; 
-    
-    % Identify Model Type
-    if sum(~isnan(c2)) == 0
-        nPar = 2; 
-        c2 = zeros(size(b1)); 
-        cic2 = zeros(size(b1)); 
-    else
-        nPar = 3; 
-    end
-    
-    % Classify Significant Change Points
-    iTry = find(~isnan(mt)); 
-    nTry = length(iTry); 
-    
-    %iCp = find(~isnan(b1 + c2 + Cp)); 
-    %nCp = length(iCp); 
-    
-    %iNS = find(fP == 0 & ~isnan(b1 + c2 + Cp)); 
-    %nNS = length(iNS); 
-    
-    iSig = find(fP == 1 & ~isnan(b1 + c2 + Cp)); 
-    nSig = length(iSig); 
-    
-    iModeE = find(fP == 1 & b1 < c2); 
-    nModeE = length(iModeE); 
-    
-    iModeD = find(fP == 1 & b1 >= c2); 
-    nModeD = length(iModeD); 
-    
-    if nModeD >= nModeE
-        iSelect = iModeD; 
-        cMode = 'D'; 
-    else
-        iSelect = iModeE; 
-        cMode = 'E'; 
-    end
-    
-    nSelect = length(iSelect); 
-    
-    % Update Selection Flags
-    fSelect = false(size(fP)); 
-    fSelect(iSelect) = true; 
-    
-    fModeD = NaN(size(fP)); 
-    fModeD(iModeD) = 1; 
-    
-    fModeE = NaN(size(fP)); 
-    fModeE(iModeE) = 1; 
+end
 
+% Determine Window Sizes
+numDimensions = ndims(Stats); 
+if numDimensions == 2
+    [numWindows, numBootstraps] = size(Stats);
+    numTemperatureStrata = 1; temperatureStrataFactor = 0.5; 
+elseif numDimensions == 3
+    [numWindows, numTemperatureStrata, numBootstraps] = size(Stats); 
+    temperatureStrataFactor = 1; 
+else
+    failureMessage = 'Stats must be 2D or 3D.'; 
+    return; 
+end
+
+% Set Reference Values
+referenceWindows = 4; 
+requiredSelectionCount = referenceWindows * temperatureStrataFactor * numBootstraps; 
+
+% Preallocate Outputs
+annualChangePoint = NaN(numBootstraps, 1); 
+numAnnualSelected = NaN(numBootstraps, 1); 
+seasonalTimeWindow = NaN(numWindows, 1); 
+seasonalChangePoint = NaN(numWindows, 1);
+
+% Extract Variables from Stats Structure
+variableNames = {'mt', 'Cp', 'b1', 'c2', 'cib1', 'cic2', 'p'}; 
+numVariables = length(variableNames); 
+
+for i = 1:numVariables
+    variableName = variableNames{i}; 
+    eval([variableName ' = fcReadFields(Stats, ''' variableName ''');']); 
     
-    FracSig = nSig / nTry; 
-    FracModeD = nModeD / nSig; 
-    FracSelect = nSelect / nTry; 
-    
-    % Abort if Too Few Selections
-    if FracSelect < 0.10
-        cFailure = 'Less than 10% successful detections.'; 
-        return; 
+    if strcmp(variableName, 'mt')
+        measurementTime = mt; 
+    elseif strcmp(variableName, 'Cp')
+        changePoint = Cp; 
     end
     
-    % Configure Regression Matrix
-    if nPar == 2
-        x = [Cp, b1, cib1]; 
-        %nx = 3; 
-    else
-        x = [Cp, b1, c2, cib1, cic2]; 
-        %nx = 5; 
-    end
+    eval([variableName ' = fcx2colvec(' variableName ');']); 
+end
 
-    % Exclude Outliers
-    xNormX = computeStandardizedScores(x); 
-    
-    % Identify Outliers
-    [fOut, iOut] = identifyOutliers(xNormX, 5);
+% Identify Significant Change Points
+significanceThreshold = 0.05; 
+significantFlag = p <= significanceThreshold; 
 
-    % Update Selected Indices
-    [iSelect, nSelect, fSelect] = updateSelectedIndices(iSelect, iOut, fSelect, fOut);
-    
-    % Update Modes
-    [iModeD, nModeD] = updateModes(fModeD,iOut);
-    [iModeE, ~] = updateModes(fModeE,iOut);
+% Identify Model Type
+if sum(~isnan(c2)) == 0
+    numParameters = 2; 
+    c2 = zeros(size(b1)); 
+    cic2 = zeros(size(b1)); 
+else
+    numParameters = 3; 
+end
 
-    % Recalculate Significant Indices
-    iSig = union(iModeD, iModeE); 
-    nSig = length(iSig);
+% Classify Significant Change Points
+validMeasurementIndices = find(~isnan(mt)); 
+numValidMeasurements = length(validMeasurementIndices); 
 
-    FracSig = nSig / nTry; 
-    FracModeD = nModeD / nSig; 
-    FracSelect = nSelect / nTry;
-    
-    if nSelect < nSelectN
-        cFailure = sprintf('Too few selected change points: %g/%g', nSelect, nSelectN); 
-        return; 
-    end
-    
-    % Aggregate Seasonal and Annual Values
-    [CpA, nA, ~] = aggregateSeasonalAndAnnualValues(xCp, iSelect, nDim, nWindows, nStrata, nBoot); 
+nonSignificantIndices = find(significantFlag == 0 & ~isnan(b1 + c2 + Cp)); 
+numNonSignificant = length(nonSignificantIndices); 
 
-    
-    % Aggregate Seasonal Means
-    [tW, CpW] = aggregateSeasonalMeans(mt, Cp, xmt, iSelect, nWindows, nStrata, nBoot);
-    
-    % Fit Annual Sine Curve
-    sSine = fitAnnualSineCurve(mt, Cp, iSelect);
+significantIndices = find(significantFlag == 1 & ~isnan(b1 + c2 + Cp)); 
+numSignificant = length(significantIndices); 
+
+modeEIndices = find(significantFlag == 1 & b1 < c2); 
+numModeE = length(modeEIndices); 
+
+modeDIndices = find(significantFlag == 1 & b1 >= c2); 
+numModeD = length(modeDIndices); 
+
+% Select Dominant Mode
+if numModeD >= numModeE
+    selectedIndices = modeDIndices; 
+    dominantMode = 'D'; 
+else
+    selectedIndices = modeEIndices; 
+    dominantMode = 'E'; 
+end
+
+numSelected = length(selectedIndices); 
+
+% Update Selection Flags
+selectedPointsFlag = false(size(significantFlag)); 
+selectedPointsFlag(selectedIndices) = true; 
+
+modeDFlag = NaN(size(significantFlag)); 
+modeDFlag(modeDIndices) = 1; 
+
+modeEFlag = NaN(size(significantFlag)); 
+modeEFlag(modeEIndices) = 1; 
+
+fractionSignificant = numSignificant / numValidMeasurements; 
+fractionModeD = numModeD / numSignificant; 
+fractionSelected = numSelected / numValidMeasurements; 
+
+% Abort if Too Few Selections
+if fractionSelected < 0.10
+    failureMessage = 'Less than 10% successful detections.'; 
+    return; 
+end
+
+% Configure Regression Matrix
+if numParameters == 2
+    regressionMatrix = [Cp, b1, cib1]; 
+else
+    regressionMatrix = [Cp, b1, c2, cib1, cic2]; 
+end
+
+% Exclude Outliers
+standardizedScores = computeStandardizedScores(regressionMatrix); 
+[outlierFlag, outlierIndices] = identifyOutliers(standardizedScores, 5);
+
+[selectedIndices, numSelected, selectedPointsFlag] = ...
+    updateSelectedIndices(selectedIndices, outlierIndices, selectedPointsFlag, outlierFlag);
+
+[modeDIndices, numModeD] = updateModes(modeDFlag, outlierIndices);
+[modeEIndices, ~] = updateModes(modeEFlag, outlierIndices);
+
+significantIndices = union(modeDIndices, modeEIndices); 
+numSignificant = length(significantIndices);
+
+fractionSignificant = numSignificant / numValidMeasurements; 
+fractionModeD = numModeD / numSignificant; 
+fractionSelected = numSelected / numValidMeasurements;
+
+if numSelected < requiredSelectionCount
+    failureMessage = sprintf('Too few selected change points: %g/%g', numSelected, requiredSelectionCount); 
+    return; 
+end
+
+% Aggregate Seasonal and Annual Values
+[annualChangePoint, numAnnualSelected, ~] = ...
+    aggregateSeasonalAndAnnualValues(changePoint, selectedIndices, numDimensions, numWindows, numTemperatureStrata, numBootstraps); 
+
+% Aggregate Seasonal Means
+[seasonalTimeWindow, seasonalChangePoint] = ...
+    aggregateSeasonalMeans(mt, Cp, measurementTime, selectedIndices, numWindows, numTemperatureStrata, numBootstraps);
+
+% Fit Annual Sine Curve
+sineCurve = fitAnnualSineCurve(mt, Cp, selectedIndices);
 
 end
+
 
 function sSine = fitAnnualSineCurve(mt, Cp, iSelect)
     % fitAnnualSineCurve
