@@ -248,8 +248,8 @@ mapColumnNamesToIndices_test_cases = [(['USTAR', 'NEE', 'TA', 'PPFD_IN' ,'SW_IN'
                                       ( ['USTAR', 'NEE', 'NEE', 'PPFD_IN' ,'SW_IN'], [-1,-1,-1,-1,-1], [5,3,3,7,6], 0),
                                       ( ['USTAR', 'NEE', 'TA', 'PPFD_IN' ,'SW_IN'], [100,-1,-1,-1,-1], [100,3,4,-1,-1], 1)
 ]
-@pytest.mark.parametrize('input_columns_names, columns_index, expected_columns_index, expected_exitcode', mapColumnNamesToIndices_test_cases)
-def test_mapColumnNamesToIndices(matlab_engine, input_columns_names, columns_index, expected_columns_index, expected_exitcode):
+@pytest.mark.parametrize('input_columns_names, columns_index, expected_columns_index, expected_errorCode', mapColumnNamesToIndices_test_cases)
+def test_mapColumnNamesToIndices(matlab_engine, input_columns_names, columns_index, expected_columns_index, expected_errorCode):
     """
     Test the MATLAB `mapColumnNamesToIndices` function maps the column names to their respective indices.
 
@@ -269,14 +269,14 @@ def test_mapColumnNamesToIndices(matlab_engine, input_columns_names, columns_ind
     columns_index = matlab.int8(vector=columns_index, is_complex=False)
 
     # Call the MATLAB function
-    exitcode, output_columns_index = matlab_engine.mapColumnNamesToIndices(header, input_columns_names, notes, columns_index, header_file, nargout=2)
+    errorCode, output_columns_index = matlab_engine.mapColumnNamesToIndices(header, input_columns_names, notes, columns_index, header_file, nargout=2)
 
     assert output_columns_index.tomemoryview().tolist()[0] == expected_columns_index
-    assert exitcode == expected_exitcode, f"Expected {expected_exitcode} exitcode for mapColumnNamesToIndices"
+    assert errorCode == expected_errorCode, f"Expected {expected_errorCode} errorCode for mapColumnNamesToIndices"
 
 
-@pytest.mark.parametrize('columns_index, expected_ppfd_from_rg, expected_exitcode', [([5,3,4,7,6], 0, 0), ([-1,3,4,7,6], 0, 1), ([5,3,4,-1,6], 1, 0)])
-def test_ppfdColExists(matlab_engine, columns_index, expected_ppfd_from_rg, expected_exitcode):
+@pytest.mark.parametrize('columns_index, expected_ppfd_from_rg, expected_errorCode', [([5,3,4,7,6], 0, 0), ([-1,3,4,7,6], 0, 1), ([5,3,4,-1,6], 1, 0)])
+def test_ppfdColExists(matlab_engine, columns_index, expected_ppfd_from_rg, expected_errorCode):
     """
     Test the MATLAB `ppfdColExists` function checks if the PPFD column exists in the data.
 
@@ -284,7 +284,7 @@ def test_ppfdColExists(matlab_engine, columns_index, expected_ppfd_from_rg, expe
     - matlab_engine: A fixture that initializes the MATLAB engine session and adds the necessary directory to the MATLAB path.
     - columns_index: A list of column indices.
     - expected_ppfd_from_rg: The expected value for the PPFD from RG flag to decide if PPFD is derived from RG.
-    - expected_exitcode: The expected exit code returned by the MATLAB function.
+    - expected_errorCode: The expected exit code returned by the MATLAB function.
     Asserts:
     - Asserts that if the PPFD column exists, the function returns the correct PPFD from RG flag and exit code.
     - Asserts that if the PPFD column does not exist, the function returns the correct PPFD from RG flag and exit code.
@@ -297,10 +297,10 @@ def test_ppfdColExists(matlab_engine, columns_index, expected_ppfd_from_rg, expe
     input_columns_names = ['USTAR', 'NEE', 'TA', 'PPFD_IN' ,'SW_IN']
 
     # Call the MATLAB function
-    ppfd_from_rg, exitcode = matlab_engine.ppfdColExists(ppfd_index, columns_index, input_columns_names, nargout=2)
+    ppfd_from_rg, errorCode = matlab_engine.ppfdColExists(ppfd_index, columns_index, input_columns_names, nargout=2)
 
     assert ppfd_from_rg == expected_ppfd_from_rg, f"Expected {expected_ppfd_from_rg} for ppfd_from_rg"
-    assert exitcode == expected_exitcode, f"Expected {expected_exitcode} exitcode for ppfdColExists"
+    assert errorCode == expected_errorCode, f"Expected {expected_errorCode} errorCode for ppfdColExists"
 
 
 @pytest.mark.parametrize("year_and_type, expected_ppfd_from_rg", [('2005',0), ('2005_nan', 1)])
@@ -404,8 +404,8 @@ def test_setMissingDataNan(matlab_engine, year):
     assert np.allclose(output_rg, expected_output['Rg'], equal_nan=True), "output_rg and expected_rg do not match"
 
 
-@pytest.mark.parametrize("year, expected_exitcode", [('2005', 0), ('2006', 0), ('2005_nan', 1)])
-def test_anyColumnsEmpty(matlab_engine, year, expected_exitcode):
+@pytest.mark.parametrize("year, expected_errorCode", [('2005', 0), ('2006', 0), ('2005_nan', 1)])
+def test_anyColumnsEmpty(matlab_engine, year, expected_errorCode):
     site_columns_names = ['uStar', 'NEE', 'Ta', 'Rg']
     site_columns = {key: None for key in site_columns_names}
 
@@ -415,9 +415,9 @@ def test_anyColumnsEmpty(matlab_engine, year, expected_exitcode):
         site_columns[col] = matlab.double(column.tolist())
 
     # Call the MATLAB function
-    exitcode = matlab_engine.anyColumnsEmpty(site_columns['uStar'], site_columns['NEE'], site_columns['Ta'], site_columns['Rg'], nargout=1)
+    errorCode = matlab_engine.anyColumnsEmpty(site_columns['uStar'], site_columns['NEE'], site_columns['Ta'], site_columns['Rg'], nargout=1)
 
-    assert exitcode == expected_exitcode, f"Expected {expected_exitcode} exitcode for anyColumnsEmpty"
+    assert errorCode == expected_errorCode, f"Expected {expected_errorCode} errorCode for anyColumnsEmpty"
     
 
 @pytest.mark.parametrize("year", ['2005', '2006'])
