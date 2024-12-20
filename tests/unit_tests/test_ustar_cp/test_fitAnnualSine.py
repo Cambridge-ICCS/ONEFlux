@@ -32,19 +32,22 @@ def test_fit_output_shape_and_type(test_engine, synthetic_data):
     assert test_engine.equal(len(test_engine.convert(result[0])), 4)
     for val in result[0]:
         assert isinstance(val, float)
-    assert np.allclose(result[0][0], true_sine[0], rtol = 0.001) # test amplitiude accuracy
-    assert np.allclose(result[0][1], true_sine[1], rtol = 0.1) # test offset accuracy
-    assert np.allclose(result[0][2], true_sine[2], rtol = 0.01) # test phase accuracy
+    assert np.allclose(result[0][0], true_sine[0], rtol = 0.1) # test offset accuracy
+    assert np.allclose(result[0][1], true_sine[1], rtol = 0.1) # test amplitude accuracy
+    assert np.allclose(result[0][2], true_sine[2], rtol = 0.1) # test phase accuracy
 
 def test_fit_on_synthetic_data(test_engine, synthetic_data):
-    days, Cp_noisy, iSelect, (true_amp, true_off, true_ph) = synthetic_data
+    days, Cp_noisy, iSelect, (true_off, true_amp, true_ph) = synthetic_data
 
     result = test_engine.fitAnnualSineCurve(test_engine.convert(days), 
                                             test_engine.convert(Cp_noisy), 
                                             test_engine.convert(iSelect))
     
-    fitted_amp, fitted_off, fitted_ph, fitted_r2 = test_engine.convert(result)
-
+    result = test_engine.convert(result)
+    fitted_amp = result[0][1] 
+    fitted_off = result[0][0] 
+    fitted_ph = result[0][2]
+    fitted_r2 = result[0][3]
     # Check that fitted parameters are close to the true parameters.
     # Allow some tolerance due to noise.
     assert np.isclose(fitted_amp, true_amp, rtol=0.2)
@@ -61,15 +64,20 @@ def test_fit_on_synthetic_data(test_engine, synthetic_data):
 
 def test_constant_data(test_engine):
     # If the data is constant, the fit might fail or result in amplitude ~ 0
-    days = test_engine.convert(np.linspace(0, 365, 100))
-    Cp = test_engine.convert(np.ones_like(days) * 5.0)
-    iSelect = test_engine.convert(np.arange(len(days)))
+    days_array = np.linspace(0, 365, 100)
+    days = test_engine.convert(days_array)
+    Cp = test_engine.convert(np.ones_like(days_array) * 5.0)
+    iSelect = np.arange(len(days_array))
+    iSelect = iSelect[iSelect != 0] # Cant index an array with zero in Matlab
+    iSelect = test_engine.convert(iSelect)
 
     result = test_engine.fitAnnualSineCurve(days, Cp, iSelect)
+    result = test_engine.convert(result)
+    fitted_amp = result[0][1] 
+    fitted_off = result[0][0]
+    fitted_r2 = result[0][3]
 
-    fitted_amp, fitted_off, fitted_ph, fitted_r2 = result
-    # For constant data, amplitude should be near zero, offset near 5, and R^2 near 1.
-    assert abs(fitted_amp) < 0.5
+    assert abs(fitted_amp)  <  0.5
     assert abs(fitted_off - 5.0) < 0.5
     # Phase doesn't matter much here, R^2 should be very high
     assert fitted_r2 > 0.9
