@@ -5,7 +5,6 @@ handle MATLAB engine interactions, and process text files for comparison in unit
 Contents:
     Fixtures:
         test_engine
-        test_engine
         setup_folders
         find_text_file
         extract_section_between_keywords
@@ -29,11 +28,68 @@ import io
 import atexit
 import numpy as np
 from matlab.engine.matlabengine import MatlabFunc
+
+
+class MFWrapper:
+    def __init__(self, func):
+        self.func = func
+        self.out = io.StringIO()
+        self.err = io.StringIO()
+        name = func._name
+        # make matlab stdout and stderr printed at the end of pytest
+        atexit.register(lambda: (s := self.out.getvalue()) and print(f"{name} stdout:\n{s}"))
+        atexit.register(lambda: (s := self.err.getvalue()) and print(f"{name} stderr:\n{s}"))
+        
+    def __call__(self, *args, jsonencode=(), jsondecode=(), **kwargs):
+        """
+        Call the wrapped function with optional JSON encoding/decoding to handle the issue that non-scalar structs (arrays of structs) cannot be returned from MATLAB functions to Python.
+        Args:
+            *args: Positional arguments to pass to the wrapped function.
+            jsonencode (tuple, optional): Indices of output arguments to JSON encode (into string) before the matlab function returns.
+            jsondecode (tuple, optional): Indices of input arguments to JSON decode (from string) at the beginning of the matlab function.
+            **kwargs: Keyword arguments to pass to the wrapped function.
+        Returns:
+            The result of the wrapped function, with specified outputs JSON decoded if necessary.
+        """
+        args = list(args)
+        if jsonencode:
+            args.append(['jsonencode'] + [i+1 for i in jsonencode])
+        if jsondecode:
+            for i in jsondecode:
+                args[i] = json.dumps(args[i])
+            args.append(['jsondecode'] + [i+1 for i in jsondecode])
+        out = kwargs.pop('stdout', self.out)
+        err = kwargs.pop('stderr', self.err)
+        ret = self.func(*args, **kwargs, stdout=out, stderr=err)
+        if jsonencode:
+            nargout = kwargs.get('nargout', 1)
+            if nargout <= 1:
+                ret = [ret]
+            else:
+                ret = list(ret)
+            for j in jsonencode:
+                ret[j] = json.loads(ret[j], object_hook=none2nan)
+            if nargout <= 1:
+                ret = ret[0]
+        return ret
+
+def mf_factory(cls, *args, **kwargs):
+    f = object.__new__(MatlabFunc)
+    f.__init__(*args, **kwargs)
+    return MFWrapper(f)
+MatlabFunc.__new__ = mf_factory
+
+# from oneflux_steps.ustar_cp_py.libsmop import matlabarray, struct
 from abc import ABC, abstractmethod
 import warnings
 
+import oneflux_steps.ustar_cp_python.utils
+
 # Python version imported here
 from oneflux_steps.ustar_cp_python import *
+from oneflux_steps.ustar_cp_python.cpdFmax2pCp3 import *
+from oneflux_steps.ustar_cp_python.utilities import *
+from oneflux_steps.ustar_cp_python.cpd_evaluate_functions import *
 
 def pytest_addoption(parser):
     parser.addoption("--language", action="store", default="matlab")
@@ -45,7 +101,7 @@ def language(pytestconfig):
 # Specification of a `TestEngine`
 class TestEngine(ABC):
     @abstractmethod
-    def _repr_pretty(self, p):
+    def _repr_pretty_(self, *args):
         """This placeholder can stay as is; it enables Hypothesis to work with this
         runner as a fixture"""
         return "Test Engine"
@@ -57,20 +113,34 @@ class TestEngine(ABC):
         return np.array(x)
 
     @abstractmethod
+    def unconvert(self, x):
+        """Convert input back from the type compatible with this engine."""
+        return np
+
+    @abstractmethod
     def equal(self, x, y) -> bool:
         """Compare two values for equality in the representation used by this engine"""
         pass
 
 # Python TestEngine
 class PythonEngine(TestEngine):
-    def _repr_pretty(self, p):
+    def _repr_pretty_(self, *args):
         return "Python Test Engine"
 
-    def convert(self, x):
+    def convert(self, x, index=False):
         """Convert input to a compatible type."""
         if x is None:
             raise ValueError("Input cannot be None")
-        return np.asarray(x) if isinstance(x, list) else x
+        if isinstance(x, list):
+            return np.asarray(x)
+        elif isinstance(x, tuple):
+            return tuple([self.convert(xi) for xi in x])
+        else:
+            return x
+        
+    def unconvert(self, x):
+        """Convert input back to the original type."""
+        return x
 
     def equal(self, x, y) -> bool:
         """Enhanced equality check for MATLAB arrays."""
@@ -80,30 +150,35 @@ class PythonEngine(TestEngine):
             return np.isclose(x, y, equal_nan=True)
         elif isinstance(x, np.ndarray) and isinstance(y, np.ndarray):
             return np.allclose(x, y, equal_nan=True)
-        elif isinstance(x, list) or isinstance(y, list):
+        elif (isinstance(x, list) and isinstance(y, list)) or (isinstance(x, tuple) and isinstance(y, tuple)):
             return all(self.equal(xi, yi) for xi, yi in zip(x, y))
         else:
             return x == y
-
+    
     def __getattribute__(self, name):
-        if name in ["convert", "equal"]:
+        if name in ["convert", "unconvert", "equal", "_repr_pretty_"]:
             return object.__getattribute__(self, name)
-        
+
         def newfunc(*args, **kwargs):
             try:
                 # Dynamically load modules based on the function name
-                mod_path = f"oneflux_steps.ustar_cp_python.{name}"
-                mod = __import__(mod_path, fromlist=[name])
-                func = getattr(mod, name, None)
+                # mod_path = f"oneflux_steps.ustar_cp_python.{name}"
+                # mod = __import__(mod_path, fromlist=[name])
+                # func = getattr(mod, name, None)
+                # if nargout is present in kwargs then remove it
+                if 'nargout' in kwargs:
+                    kwargs.pop('nargout')
+                func = globals().get(name)
                 if callable(func):
                     return func(*args, **kwargs)
-                else: warnings.warn(f"'function {name}' cannot be found", UserWarning)
+                else: 
+                    warnings.warn(f"'function {name}' cannot be found", UserWarning)
             except ImportError:
                 pass
             warnings.warn(f"'{name}' is not callable", UserWarning)
-        return newfunc
+        return newfunc if globals().get(name) else None
 
-# MATLAB Engine wrapper
+# MATLAB Engine wrapper 
 class MatlabEngine:
     def __init__(self, func):
         self.func = func
@@ -114,7 +189,7 @@ class MatlabEngine:
         atexit.register(lambda: (s := self.out.getvalue()) and print(f"{name} stdout:\n{s}"))
         atexit.register(lambda: (s := self.err.getvalue()) and print(f"{name} stderr:\n{s}"))
 
-    def _repr_pretty_(self, p):
+    def _repr_pretty_(self, *args):
         return "MATLAB"
 
     def __call__(self, *args, jsonencode=(), jsondecode=(), **kwargs):
@@ -132,31 +207,42 @@ class MatlabEngine:
         if self.func._name == '_repr_pretty_':
             # Overload attempts to pretty print matlab engines (e.g., by hypothesis)
             return 'MATLAB'
-      
+
         # For `convert` and `equal` we need to handle these directly here since
         # we have overriden `call`.
-        if (self.func._name == "convert") | (self.func._name == "equal"):
+        if (self.func._name == "convert") | (self.func._name == "unconvert") | (self.func._name == "equal"):
 
           # Locally scoped definitions
-          def _convert(x):
-              return to_matlab_type(x)
+          def _convert(x, index=None):
+                if index == 'to_matlab': # Add 1 for index conversion to MATLAB, types: int, ndarray, list
+                    print(index)
+                    print("Before conversion: ", x)
+                    if isinstance(x, (int, float, np.ndarray)):
+                        x = x+1
+                    elif isinstance(x, list):
+                        x = np.asarray(x)+1
+                    print("After conversion: ", x)
+                return to_matlab_type(x)
+
+          def _unconvert(x):
+              if isinstance(x, matlab.double):
+                x = np.array(x)
+              if len(x) == 1:
+                  return np.array(x[0])
+              else:
+                  return x
 
           def _equal(x, y):
-              if isinstance(x, float):
-                  # Floating point equality using numpy
-                  return np.isclose(x, y, equal_nan=True)
-              elif isinstance(x, matlab.double):
-                  # Compare matlab arrays
-                  return compare_matlab_arrays(x, y)
-              else:
-                  # Drop through to usual equality
-                  return x == y
+              return compare_matlab_arrays(x, y)
 
           # Choose which function to call
           if self.func._name == "convert":
+            #   print(*args)
               return _convert(*args)
           elif self.func._name == "equal":
               return _equal(*args)
+          elif self.func._name == "unconvert":
+              return _unconvert(*args)
 
         else:
           # Calls mostly going through to the MATLAB engine
@@ -180,6 +266,24 @@ class MatlabEngine:
                   ret[j] = json.loads(ret[j], object_hook=none2nan)
               if nargout <= 1:
                   ret = ret[0]
+
+       # # Some alternate approach here
+       # nargout = kwargs.get('nargout', 1)
+        # if nargout <= 1:
+        #     ret = [ret]
+        # else:
+        #     ret = list(ret)
+        # for j, y in enumerate(ret):
+        #     if j in jsonencode:
+        #         y = json.loads(y, object_hook=lambda d:
+        #             {k: np.nan if v is None else v for k, v in d.items()})
+        #         ret[j] = struct(y)
+        #     elif isinstance(y, np.ndarray):
+        #         ret[j] = matlabarray(y)
+        # if nargout <= 1:
+        #     ret = ret[0]
+        # return ret
+
           return ret
 
 def mf_factory(cls, *args, **kwargs):
@@ -199,6 +303,10 @@ def test_engine(language, refactored=True):
     Pytest fixture to start a 'running engine' which allows multiple languages
     to be targetted
     """
+    # if request.param == "translated":  # return the translated python module
+    #     import oneflux_steps.ustar_cp_python_auto as eng
+    #     yield eng
+    #     return
     if language == 'python':
         yield PythonEngine()  # Assuming a defined PythonEngine class elsewhere
     else:
@@ -476,6 +584,10 @@ def flatten(container):
 
 # Helper function to compare MATLAB double arrays element-wise, handling NaN comparisons
 def compare_matlab_arrays(result, expected):
+    if isinstance(result, float):
+      # Floating point equality using numpy
+      return np.isclose(result, expected, equal_nan=True)
+
     if not hasattr(result, '__len__') or not hasattr(expected, '__len__'):
         return np.allclose(result, expected, equal_nan=True)
 
@@ -499,6 +611,8 @@ def compare_matlab_arrays(result, expected):
 
     # Recursive case
     return all(compare_matlab_arrays(r, e) for r, e in zip(result, expected))
+    # ALT:
+    #return all(objects_are_equal(r, e) for r, e in zip(result, expected))
 
 def read_csv_with_csv_module(file_path):
     """
@@ -539,7 +653,7 @@ def none2nan(obj):
     if isinstance(obj, dict):
         return {k: none2nan(v) for k, v in obj.items()}
     elif hasattr(obj, 'size'):
-        return np.where(obj == None, np.nan, obj).tolist()
+        return np.where(obj is None, np.nan, obj).tolist()
     elif isinstance(obj, list):
         return [none2nan(v) for v in obj]
     elif obj is None:
