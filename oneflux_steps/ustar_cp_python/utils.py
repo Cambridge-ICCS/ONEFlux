@@ -272,9 +272,7 @@ def logical_or(a, b):
     return np.logical_or(a, b)
 
 
-def diff(a, n=1, axis=0):
-    x = squeeze(np.asarray(a))
-    return np.diff(x, n=n, axis=axis).view(matlabarray)
+
 
 
 def exist(a, b="file"):
@@ -816,11 +814,6 @@ def nanmean(a, axis=0):
 
 
 @function
-def nanmedian(a, axis=0):
-    """
-    Compute the median of an array while ignoring NaNs.
-    """
-    return np.nanmedian(squeeze(np.asarray(a)), axis=axis)
 
 
 def fcdf(x, dfn, dfd):

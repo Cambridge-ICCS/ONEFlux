@@ -43,6 +43,9 @@ def prctile_hazen(a, q):
     a = np.percentile(np.asarray(a), q, method="hazen")
     return a
 
+def diff(a, n=1, axis=0):
+    x = squeeze(np.asarray(a))
+    return np.diff(x, n=n, axis=axis)
 
 def dot(a : np.ndarray, b : np.ndarray) -> np.ndarray:
     """
@@ -97,6 +100,12 @@ def jsonencode(a):
 
 def jsondecode(a):
     return a if isinstance(a, cellarray) else json.loads(a)
+
+def nanmedian(a, axis=0):
+    """
+    Compute the median of an array while ignoring NaNs.
+    """
+    return np.nanmedian(squeeze(np.asarray(a)), axis=axis)
 
 def ndims(a : int | float | np.ndarray) -> int:
     """
