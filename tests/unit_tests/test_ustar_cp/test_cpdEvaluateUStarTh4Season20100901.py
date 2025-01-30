@@ -118,12 +118,9 @@ def test_filterInvalidPoints_logged_data(test_engine):
     for name in expected_output_names:
         path_to_artifacts = artifacts_dir + f'/CA-Cbo_qca_ustar_2007_0/output_{name}.csv'
         column = pd.read_csv(path_to_artifacts, header=None).iloc[:,0].to_numpy()
-        if name == 'itAnnual':
-            # index='to_python' optional argument to account for 0-based indexing in Python
-            expected_output_data[name] = test_engine.convert(column, 'to_python')
-        else:
-            expected_output_data[name] = test_engine.convert(column)
-
+        # Convert the data, with extra parameter to determine whether this is indexing data
+        expected_output_data[name] = test_engine.convert(column, isIndex=(name == 'itAnnual'))
+        
     uStar, itAnnual, ntAnnual = test_engine.filterInvalidPoints(input_data['uStar'], input_data['fNight'], input_data['NEE'], input_data['T'], nargout=3)
     print("output: ", itAnnual)
     print("expected: ", expected_output_data['itAnnual'])
@@ -183,11 +180,8 @@ def test_reorderAndPreprocessData_logged_data(test_engine):
     for name in expected_output_names:
         path_to_artifacts = artifacts_dir + f'/CA-Cbo_qca_ustar_2007_0/output_{name}.csv'
         column = pd.read_csv(path_to_artifacts, header=None).iloc[:,0].to_numpy()
-        if name == 'itAnnual':
-            # index='to_python' optional argument to account for 0-based indexing in Python
-            expected_output_data[name] = test_engine.convert(column, 'to_python')
-        else:
-            expected_output_data[name] = test_engine.convert(column)
+        # Convert the data with extra check on whether this is indexing data
+        expected_output_data[name] = test_engine.convert(column, isIndex=(name == 'itAnnual'))
         
     t, T, uStar, NEE, fNight, itAnnual, ntAnnual = test_engine.reorderAndPreprocessData(*[input_data[name] for name in input_names], nargout=7)
 
@@ -238,10 +232,8 @@ def test_computeTemperatureThresholds_logged_data(test_engine):
         column = pd.read_csv(path_to_artifacts, header=None).iloc[:,0].to_numpy()
         input_data[name] = column#.tolist()
     print(input_data['itSeason'])
-    # index='to_python' optional argument to account for 0-based indexing in Python
-    print(test_engine.convert(input_data['itSeason'], 'to_python'))
-    # index='to_python' optional argument to account for 0-based indexing in Python
-    TTh = test_engine.computeTemperatureThresholds(test_engine.convert(input_data['T']), test_engine.convert(input_data['itSeason'], 'to_python'), nStrata, nargout=1)
+    print(test_engine.convert(input_data['itSeason'], isIndex=True))
+    TTh = test_engine.computeTemperatureThresholds(test_engine.convert(input_data['T']), test_engine.convert(input_data['itSeason'], isIndex=True), nStrata, nargout=1)
     python_TTh = computeTemperatureThresholds(np.array(input_data['T']), input_data['itSeason']-1, nStrata) # -1 to account for 0-based indexing in python
 
     expected_TTh = artifacts_dir + f'/CA-Cbo_qca_ustar_2007_0/output_TTh.csv'

@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Dict, List
-from oneflux_steps.ustar_cp_python.utilities import dot, intersect, squeeze, diff, nanmedian
+from oneflux_steps.ustar_cp_python.utilities import dot, intersect, round_up
 
 def cpdBootstrapUStarTh4Season20100901(*args, **kwargs):
     """
@@ -35,7 +35,7 @@ def generate_statsMT() -> Dict[str, float]:
     return stats_mt
 
 
-def setup_Stats(n_boot: int, n_seasons: int, n_strata_x: int, **kwargs) -> List[List[List[Dict[str, float]]]]|dict[str, float]:
+def setup_Stats(n_boot: int, n_seasons: int, n_strata_x: int) -> List[List[List[Dict[str, float]]]]|dict[str, float]:
     """
     Initialize the Stats structure based on input dimensions.
 
@@ -98,10 +98,27 @@ def update_uStar(uStar : np.ndarray) -> np.ndarray:
     updated_ustar[iOut] = np.nan()
     return updated_ustar
 
-def get_iNight(fNight):
-    return np.arange(0, len(fNight))
+def get_iNight(fNight : np.ndarray) -> np.ndarray:
+    """
+    Get the indices of the night time values.
 
-def get_nPerBin(t):    
+    Args:
+        fNight (np.ndarray): Night time values.         
+    Returns:  
+        np.ndarray: Indices of the night time values.
+
+    """
+    return np.where(fNight)[0]
+
+def get_nPerBin(t : np.ndarray) -> int:
+    """
+    Get the number of points per bin.
+
+    Args: 
+        t (np.ndarray): Time vector.
+    Returns:  
+        int: Number of points per bin (within a day)
+    """
     nPerDay = get_nPerDay(t)
     if 24 == nPerDay:
         return 3
@@ -112,4 +129,4 @@ def get_nPerBin(t):
         return 5
 
 def get_nPerDay(t):
-    return round(1 / nanmedian(np.diff(t)))
+    return round_up(1 / np.nanmedian(np.diff(t)))

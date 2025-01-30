@@ -131,7 +131,7 @@ class PythonEngine(TestEngine):
     def _repr_pretty_(self, *args):
         return "Python Test Engine"
 
-    def convert(self, x, index=False, fromFile=False):
+    def convert(self, x, index='to_python', fromFile=False):
         """Convert input to a compatible type."""
         if x is None:
             raise ValueError("Input cannot be None")
@@ -179,6 +179,10 @@ class PythonEngine(TestEngine):
                 # if nargout is present in kwargs then remove it
                 if 'nargout' in kwargs:
                     kwargs.pop('nargout')
+                # if jsonencode is present in kwargs then remove it
+                if 'jsonencode' in kwargs:
+                    kwargs.pop('jsonencode')
+
                 func = globals().get(name)
                 if callable(func):
                     return func(*args, **kwargs)
@@ -224,9 +228,9 @@ class MatlabEngine:
         if (self.func._name == "convert") | (self.func._name == "unconvert") | (self.func._name == "equal"):
 
           # Locally scoped definitions
-          def _convert(x, index=None):
+          def _convert(x, index='to_python'):
+                print(index)
                 if index == 'to_matlab': # Add 1 for index conversion to MATLAB, types: int, ndarray, list
-                    print(index)
                     print("Before conversion: ", x)
                     if isinstance(x, (int, float, np.ndarray)):
                         x = x+1
@@ -249,11 +253,11 @@ class MatlabEngine:
           # Choose which function to call
           if self.func._name == "convert":
             #   print(*args)
-              return _convert(*args)
+              return _convert(*args, **kwargs)
           elif self.func._name == "equal":
-              return _equal(*args)
+              return _equal(*args, **kwargs)
           elif self.func._name == "unconvert":
-              return _unconvert(*args)
+              return _unconvert(*args, **kwargs)
 
         else:
           # Calls mostly going through to the MATLAB engine
@@ -548,6 +552,7 @@ def to_matlab_type(data: Any) -> Any:
     """
     if isinstance(data, dict):
         # Convert a Python dictionary to a MATLAB struct
+        # TODO: the following doesn't actually work but is not yet used
         matlab_struct = matlab.struct()
         for key, value in data.items():
             matlab_struct[key] = to_matlab_type(value)  # Recursively handle nested structures

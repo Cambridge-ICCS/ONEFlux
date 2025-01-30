@@ -137,11 +137,11 @@ def mock_data(nt=300, tspan=(0, 1), uStar_pars=(0.1, 3.5), T_pars=(-10, 30), fNi
 #         # Extract the expected outputs for comparison
 #         outputs_list = [outputs[str(i)] for i in range(len(outputs))]
 
-#         # Assertions to compare MATLAB results to expected outputs
-#         assert test_engine.convert(Cp2, outputs_list[0])
-#         assert test_engine.convert(Stats2, outputs_list[1])
-#         assert test_engine.convert(Cp3, outputs_list[2])
-#         assert test_engine.convert(Stats3, outputs_list[3])
+        # # Assertions to compare MATLAB results to expected outputs
+        # assert test_engine.equal(Cp2, outputs_list[0])
+        # assert test_engine.equal(Stats2, outputs_list[1])
+        # assert test_engine.equal(Cp3, outputs_list[2])
+        # assert test_engine.equal(Stats3, outputs_list[3])
 
 # Parameterized test for the get_nPerDay function
 @pytest.mark.parametrize("input_data, expected_result", [
@@ -154,34 +154,34 @@ def mock_data(nt=300, tspan=(0, 1), uStar_pars=(0.1, 3.5), T_pars=(-10, 30), fNi
 def test_get_nPerDay(test_engine, input_data, expected_result):
     input_data = test_engine.convert(input_data)
     result = test_engine.get_nPerDay(input_data)
+    assert result == expected_result, f"Expected {expected_result}, but got {result} for input {input_data}"
+
+# Parameterized test for the get_nPerBin function
+@pytest.mark.parametrize("input_data, expected_result", [
+    ([0, 1/24, 2/24, 3/24, 4/24], 3),          # 24 points per day, expect 3 per bin
+    ([0, 1/48, 2/48, 3/48, 4/48], 5),          # 48 points per day, expect 5 per bin
+    ([0, 1/12, 2/12, 3/12, 4/12], 5),          # Other case, expect default 5 per bin
+    ([0, 1, 2, 3, np.nan, 5, 6], 5),           # Includes NaN, should default to 5 per bin
+    ([0, 0.5, 1.0, 1.5, 2.0], 5),              # 2 points per day, default case, expect 5 per bin
+])
+def test_get_nPerBin(test_engine, input_data, expected_result):
+    input_data = test_engine.convert(input_data)
+    result = test_engine.get_nPerBin(input_data)
     assert result == expected_result, f"Expected {expected_result}, but got {result}"
 
-# # Parameterized test for the get_nPerBin function
-# @pytest.mark.parametrize("input_data, expected_result", [
-#     ([0, 1/24, 2/24, 3/24, 4/24], 3),          # 24 points per day, expect 3 per bin
-#     ([0, 1/48, 2/48, 3/48, 4/48], 5),          # 48 points per day, expect 5 per bin
-#     ([0, 1/12, 2/12, 3/12, 4/12], 5),          # Other case, expect default 5 per bin
-#     ([0, 1, 2, 3, np.nan, 5, 6], 5),           # Includes NaN, should default to 5 per bin
-#     ([0, 0.5, 1.0, 1.5, 2.0], 5),              # 2 points per day, default case, expect 5 per bin
-# ])
-# def test_get_nPerBin(test_engine, input_data, expected_result):
-#     input_data = test_engine.convert(input_data)
-#     result = test_engine.get_nPerBin(input_data)
-#     assert result == expected_result, f"Expected {expected_result}, but got {result}"
-
-# # Parameterized test for the get_iNight function
-# @pytest.mark.parametrize("input_data, expected_result", [
-#     ([0, 1, 0, 1, 0], [2.0, 4.0]),                # Two true values at indices 2 and 4 (MATLAB uses 1-based indexing)
-#     ([1, 1, 1, 1], [1.0, 2.0, 3.0, 4.0]),             # All true values, expect all indices
-#     ([0, 0, 0, 0], [[]]),                       # No true values, expect empty array
-#     # TODO: check whether we should include this
-#     #([0, 1, np.nan, 1, 0], matlab.double([2.0, 4.0])),           # NaN should be ignored, expect indices 2 and 4
-#     ([1, 0, 0, 1, 1, 0], [1.0, 4.0, 5.0])           # True values at indices 1, 4, and 5
-# ])
-# def test_get_iNight(test_engine, input_data, expected_result):
-#     input_data = test_engine.convert(input_data)
-#     result = test_engine.get_iNight(input_data)
-#     assert test_engine.equal(result, expected_result), f"Expected {expected_result}, but got {result}"
+# Parameterized test for the get_iNight function
+@pytest.mark.parametrize("input_data, expected_result", [
+    ([0, 1, 0, 1, 0], [1.0, 3.0]),                # Two true values at indices 1 and 3
+    ([1, 1, 1, 1], [0.0, 1.0, 2.0, 3.0]),         # All true values, expect all indices
+    ([0, 0, 0, 0], [[]]),                         # No true values, expect empty array
+    ([0, 1, np.nan, 1, 0], [1.0, 2.0, 3.0]),      # NaN should be ignored
+    ([1, 0, 0, 1, 1, 0], [0.0, 3.0, 4.0])         # True values at indices 0, 3, and 4
+])
+def test_get_iNight(test_engine, input_data, expected_result):
+    input_data = test_engine.convert(input_data)
+    result = test_engine.get_iNight(input_data)
+    expected_result = test_engine.convert(expected_result, index='to_matlab')
+    assert test_engine.equal(result, expected_result), f"Expected {expected_result}, but got {result}"
 
 # # Parameterized test for the update_ustar function
 # @pytest.mark.parametrize("input_data, expected_result", [
