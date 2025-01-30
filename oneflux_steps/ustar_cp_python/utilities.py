@@ -86,9 +86,17 @@ def intersect(a : np.ndarray, b : np.ndarray) -> np.ndarray:
     elif isinstance(a, list):
         return c
     else:
+        if (len(a.shape) > 1) and (a.shape[1] > 1):
+          return transpose(np.array(c))
+        else:
+          if len(c) == 1:
+            # If the result is a singleton, return it as a scalar
+            return c[0]
+          else:
+            return np.array(c)
         # FIXME: the result is a column vector if
         # both args are column vectors; otherwise row vector
-        return np.array(c).reshape((1, -1) if a.shape[1] > 1 else (-1, 1))
+        #return np.array(c).reshape((1, -1) if a.shape[1] > 1 else (-1, 1))
 
 def jsonencode(a):
     return a if isinstance(a, cellarray) else json.dumps(a)

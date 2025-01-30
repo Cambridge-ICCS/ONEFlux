@@ -66,16 +66,23 @@ def setup_Cp(nSeasons=None, nStrataX=None, nBoot=None):
     # TODO: check definition, may need to use the definition in utils.py
     return dot(np.nan, np.ones([nSeasons, nStrataX, nBoot]))
 
-# TODO: rough attempt in np
 def get_itNee(NEE : np.ndarray, uStar : np.ndarray, T : np.ndarray, iNight : np.ndarray) -> np.ndarray:
-    itNee = np.where(np.logical_not(np.isnan(NEE + uStar + T)))
+    itNee = np.where(np.logical_not(np.isnan(NEE + uStar + T)))[0]
     # Interect the arrays of itNee and itNight
     itNee = intersect(itNee, iNight)
     return itNee
 
-def get_ntN(t, nSeasons):
+def get_ntN(t : np.ndarray, nSeasons : int) -> int:
     """
     Get the number of points in the season.
+
+    Args:
+        t (np.ndarray): Time vector.
+        nSeasons (int): Number of seasons.
+
+    Returns:
+        int: Number of points in the season.
+        
     """
     nStrataN = 4 # Local variable, used to calculate ntN
     nBins = 50   # Local variable, used to calculate ntN
@@ -94,8 +101,8 @@ def update_uStar(uStar : np.ndarray) -> np.ndarray:
     """
     # TODO: check whether we need to change the indexing
     updated_ustar = uStar.copy() # Initialize to same size as input
-    iOut = np.where(uStar < 0 | uStar > 4);
-    updated_ustar[iOut] = np.nan()
+    iOut = np.where(np.logical_or(uStar < 0, uStar > 4))[0]
+    updated_ustar[iOut] = np.nan
     return updated_ustar
 
 def get_iNight(fNight : np.ndarray) -> np.ndarray:

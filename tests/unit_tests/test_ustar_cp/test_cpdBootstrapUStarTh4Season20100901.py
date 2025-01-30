@@ -183,74 +183,71 @@ def test_get_iNight(test_engine, input_data, expected_result):
     expected_result = test_engine.convert(expected_result, index='to_matlab')
     assert test_engine.equal(result, expected_result), f"Expected {expected_result}, but got {result}"
 
-# # Parameterized test for the update_ustar function
-# @pytest.mark.parametrize("input_data, expected_result", [
-#     ([1, 2, 3, 4], [1.0, 2.0, 3.0, 4.0]),                     # No values out of bounds
-#     ([-1, 2, 3, 5], [np.nan, 2.0, 3.0, np.nan]),               # Values < 0 or > 4 should be NaN
-#     ([0, 4, 4.1], [0.0, 4.0, np.nan]),                         # Edge cases with 0, 4, and out-of-bound 4.1
-#     ([np.nan, 2, 3], [np.nan, 2.0, 3.0]),                      # Input with NaN should remain NaN
-#     ([5, -2, 0, 3], [np.nan, np.nan, 0.0, 3.0])                # Multiple values out of bounds
-# ])
-# def test_update_uStar(test_engine, input_data, expected_result):
-#     input_data = test_engine.convert(input_data)
-#     result = test_engine.update_uStar(input_data)
-#     assert test_engine.equal(result, expected_result), f"Expected {expected_result}, but got {result}"
+# Parameterized test for the update_ustar function
+@pytest.mark.parametrize("input_data, expected_result", [
+    ([1, 2, 3, 4], [1.0, 2.0, 3.0, 4.0]),                     # No values out of bounds
+    ([-1, 2, 3, 5], [np.nan, 2.0, 3.0, np.nan]),               # Values < 0 or > 4 should be NaN
+    ([0, 4, 4.1], [0.0, 4.0, np.nan]),                         # Edge cases with 0, 4, and out-of-bound 4.1
+    ([np.nan, 2, 3], [np.nan, 2.0, 3.0]),                      # Input with NaN should remain NaN
+    ([5, -2, 0, 3], [np.nan, np.nan, 0.0, 3.0])                # Multiple values out of bounds
+])
+def test_update_uStar(test_engine, input_data, expected_result):
+    input_data = test_engine.convert(input_data)
+    result = test_engine.update_uStar(input_data)
+    assert test_engine.equal(result, test_engine.convert(expected_result)), f"Expected {expected_result}, but got {result}"
 
 
-# # Parameterized test for the get_ntN function
-# @pytest.mark.parametrize("t_input, nSeasons, expected_ntN", [
-#     ([0, 1, 2, 3, 4], 2, 2000),    # 2 seasons
-#     ([0, 0.5, 1.0, 1.5, 2.0], 1, 1000),  #1 season
-#     ([0, 1, 2], 3, 3000),          # Small time array, 3 seasons
-#     ([0, 1, 2, 3, 4], 1, 1000),     # 1 season
-#     ([0, 1], 5, 5000)              # Larger nSeasons
-# ])
-# def test_get_ntN(test_engine, t_input, nSeasons, expected_ntN):
-#     t_input = test_engine.convert(t_input)
+# Parameterized test for the get_ntN function
+@pytest.mark.parametrize("t_input, nSeasons, expected_ntN", [
+    ([0, 1, 2, 3, 4], 2, 2000),    # 2 seasons
+    ([0, 0.5, 1.0, 1.5, 2.0], 1, 1000),  #1 season
+    ([0, 1, 2], 3, 3000),          # Small time array, 3 seasons
+    ([0, 1, 2, 3, 4], 1, 1000),     # 1 season
+    ([0, 1], 5, 5000)              # Larger nSeasons
+])
+def test_get_ntN(test_engine, t_input, nSeasons, expected_ntN):
+    t_input = test_engine.convert(t_input)
 
-#     # Call get_ntN and check the result
-#     result = test_engine.get_ntN(t_input, nSeasons)
-#     assert result == expected_ntN, f"Expected {expected_ntN}, but got {result}"
+    # Call get_ntN and check the result
+    result = test_engine.get_ntN(t_input, nSeasons)
+    assert result == expected_ntN, f"Expected {expected_ntN}, but got {result}"
 
-# # Test for the get_itNee function
-# @pytest.mark.parametrize(
-#     "NEE, uStar, T, iNight, expected_itNee",
-#     [
-#         # Case 1: No NaNs and full intersection with iNight
-#         ([1, 2, 3, 4], [1, 1, 1, 1], [1, 1, 1, 1], [1, 2, 3], [1.0,2.0,3.0]),
+# Test for the get_itNee function
+@pytest.mark.parametrize(
+    "NEE, uStar, T, iNight, expected_itNee",
+    [
+        # Case 1: No NaNs and full intersection with iNight
+        ([1, 2, 3, 4], [1, 1, 1, 1], [1, 1, 1, 1], [0, 1, 2], [0.0, 1.0, 2.0]),
 
-#         # Case 2: Some NaN values, partial intersection with iNight
-#         ([1, np.nan, 3, 4], [1, 1, np.nan, 1], [1, 1, 1, np.nan], [1, 3], 1.0),
+        # Case 2: Some NaN values, partial intersection with iNight
+        ([1, np.nan, 3, 4], [1, 1, np.nan, 1], [0, 0, 0, np.nan], [0, 2], 0.0),
 
-#         # Case 3: No intersection with iNight
-#         ([1, 2, 3, 4], [1, 1, 1, 1], [1, 1, 1, 1], [5, 6], [[]]),
+        # Case 2b: Some NaN values, partial intersection with iNight
+        ([4, 1, np.nan, 3, 4], [6, 4, 1, np.nan, 1], [np.nan, 0, 0, 0.0, 0], [1, 3], 1.0),
 
-#         # Case 4: All elements are NaN, so no valid indices
-#         ([np.nan, np.nan], [np.nan, np.nan], [np.nan, np.nan], [1, 2], [[]]),
+        # Case 3: No intersection with iNight
+        ([1, 2, 3, 4], [1, 1, 1, 1], [1, 1, 1, 1], [4, 5], [[]]),
 
-#         # Case 5: All valid values, but no intersection with iNight
-#         ([1, 2, 3, 4], [1, 1, 1, 1], [1, 1, 1, 1], [], []),
+        # Case 4: All elements are NaN, so no valid indices
+        ([np.nan, np.nan], [np.nan, np.nan], [np.nan, np.nan], [0, 1], [[]]),
 
-#         # Case 6: All valid values and full intersection with iNight
-#         ([1, 2, 3], [1, 1, 1], [1, 1, 1], [1, 2, 3], [1.0, 2.0, 3.0])
-#     ]
-# )
-# def test_get_itNee(test_engine, NEE, uStar, T, iNight, expected_itNee):
-#     # Convert input arrays to MATLAB-compatible types
-#     NEE_matlab = test_engine.convert(NEE)
-#     uStar_matlab = test_engine.convert(uStar)
-#     T_matlab = test_engine.convert(T)
-#     iNight_matlab = test_engine.convert(iNight)
+        # Case 5: All valid values, but no intersection with iNight
+        ([1, 2, 3, 4], [1, 1, 1, 1], [1, 1, 1, 1], [], []),
 
-#     # Call the MATLAB function
-#     itNee = test_engine.get_itNee(NEE_matlab, uStar_matlab, T_matlab, iNight_matlab)
+        # Case 6: All valid values and full intersection with iNight
+        ([1, 2, 3], [1, 1, 1], [1, 1, 1], [0, 1, 2], [0.0, 1.0, 2.0])
+    ]
+)
+def test_get_itNee(test_engine, NEE, uStar, T, iNight, expected_itNee):
+    NEE_input = test_engine.convert(NEE)
+    uStar_input = test_engine.convert(uStar)
+    T_input = test_engine.convert(T)
+    iNight_input = test_engine.convert(iNight, index='to_matlab')
 
-#     # Compare results
-#     # TODO: probably collapse
-#     if not isinstance(itNee, float):
-#         assert test_engine.equal(itNee, expected_itNee), f"Expected {expected_itNee}, but got {itNee}"
-#     else:
-#         assert test_engine.equal(itNee, expected_itNee)
+    # Call the function
+    itNee = test_engine.get_itNee(NEE_input, uStar_input, T_input, iNight_input)
+    # Compare results
+    assert test_engine.equal(itNee, test_engine.convert(expected_itNee, index='to_matlab')), f"Expected {expected_itNee}, but got {itNee}"
 
 # # Test for the setup_Cp function
 # @pytest.mark.parametrize(
