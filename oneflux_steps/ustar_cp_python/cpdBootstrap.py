@@ -62,8 +62,18 @@ def setup_Stats(n_boot: int, n_seasons: int, n_strata_x: int) -> List[List[List[
 
     return stats
 
-def setup_Cp(nSeasons=None, nStrataX=None, nBoot=None):
-    # TODO: check definition, may need to use the definition in utils.py
+def setup_Cp(nSeasons : int, nStrataX : int, nBoot : int) -> np.ndarray:
+    """
+    Initialize the Cp structure based on input dimensions.
+    
+    Args:
+        nSeasons (int): Number of seasons.
+        nStrataX (int): Number of strata in X direction.
+        nBoot (int): Number of bootstraps.
+    
+    Returns:
+        np.ndarray: Preallocated Cp structure.
+    """
     return dot(np.nan, np.ones([nSeasons, nStrataX, nBoot]))
 
 def get_itNee(NEE : np.ndarray, uStar : np.ndarray, T : np.ndarray, iNight : np.ndarray) -> np.ndarray:

@@ -249,36 +249,34 @@ def test_get_itNee(test_engine, NEE, uStar, T, iNight, expected_itNee):
     # Compare results
     assert test_engine.equal(itNee, test_engine.convert(expected_itNee, index='to_matlab')), f"Expected {expected_itNee}, but got {itNee}"
 
-# # Test for the setup_Cp function
-# @pytest.mark.parametrize(
-#     "nSeasons, nStrataX, nBoot, expected_shape",
-#     [
-#         # Case 1: Basic 2x2x2 array
-#         (2, 2, 2, (2, 2, 2)),
+# Test for the setup_Cp function
+@pytest.mark.parametrize(
+    "nSeasons, nStrataX, nBoot, expected_shape",
+    [
+        # Case 1: Basic 2x2x2 array
+        (2, 2, 2, (2, 2, 2)),
 
-#         # Case 2: Single season, single strata, single boot
-#         (1, 1, 1, ()),
+        # Case 2: Single season, single strata, single boot
+        (1, 1, 1, ()),
 
-#         # Case 3: 3 seasons, 4 strata, 5 bootstrap iterations
-#         (3, 4, 5, (3, 4, 5)),
+        # Case 3: 3 seasons, 4 strata, 5 bootstrap iterations
+        (3, 4, 5, (3, 4, 5)),
 
-#         # Case 4: No bootstrap iterations (nBoot=0)
-#         (2, 3, 0, (2, 3, 0)),
+        # Case 4: No bootstrap iterations (nBoot=0)
+        (2, 3, 0, (2, 3, 0)),
 
-#         # Case 5: One season, multiple strata, multiple bootstraps
-#         (1, 5, 4, (1, 5, 4)),
-#     ]
-# )
-# def test_setup_Cp(test_engine, nSeasons, nStrataX, nBoot, expected_shape):
-#     Cp = test_engine.setup_Cp(nSeasons, nStrataX, nBoot)
+        # Case 5: One season, multiple strata, multiple bootstraps
+        (1, 5, 4, (1, 5, 4)),
+    ]
+)
+def test_setup_Cp(test_engine, nSeasons, nStrataX, nBoot, expected_shape):
+    Cp = test_engine.setup_Cp(nSeasons, nStrataX, nBoot)
 
-#     # TODO remove these lines
-#     # Convert the MATLAB output to numpy arrays for comparison
-#     Cp_array = np.array(Cp)
+    Cp_array = np.array(Cp)
 
-#     # Check the shape of Cp2 and Cp3
-#     assert test_engine.equal(Cp_array.shape, test_engine.convert(expected_shape)), f"Expected shape {expected_shape} for Cp, but got {Cp_array.shape}"
+    # Check the shape of Cp2 and Cp3
+    assert test_engine.equal(Cp_array.shape, test_engine.convert(expected_shape)), f"Expected shape {expected_shape} for Cp, but got {Cp_array.shape}"
 
-#     # Ensure all elements are NaN
-#     assert np.isnan(Cp_array).all(), "Not all elements in Cp2 are NaN"
+    # Ensure all elements are NaN
+    assert np.isnan(Cp_array).all(), "Not all elements in Cp2 are NaN"
 
