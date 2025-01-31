@@ -569,6 +569,8 @@ def to_matlab_type(data: Any) -> Any:
             return [to_matlab_type(elem) for elem in data]
     elif isinstance(data, (int, float)):
         return matlab.double([data])  # Convert single numbers
+    elif isinstance(data, bool):
+        return matlab.logical(data)
     else:
       return data  # If the data type is already MATLAB-compatible
 

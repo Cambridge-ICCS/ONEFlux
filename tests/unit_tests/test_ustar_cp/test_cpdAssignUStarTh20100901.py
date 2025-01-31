@@ -91,3 +91,22 @@ def test_cpdAssignUStarTh20100901_edge_cases(test_engine, mock_data):
     # Assertions for edge cases
     assert len(results_all_sig[0]) > 0, "Should produce results for all significant change points"
     assert len(results_no_sig[5]) > 0, "Should produce a failure message for no significant change points"
+
+@pytest.mark.parametrize(
+    "x_norm_x, threshold, expected_f_out, expected_i_out",
+    [
+        ([0.5, 1.2, 3.5, 0.1, 2.8], 2.0, [[False, False, True, False, True]], [[3.0, 5.0]]),  # Basic test
+        ([0.1, 0.2, 0.3], 1.0, [[False, False, False]], [[]]),  # No outliers
+        ([3.1, 2.9, 3.5], 2.0, [[True, True, True]], [[1, 2, 3]]),  # All outliers
+        ([], 2.0, np.bool([]), []),  # Empty input case
+        ([-3, -2, -1, 0, 1, 2, 3], -1.0, [[False, False, False, True, True, True, True]], [[4.0, 5.0, 6.0, 7.0]]),  # Negative threshold
+    ]
+)
+def test_identify_outliers(test_engine, x_norm_x, threshold, expected_f_out, expected_i_out):
+    """Test MATLAB's identifyOutliers function from Python using MATLAB Engine."""
+
+
+    f_out, i_out = test_engine.identifyOutliers(test_engine.convert(x_norm_x), test_engine.convert(threshold), nargout=2)
+
+    assert np.array_equal(f_out, test_engine.convert(expected_f_out)), "Boolean outlier array does not match expected"
+    assert i_out == test_engine.convert(expected_i_out), "Index output does not match expected"
