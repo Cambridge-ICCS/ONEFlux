@@ -262,7 +262,7 @@ def test_mapColumnNamesToIndices(test_engine, input_columns_names, columns_index
     header = []
     header_file = 'tests/test_artifacts/launch_artifacts/mapColumnNamesToIndices_input_header_US-ARc_qca_ustar_2005.csv'
     notes = list(pd.read_csv('tests/test_artifacts/launch_artifacts/mapColumnNamesToIndices_input_notes_US-ARc_qca_ustar_2005.csv'))
-    columns_index = test_engine.convert(np.array(columns_index).astype(np.int8))
+    columns_index = test_engine.convert(np.array(columns_index))
 
     # Call the function
     exitcode, output_columns_index = test_engine.mapColumnNamesToIndices(header, input_columns_names, notes, columns_index, header_file, nargout=2)
@@ -289,7 +289,7 @@ def test_ppfdColExists(test_engine, columns_index, expected_ppfd_from_rg, expect
 
     # Create the input data
     ppfd_index = 4
-    columns_index = test_engine.convert(np.array(columns_index).astype(np.int8))
+    columns_index = test_engine.convert(np.array(columns_index))
     input_columns_names = ['USTAR', 'NEE', 'TA', 'PPFD_IN' ,'SW_IN']
 
     # Call the function
@@ -314,7 +314,7 @@ def test_areAllPpfdValuesInvalid(test_engine, year_and_type, expected_ppfd_from_
 
     # Create the input data
     ppfd_from_rg = 0
-    columns_index = test_engine.convert(np.array([[5,3,4,7,6]]).astype(np.int8))
+    columns_index = test_engine.convert(np.array([[5,3,4,7,6]]))
     ppfd_index = 4
     data = []
 
