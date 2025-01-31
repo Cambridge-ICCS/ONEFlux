@@ -4,6 +4,7 @@ from .fcx2rowvec import fcx2rowvec
 from .fcDatetick import fcDatetick
 from .fcDoy import fcDoy
 from .fcr2Calc import fcr2Calc
+from .fcReadFields import fcReadFields
 from .cpdFmax2pCp3 import cpdFmax2pCp3
 from .fcNaniqr import *
 from .cpdFmax2pCp2 import cpdFmax2pCp2
@@ -11,7 +12,6 @@ from .cpdFmax2pCore import interpolate_FmaxCritical, calculate_p_low, calculate_
 from .fcDatenum import datenum
 from .fcBin import fcBin
 from .cpdAssignUStarTh import *
-
 
 from os.path import dirname, basename, isfile, join
 import glob
