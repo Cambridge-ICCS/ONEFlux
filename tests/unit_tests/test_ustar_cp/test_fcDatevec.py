@@ -2,14 +2,13 @@
 # which converts a date string to a date vector
 
 import pytest
-from tests.conftest import test_engine
 
 from hypothesis import given, settings
-from hypothesis.strategies import floats, lists, composite
-
-import numpy as np
+from hypothesis.strategies import floats, lists
 
 from oneflux_steps.ustar_cp_python.fcDatevec import fcDatevec
+
+import pandas as pd
 
 # Property-based tests for fcDatevec
 # The size of the input `n` determines the size of the output as `n x 6`
@@ -73,6 +72,7 @@ def test_fcDatevec_shape(test_engine, data):
     , ([5.0446049250313e-10], (-1, 12, 30, 24, 0, 0))
     , ([6.0446049250313e-10], (0, 0, 0, 0, 0, 0.0001))
     , ([10+6.0446049250313e-10], (0, 1, 10, 0, 0, 0.0001))
+    , ([336], (0.0, 11.0, 30.0, 24.0, 0.0, 0.0))
 ])
 def test_fcDatevec_specific(test_engine, t, expected):
     """
@@ -83,3 +83,18 @@ def test_fcDatevec_specific(test_engine, t, expected):
 
     # Check the result
     assert test_engine.equal(result, test_engine.convert(expected))
+
+# TODO: During migration remove this differential test
+def test_fcDatevec_site_data_differential(test_engine):
+
+    time_artifact_path = 'tests/test_artifacts/cpdEvaluateUStarTh4Season20100901_artifacts/CA-Cbo_qca_ustar_2007/input_time_it_.csv'
+    data = pd.read_csv(time_artifact_path, header=None).values.tolist()
+
+    # Call the function
+    expected_result = test_engine.fcDatevec(test_engine.convert(data), nargout=6)
+
+    print("test_engine.fcDatevec(test_engine.convert(data), nargout=6) has run...\n\n")
+
+    result = fcDatevec(data)
+
+    assert test_engine.equal(result, expected_result)
