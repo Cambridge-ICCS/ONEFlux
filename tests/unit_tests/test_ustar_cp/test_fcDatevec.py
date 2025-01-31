@@ -84,7 +84,7 @@ def test_fcDatevec_specific(test_engine, t, expected):
     # Check the result
     assert test_engine.equal(result, test_engine.convert(expected))
 
-
+# TODO: During migration remove this differential test
 def test_fcDatevec_site_data(test_engine):
 
     time_artifact_path = 'tests/test_artifacts/cpdEvaluateUStarTh4Season20100901_artifacts/CA-Cbo_qca_ustar_2007/input_time_it_.csv'
