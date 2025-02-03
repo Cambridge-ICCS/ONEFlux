@@ -109,4 +109,4 @@ def test_identify_outliers(test_engine, x_norm_x, threshold, expected_f_out, exp
     f_out, i_out = test_engine.identifyOutliers(test_engine.convert(x_norm_x), test_engine.convert(threshold), nargout=2)
 
     assert np.array_equal(f_out, test_engine.convert(expected_f_out)), "Boolean outlier array does not match expected"
-    assert i_out == test_engine.convert(expected_i_out), "Index output does not match expected"
+    assert i_out == expected_i_out, "Index output does not match expected"

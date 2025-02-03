@@ -95,6 +95,7 @@ from oneflux_steps.ustar_cp_python.utilities import *
 from oneflux_steps.ustar_cp_python.cpd_evaluate_functions import *
 from oneflux_steps.ustar_cp_python.cpdFindChangePoint_functions import *
 from oneflux_steps.ustar_cp_python.cpdBootstrap import *
+from oneflux_steps.ustar_cp_python.cpdAssignUStarTh import *
 
 def pytest_addoption(parser):
     parser.addoption("--language", action="store", default="matlab")
@@ -141,7 +142,12 @@ class PythonEngine(TestEngine):
                 x = x-1
             elif isinstance(x, list):
                 x = np.asarray(x)-1
-        if isinstance(x, list):
+        # Explicitly check for NumPy boolean arrays
+        if isinstance(x, np.ndarray) and x.dtype is bool:
+            print("NumPy bool array detected")
+            return x  # Keep as boolean
+        elif isinstance(x, list):
+            print("list")
             # Transpose to capture MATLAB data layout
             # when the data has been serialised from MATLAB
             # to a file
@@ -153,6 +159,7 @@ class PythonEngine(TestEngine):
         elif isinstance(x, tuple):
             return tuple([self.convert(xi) for xi in x])
         else:
+            print("hmm")
             return x
         
     def unconvert(self, x):

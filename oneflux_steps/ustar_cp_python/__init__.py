@@ -11,7 +11,7 @@ from .cpdFmax2pCp2 import cpdFmax2pCp2
 from .cpdFmax2pCore import interpolate_FmaxCritical, calculate_p_low, calculate_p_interpolate
 from .fcDatenum import datenum
 from .fcBin import fcBin
-from .cpdAssignUStarTh import *
+from .cpdAssignUStarTh import identifyOutliers
 
 from os.path import dirname, basename, isfile, join
 import glob

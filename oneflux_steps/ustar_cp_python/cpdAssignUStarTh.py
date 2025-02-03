@@ -1,6 +1,5 @@
 import numpy as np
-
-def identify_outliers(x_norm_x, threshold):
+def identifyOutliers(x_norm_x, threshold):
     """
     Identifies outliers based on standardized scores.
 
@@ -11,7 +10,8 @@ def identify_outliers(x_norm_x, threshold):
     Returns:
     tuple: A boolean array (f_out) indicating outliers and an array (i_out) of outlier indices.
     """
-    f_out = x_norm_x > threshold  # Boolean mask of outliers
+    f_out = (x_norm_x > threshold)  # Ensures f_out is a boolean array
     i_out = np.where(f_out)[0]  # Indices of outliers
+
     
-    return f_out, i_out
+    return f_out, i_out  # Ensure f_out remains a boolean array
