@@ -1,6 +1,14 @@
-from typing import List, Tuple, Sequence, Dict, Union
+from typing import List, Tuple, Sequence, Dict, Union, Any
+from oneflux_steps.ustar_cp_python.fcBin import fcBin
 from oneflux_steps.ustar_cp_python.utilities import prctile as matlab_percentile
+from oneflux_steps.ustar_cp_python.fcDatenum import datenum
+from oneflux_steps.ustar_cp_python.fcDatevec import fcDatevec
+from oneflux_steps.ustar_cp_python.fcDoy import fcDoy
+from oneflux_steps.ustar_cp_python.cpdBootstrap import generate_statsMT
+from oneflux_steps.ustar_cp_python.cpdFindChangePoint_functions import cpdFindChangePoint20100901
 import numpy as np
+from scipy.stats import pearsonr
+import copy
 
 
 
@@ -249,7 +257,7 @@ def computeStrataCount(nt_season: int,
     n_strata = min(n_strata, n_strata_x)
     return n_strata
 
-
+    
 def computeSeasonIndices(i_season: int, 
                            n_seasons: int, 
                            n_per_season: int, 
@@ -281,18 +289,18 @@ def computeSeasonIndices(i_season: int,
         A range object representing the indices for the specified season.
     """
     n_per_season = int(n_per_season)
-    if i_season == 1:
+    if i_season == 0:
         # First season
-        return range(1, n_per_season + 1)
-    elif i_season == n_seasons:
+        return range(0, n_per_season)
+    elif i_season +1 == n_seasons: # +1 as 3rd index is 4th season
         # Last season, possibly extended to cover the remainder
-        start = (n_seasons - 1) * n_per_season + 1
-        return range(start, nt_annual + 1)
+        start = (n_seasons - 1) * n_per_season
+        return range(start, nt_annual)
     else:
         # Intermediate seasons
-        start = (i_season - 1) * n_per_season + 1
-        end = i_season * n_per_season
-        return range(start, end + 1)
+        start = (i_season) * n_per_season
+        end = (i_season+1) * n_per_season
+        return range(start, end)
 
 
 def computeTemperatureThresholds(
@@ -325,7 +333,6 @@ def computeTemperatureThresholds(
     # Compute the required percentile values:
     # np.linspace(0, 100, n_strata + 1) creates an array of percentiles from 0 to 100.
     percentiles = np.linspace(0, 100, n_strata + 1)
-    # print(it_season)
     # Extract the seasonal temperatures and compute their percentiles
     T_season = T[it_season]
     TTh = matlab_percentile(T_season, percentiles)
@@ -333,3 +340,338 @@ def computeTemperatureThresholds(
     return TTh
 
 
+def initializeParameters(
+    t: np.ndarray,
+    nSeasons: int,
+    nStrataN: int,
+    nBins: int
+) -> Tuple[int, np.ndarray, float, int, int]:
+    """
+    initializeParameters
+
+    Derives basic time information from an input time array t (e.g., serial
+    datenum or timestamp) and initializes binning parameters for subsequent
+    computations.
+
+    Parameters
+    ----------
+    t : np.ndarray
+        Time array (1D). Must be numeric. 
+    nSeasons : int
+        Number of seasons to consider.
+    nStrataN : int
+        Number of strata for each season.
+    nBins : int
+        Number of bins used in the computations.
+
+    Returns
+    -------
+    nt : int
+        Length of t.
+    m : np.ndarray
+        Month array derived from fcDatevec(t).
+    EndDOY : float
+        Day of year (DOY) for the last day of the median year in the data.
+    nPerBin : int
+        Number of time steps per bin, adjusted based on sampling frequency.
+    nN : int
+        Total number of points across seasons, strata, and bins: nSeasons * (nStrataN * nBins * nPerBin).
+
+    Notes
+    -----
+
+    - Shallow copies are made where needed to avoid modifying the original data.
+    - The switch-case in MATLAB is replaced by Python if/elif statements.
+
+    Example
+    -------
+    >>> t = np.linspace(737060.0, 737389.0, 24*365/2)  # Example time array
+    >>> nt, m, EndDOY, nPerBin, nN = initializeParameters(t, 4, 2, 3)
+    """
+
+    # Make a shallow copy of t
+    tCopy = t.copy()
+
+    # Derive basic time information
+    nt = len(tCopy)
+    y, m, d, h, mn, s = fcDatevec(tCopy)  
+    iYr = int(np.median(y))          # median year
+    EndDOY = fcDoy(datenum1(iYr, 12, 31.5))  
+
+    # Estimate sampling frequency
+    # e.g., daily data => nPerDay=1, or 30-min data => nPerDay=48, etc.
+    nPerDay = int(round(1 / np.nanmedian(np.diff(tCopy))))
+
+    # Define default
+    nPerBin = 5
+
+    # Adjust binning based on sampling frequency
+    if nPerDay == 24:
+        nPerBin = 3
+    elif nPerDay == 48:
+        nPerBin = 5
+
+    # Number of points per season for 'n' dimension
+    nPerSeasonN = nStrataN * nBins * nPerBin
+    nN = nSeasons * nPerSeasonN
+
+    return nt, m, EndDOY, nPerBin, nN
+
+
+def initializeStatistics(nSeasons: int, nStrataX: int) -> Tuple[Any, Any]:
+    """
+    initializeStatistics
+
+    Creates two 2D arrays (Stats2, Stats3) of the same shape [nSeasons x nStrataX].
+    Each entry in these arrays is a shallow copy of a base stats object (StatsMT)
+    generated by generate_statsMT(). This replicates the MATLAB code logic, but uses
+    Python's 0-based indexing and shallow copies.
+
+    Parameters
+    ----------
+    nSeasons : int
+        Number of seasons.
+    nStrataX : int
+        Number of strata for the x dimension.
+
+    Returns
+    -------
+    Stats2 : 2D list (or array) of shape [nSeasons x nStrataX]
+        Each element is a shallow copy of StatsMT.
+    Stats3 : 2D list (or array) of shape [nSeasons x nStrataX]
+        Each element is a shallow copy of StatsMT.
+
+    Notes
+    -----
+    - Shallow copies are made to ensure each element in Stats2/Stats3 can be updated
+      independently if needed.
+    """
+
+    # Retrieve the base stats object (placeholder function).
+    StatsMT = generate_statsMT()
+
+    # Construct Stats2, Stats3 as 2D arrays (lists of lists here)
+    # Each element is a shallow copy of StatsMT
+    Stats2 = [[copy.copy(StatsMT) for _ in range(nStrataX)] for _ in range(nSeasons)]
+    Stats3 = [[copy.copy(StatsMT) for _ in range(nStrataX)] for _ in range(nSeasons)]
+
+    return Stats2, Stats3
+
+
+def cpdEvaluateUStarTh4Season20100901(
+    t: np.ndarray,
+    NEE: np.ndarray,
+    uStar: np.ndarray,
+    T: np.ndarray,
+    fNight: np.ndarray,
+    fPlot: int,
+    cSiteYr: str
+) -> Tuple[np.ndarray, Any, np.ndarray, Any]:
+    """
+    cpdEvaluateUStarTh4Season20100901
+
+    Estimates uStarTh for one year of data using change-point detection (cpd) methods
+    within the general framework of the Papale et al. (2006) uStarTh evaluation method.
+
+    Parameters
+    ----------
+    t : np.ndarray
+        Time vector (length >= one year of data).
+    NEE : np.ndarray
+        Net ecosystem exchange data corresponding to times in t.
+    uStar : np.ndarray
+        Friction velocity data corresponding to times in t.
+    T : np.ndarray
+        Temperature data corresponding to times in t.
+    fNight : np.ndarray
+        Vector specifying daytime (0) or nighttime (1) for each time step.
+    fPlot : int
+        Scalar flag for plotting (0 or 1). In MATLAB, if set to 1, various plots are produced.
+        Here it is retained but not used directly unless placeholders or external plot calls are defined.
+    cSiteYr : str
+        Text string used in plot titles (if fPlot is enabled).
+
+    Returns
+    -------
+    Cp2 : np.ndarray
+        2D array (nSeasons x nStrataX) containing change-point (uStarTh) estimates
+        from the 2-parameter operational model. Set to NaN if not enough data or
+        if the model fails.
+    Stats2 : Any
+        2D array or nested structure with cpd statistics for the 2-parameter model.
+        Its dimensions match (nSeasons x nStrataX).
+    Cp3 : np.ndarray
+        2D array (nSeasons x nStrataX) containing change-point (uStarTh) estimates
+        from the 3-parameter diagnostic model. Set to NaN if not enough data or
+        if the model fails.
+    Stats3 : Any
+        2D array or nested structure with cpd statistics for the 3-parameter model.
+        Its dimensions match (nSeasons x nStrataX).
+
+    Notes
+    -----
+    - The year of data is stratified by time of year (seasons) and temperature bins.
+    - For each stratum, two change-point models (2-parameter operational, 3-parameter diagnostic)
+      estimate the friction velocity threshold, uStarTh.
+    - This method calls multiple helper functions (listed below as placeholders).
+      They must be implemented or imported in your environment:
+        * initializeParameters
+        * filterInvalidPoints
+        * initializeStatistics
+        * reorderAndPreprocessData
+        * computeSeasonIndices
+        * computeStrataCount
+        * computeTemperatureThresholds
+        * plotStratum
+        * findStratumIndices
+        * fcBin
+        * cpdFindChangePoint20100901
+        * addStatisticsFields
+    - Because MATLAB used 1-based indexing, the loops have been adapted to 0-based indexing in Python.
+    - Shallow copies of the input arrays are made to avoid modifying external data.
+    """
+
+    # ---------------------------
+    # 0) Shallow copies of inputs
+    # ---------------------------
+    tCopy = t.copy()
+    NEECopy = NEE.copy()
+    uStarCopy = uStar.copy()
+    TCopy = T.copy()
+    fNightCopy = fNight.copy()
+
+    # -------------------------------------
+    # 1) Define basic partitioning constants
+    # -------------------------------------
+    nSeasons = 4
+    nStrataN = 4
+    nStrataX = 8
+    nBins = 50
+
+    # -----------------------------------------
+    # 2) Initialize parameters and filter data
+    # -----------------------------------------
+    # returns (nt, m, EndDOY, nPerBin, nN)
+    nt, m, EndDOY, nPerBin, nN = initializeParameters(
+        tCopy, nSeasons, nStrataN, nBins
+    )
+
+    # filterInvalidPoints => (uStar, itAnnual, ntAnnual)
+    uStarFiltered, itAnnual, ntAnnual = filterInvalidPoints(
+        uStarCopy, fNightCopy, NEECopy, TCopy
+    )
+
+    # ----------------------------------------
+    # 3) Initialize Cp2, Cp3, Stats2, Stats3
+    # ----------------------------------------
+    Cp2 = np.full((nSeasons, nStrataX), np.nan)
+    Cp3 = np.full((nSeasons, nStrataX), np.nan)
+    Stats2, Stats3 = initializeStatistics(nSeasons, nStrataX)
+
+    # If not enough data, return now
+    if ntAnnual < nN:
+        return Cp2, Stats2, Cp3, Stats3
+
+    # -------------------------------------------------
+    # 4) Reorder and preprocess data (like "move Dec...")
+    # -------------------------------------------------
+    (
+        tReordered,
+        TReordered,
+        uStarReordered,
+        NEEReordered,
+        fNightReordered,
+        itAnnualReordered,
+        ntAnnualReordered
+    ) = reorderAndPreprocessData(
+        tCopy, TCopy, uStarFiltered, NEECopy, fNightCopy, EndDOY, m, nt
+    )
+
+
+    # -----------------------------------------------------
+    # 5) Adjust number of seasons based on actual good data
+    # -----------------------------------------------------
+    nPerSeason = round(ntAnnualReordered / nSeasons)
+    nSeasons = round(ntAnnualReordered / nPerSeason)
+    nPerSeason = ntAnnualReordered / nSeasons
+    nPerSeason = round(nPerSeason)
+
+
+    
+    # ------------------------------------------------------------
+    # 6) Stratify data in time (by season) and by temperature bins
+    # ------------------------------------------------------------
+    iPlot = 0
+    if fPlot == 1:
+        # Placeholder for figure creation call
+        # e.g. fcFigLoc(1, 0.9, 0.9, 'MC')
+        iPlot = 0
+
+    for iSeason in range(nSeasons):
+        # get the season indices
+
+        jtSeason = computeSeasonIndices(iSeason, nSeasons, nPerSeason, ntAnnualReordered)
+        itSeason = itAnnualReordered[jtSeason]
+        ntSeason = len(itSeason)
+
+        # compute number of strata
+        nStrata = computeStrataCount(ntSeason, nBins, nPerBin, nStrataN, nStrataX)
+
+        # temperature thresholds
+        TTh = computeTemperatureThresholds(TReordered, itSeason, nStrata)
+
+        for iStrata in range(nStrata):
+            cPlotLocal, iPlot = None, None
+
+            itStrata = findStratumIndices(TReordered, itSeason, TTh, iStrata)
+
+            # bin the data
+            nTemp, muStar, mNEE = fcBin(
+                uStarReordered[itStrata], NEEReordered[itStrata], np.asarray([]), nPerBin
+            )
+
+            # Perform the change-point detection
+            xCp2, xs2, xCp3, xs3 = cpdFindChangePoint20100901(
+                muStar, mNEE, fPlot, cPlotLocal
+            )
+
+            # Additional stats
+            nTemp, muStarT, mT = fcBin(
+                uStarReordered[itStrata], TReordered[itStrata], np.asarray([]), nPerBin
+            )
+            rCorr, pCorr = corrcoef_with_pvalues(muStarT, mT)
+            to_save = [xs2, tReordered, rCorr, pCorr, TReordered, itStrata]
+
+            xs2 = addStatisticsFields(xs2, tReordered, rCorr, pCorr, TReordered, itStrata)
+            xs3 = addStatisticsFields(xs3, tReordered, rCorr, pCorr, TReordered, itStrata)
+
+            # Store results in the arrays
+            Cp2[iSeason, iStrata] = xCp2
+            Stats2[iSeason][iStrata] = xs2
+
+            Cp3[iSeason, iStrata] = xCp3
+            Stats3[iSeason][iStrata] = xs3
+
+    return Cp2, Stats2, Cp3, Stats3
+
+
+def corrcoef_with_pvalues(muStar, mT):
+    """
+    Compute the correlation coefficient matrix (R) and p-values (P) 
+    for two 1D NumPy arrays muStar and mT.
+    """
+    # Stack the arrays to create a 2D matrix similar to MATLAB's corrcoef input
+    A = np.column_stack((muStar, mT))
+    
+    n = A.shape[1]
+    R = np.corrcoef(A, rowvar=False)  # Compute correlation matrix
+    P = np.ones((n, n))  # Initialize P matrix with ones
+
+    # Compute p-values for each pair
+    for i in range(n):
+        for j in range(i + 1, n):  # Only compute upper triangle
+            r, p = pearsonr(A[:, i], A[:, j])
+            R[i, j] = R[j, i] = r  # Fill both symmetric parts
+            P[i, j] = P[j, i] = p  # Fill both symmetric parts
+
+    return R, P
