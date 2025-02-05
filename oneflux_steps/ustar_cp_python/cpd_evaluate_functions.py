@@ -396,7 +396,7 @@ def initializeParameters(
     nt = len(tCopy)
     y, m, d, h, mn, s = fcDatevec(tCopy)  
     iYr = int(np.median(y))          # median year
-    EndDOY = fcDoy(datenum1(iYr, 12, 31.5))  
+    EndDOY = fcDoy(datenum(iYr, 12, 31.5))  
 
     # Estimate sampling frequency
     # e.g., daily data => nPerDay=1, or 30-min data => nPerDay=48, etc.
