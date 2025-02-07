@@ -98,7 +98,6 @@ def cpdBootstrapUStarTh4Season20100901(t: np.ndarray, NEE: np.ndarray, uStar: np
     if ntNee >= ntN:
         # Boot-strapping
         for iBoot in range(nBoot):
-            print("oaky")
             it = generate_rand_int_array(nt)
             # Old comment: ntNee=sum(ismember(it,itNee));
             if iBoot > 0:
