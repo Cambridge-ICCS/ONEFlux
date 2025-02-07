@@ -93,6 +93,7 @@ from oneflux_steps.ustar_cp_python.fcDatenum import *
 from oneflux_steps.ustar_cp_python.cpdFmax2pCp3 import *
 from oneflux_steps.ustar_cp_python.utilities import *
 from oneflux_steps.ustar_cp_python.cpd_evaluate_functions import *
+from oneflux_steps.ustar_cp_python.cpdFindChangePoint_functions import *
 from oneflux_steps.ustar_cp_python.cpdBootstrap import *
 
 def pytest_addoption(parser):
@@ -131,10 +132,15 @@ class PythonEngine(TestEngine):
     def _repr_pretty_(self, *args):
         return "Python Test Engine"
 
-    def convert(self, x, index='to_python', fromFile=False):
+    def convert(self, x, index='to_matlab', fromFile=False):
         """Convert input to a compatible type."""
         if x is None:
             raise ValueError("Input cannot be None")
+        if index == 'to_python':
+            if isinstance(x, (int, float, np.ndarray)):
+                x = x-1
+            elif isinstance(x, list):
+                x = np.asarray(x)-1
         if isinstance(x, list):
             # Transpose to capture MATLAB data layout
             # when the data has been serialised from MATLAB

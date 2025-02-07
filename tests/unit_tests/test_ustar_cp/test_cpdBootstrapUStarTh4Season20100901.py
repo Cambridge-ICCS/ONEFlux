@@ -275,7 +275,7 @@ def test_setup_Cp(test_engine, nSeasons, nStrataX, nBoot, expected_shape):
     Cp_array = np.array(Cp)
 
     # Check the shape of Cp2 and Cp3
-    assert test_engine.equal(Cp_array.shape, test_engine.convert(expected_shape)), f"Expected shape {expected_shape} for Cp, but got {Cp_array.shape}"
+    assert test_engine.equal(Cp_array.shape, test_engine.convert(expected_shape)), f"Expected shape {test_engine.convert(expected_shape)} for Cp, but got {Cp_array.shape}"
 
     # Ensure all elements are NaN
     assert np.isnan(Cp_array).all(), "Not all elements in Cp2 are NaN"

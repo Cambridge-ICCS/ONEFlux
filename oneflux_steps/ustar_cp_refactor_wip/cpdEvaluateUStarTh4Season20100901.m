@@ -87,7 +87,6 @@
 	
 	
 %	Move Dec to beginning of year and date as previous year.
-
 	[t, T, uStar, NEE, fNight, itAnnual, ntAnnual] = ...
 		reorderAndPreprocessData(t, T, uStar, NEE, fNight, EndDOY, m, nt);
 	
@@ -97,7 +96,7 @@
 	nPerSeason=round(ntAnnual/nSeasons); 
 	nSeasons=round(ntAnnual/nPerSeason); nPerSeason=ntAnnual/nSeasons; 
 	nPerSeason=round(nPerSeason); 
-	
+
 %	Stratify in two dimensions:
 %	1. by time using moving windows
 %	2. by temperature class
@@ -114,6 +113,8 @@
 		nStrata = computeStrataCount(ntSeason, nBins, nPerBin, nStrataN, nStrataX);
 		
 		TTh = computeTemperatureThresholds(T, itSeason, nStrata);
+
+
 		
 		for iStrata=1:nStrata;
            
@@ -123,14 +124,20 @@
 			
 			[n,muStar,mNEE] = fcBin(uStar(itStrata),NEE(itStrata),[],nPerBin);
 	 
+			
 			[xCp2,xs2,xCp3,xs3] = cpdFindChangePoint20100901(muStar,mNEE,fPlot,cPlot); 
-			
+
+
 			%	add fields not assigned by cpdFindChangePoint function
-			
+
 			[n,muStar,mT] = fcBin(uStar(itStrata),T(itStrata),[],nPerBin);
+
+
 			[r,p]=corrcoef(muStar,mT); 
 			
+
 			xs2 = addStatisticsFields(xs2, t, r, p, T, itStrata);
+
 			xs3 = addStatisticsFields(xs3, t, r, p, T, itStrata);
 			
 			Cp2(iSeason,iStrata)=xCp2; 
