@@ -29,9 +29,11 @@ def json_to_numpy(data):
     return np.array(all_arrays)
 
 
-cpdEvaluateUStar_test_cases = ['2007', # Nomial case 
-                               '2007_fnight_zero_0' # All nighttime data is zero
+cpdEvaluateUStar_iteration_test_cases = [f'2007_{it}' for it in range(0, 100, 10)]
+cpdEvaluateUStar_manual_test_cases = ['2007', # Nomial case 
+                               '2007_fnight_zero_0', # All nighttime data is zero
                                ]
+cpdEvaluateUStar_test_cases = cpdEvaluateUStar_iteration_test_cases + cpdEvaluateUStar_manual_test_cases
 @pytest.mark.parametrize('year', cpdEvaluateUStar_test_cases)
 def test_cpdEvaluateUStarTh4Season20100901_logged_data(test_engine, year): # This test stores the logged data as row major instead of column major
     """
@@ -51,8 +53,9 @@ def test_cpdEvaluateUStarTh4Season20100901_logged_data(test_engine, year): # Thi
 
     [xCp2,xStats2, xCp3,xStats3] = test_engine.cpdEvaluateUStarTh4Season20100901(
         input_data['time_it_'], input_data['NEE_it_'], input_data['updated_uStar_it_'], 
-        input_data['Temperature_it_'], input_data['fNight_it_'], fplot, cSiteYr, 1, nargout=4)
-    
+        input_data['Temperature_it_'], input_data['fNight_it_'], fplot, cSiteYr, jsonencode=[1,3], nargout=4) # TODO: Change jsonencode explicity named argument
+
+   
     expected_xCp2 = artifacts_dir + f"/CA-Cbo_qca_ustar_{year}/output_xCp2.csv"
     expected_xCp2 = pd.read_csv(expected_xCp2, header=None).iloc[:,:].to_numpy()
 
@@ -62,18 +65,24 @@ def test_cpdEvaluateUStarTh4Season20100901_logged_data(test_engine, year): # Thi
     expected_xStats2 = artifacts_dir + f"/CA-Cbo_qca_ustar_{year}/output_xStats2.json"
     expected_xStats3 = artifacts_dir + f"/CA-Cbo_qca_ustar_{year}/output_xStats3.json"
     
-    xStats2 = json_to_numpy(json.loads(xStats2))
-    xStats3 = json_to_numpy(json.loads(xStats3))
+    if isinstance(xStats2, str) and isinstance(xStats3, str):
+        xStats2 = json.loads(xStats2)
+        xStats3 = json.loads(xStats3)
 
     with open(expected_xStats2, 'r') as f:
         expected_xStats2 = json_to_numpy(json.load(f))
     with open(expected_xStats3, 'r') as f:
         expected_xStats3 = json_to_numpy(json.load(f))
 
-    assert test_engine.equal(test_engine.convert(xStats2), expected_xStats2)
-    assert test_engine.equal(test_engine.convert(xStats3), expected_xStats3)
+    xStats2 = json_to_numpy(xStats2)
+    xStats3 = json_to_numpy(xStats3)
+
+
     assert test_engine.equal(test_engine.convert(xCp2), expected_xCp2)
     assert test_engine.equal(test_engine.convert(xCp3), expected_xCp3)
+    assert test_engine.equal(test_engine.convert(xStats2), expected_xStats2)
+    assert test_engine.equal(test_engine.convert(xStats3), expected_xStats3)
+ 
 
 
 testcases = [ ([1.0000, 1.0417, 1.0834], 3, [0,1,1], 366, 3, 2400), #nPerDay = 24, nPerBin = 3
@@ -93,9 +102,9 @@ def test_initializeParameters(test_engine, t, expected_nt, expected_m, expected_
     t = test_engine.convert(t)
 
     nt, m, EndDOY, nPerBin, nN = test_engine.initializeParameters(t, nSeasons, nStrataN, nBins, nargout=5)
-    
+
     assert test_engine.equal(nt, expected_nt)
-    assert test_engine.equal(m, expected_m)
+    assert test_engine.equal(test_engine.convert(m), test_engine.convert(expected_m))
     assert test_engine.equal(EndDOY, expected_EndDOY)
     assert test_engine.equal(nPerBin, expected_nPerBin)
     assert test_engine.equal(nN, expected_nN)
@@ -125,8 +134,7 @@ def test_filterInvalidPoints_logged_data(test_engine):
             expected_output_data[name] = test_engine.convert(column)
 
     uStar, itAnnual, ntAnnual = test_engine.filterInvalidPoints(input_data['uStar'], input_data['fNight'], input_data['NEE'], input_data['T'], nargout=3)
-    print("output: ", itAnnual)
-    print("expected: ", expected_output_data['itAnnual'])
+
     assert test_engine.equal(test_engine.convert(uStar), expected_output_data['uStar'])
     assert test_engine.equal(test_engine.convert(itAnnual), expected_output_data['itAnnual'])
     assert test_engine.equal(test_engine.convert(ntAnnual), expected_output_data['ntAnnual'])
@@ -142,13 +150,13 @@ def test_initializeStatistics(test_engine):
     nSeasons = 4
     nStrataX = 8
 
-    Stats2, Stats3 = test_engine.initializeStatistics(nSeasons, nStrataX, 1, nargout=2)
-    Stats2 = json.loads(Stats2)
-    Stats3 = json.loads(Stats3)
+    Stats2, Stats3 = test_engine.initializeStatistics(nSeasons, nStrataX, jsonencode=[0,1], nargout=2) # TODO: Change jsonencode explicity named argument
+    if isinstance(Stats2, str) and isinstance(Stats3, str):
+        Stats2 = json.loads(Stats2)
+        Stats3 = json.loads(Stats3)
     assert len(Stats2) == 4, "Stats2 should have 4 entries for each season."
     assert len(Stats3) == 4, "Stats3 should have 4 entries for each season."
-    # print(Stats2)
-    # print(Stats3)
+
 
     # Check the structure of Stats2 and Stats3
     struct = set(['n', 'Cp', 'Fmax', 'p', 'b0', 'b1', 'b2', 'c2', 'cib0', 'cib1', 'cic2', 'mt' , 'ti', 'tf', 'ruStarVsT', 'puStarVsT', 'mT', 'ciT'])
@@ -199,7 +207,6 @@ def test_reorderAndPreprocessData_logged_data(test_engine):
     assert test_engine.equal(test_engine.convert(itAnnual), expected_output_data['itAnnual'])
     assert test_engine.equal(ntAnnual, test_engine.convert(expected_output_data['ntAnnual']))
 
-
 testcases = [
              (1339, 5, 5), # Nominal case, nStrata between 4 and 8
              (1339, 3, 8), # nStrata > 8, ntSeason is not perfectly divisible
@@ -237,16 +244,12 @@ def test_computeTemperatureThresholds_logged_data(test_engine):
         path_to_artifacts = artifacts_dir + f'/CA-Cbo_qca_ustar_2007_0/input_{name}.csv'
         column = pd.read_csv(path_to_artifacts, header=None).iloc[:,0].to_numpy()
         input_data[name] = column#.tolist()
-    print(input_data['itSeason'])
-    # index='to_python' optional argument to account for 0-based indexing in Python
-    print(test_engine.convert(input_data['itSeason'], 'to_python'))
-    # index='to_python' optional argument to account for 0-based indexing in Python
+
     TTh = test_engine.computeTemperatureThresholds(test_engine.convert(input_data['T']), test_engine.convert(input_data['itSeason'], 'to_python'), nStrata, nargout=1)
     python_TTh = computeTemperatureThresholds(np.array(input_data['T']), input_data['itSeason']-1, nStrata) # -1 to account for 0-based indexing in python
 
     expected_TTh = artifacts_dir + f'/CA-Cbo_qca_ustar_2007_0/output_TTh.csv'
     expected_TTh = pd.read_csv(expected_TTh, header=None).iloc[0,:].to_numpy()
-    print("test_engine output: ", TTh)
-    print("expected output: ", expected_TTh)
+
     assert test_engine.equal(test_engine.convert(TTh), test_engine.convert(expected_TTh))
     assert test_engine.equal(test_engine.convert(python_TTh), test_engine.convert(expected_TTh))

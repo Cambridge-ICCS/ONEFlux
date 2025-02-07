@@ -60,11 +60,6 @@
 
 %	========================================================================
 %	========================================================================
-	metadata = struct();
-	metadata.siteFile = 'CA-Cbo_qca_ustar_2007';
-	metadata.oneFluxDir = '/home/ia/iccs_repos/ONEFlux/';
-	metadata.relArtifactsDir = 'tests/test_artifacts';
-	metadata.frequency = 50;  %frequncy_to_log_input/ouput, defualt is 10 if not specified
 
 	nSeasons = 4; nStrataN = 4; 
 	nStrataX = 8; nBins = 50;
@@ -92,7 +87,6 @@
 	
 	
 %	Move Dec to beginning of year and date as previous year.
-
 	[t, T, uStar, NEE, fNight, itAnnual, ntAnnual] = ...
 		reorderAndPreprocessData(t, T, uStar, NEE, fNight, EndDOY, m, nt);
 	
@@ -102,7 +96,7 @@
 	nPerSeason=round(ntAnnual/nSeasons); 
 	nSeasons=round(ntAnnual/nPerSeason); nPerSeason=ntAnnual/nSeasons; 
 	nPerSeason=round(nPerSeason); 
-	
+
 %	Stratify in two dimensions:
 %	1. by time using moving windows
 %	2. by temperature class
@@ -119,6 +113,8 @@
 		nStrata = computeStrataCount(ntSeason, nBins, nPerBin, nStrataN, nStrataX);
 		
 		TTh = computeTemperatureThresholds(T, itSeason, nStrata);
+
+
 		
 		for iStrata=1:nStrata;
            
@@ -128,18 +124,20 @@
 			
 			[n,muStar,mNEE] = fcBin(uStar(itStrata),NEE(itStrata),[],nPerBin);
 	 
-
-			metadata.inputNames = {'muStar', 'mNEE', 'fPlot', 'cPlot'};
-			metadata.outputNames = {'xCp2', 'xs2', 'xCp3', 'xs3'};
-			% [xCp2,xs2,xCp3,xs3] = logFuncResult('log.json', @cpdFindChangePoint20100901, metadata, muStar, mNEE, fPlot, cPlot);
+			
 			[xCp2,xs2,xCp3,xs3] = cpdFindChangePoint20100901(muStar,mNEE,fPlot,cPlot); 
-			
+
+
 			%	add fields not assigned by cpdFindChangePoint function
-			
+
 			[n,muStar,mT] = fcBin(uStar(itStrata),T(itStrata),[],nPerBin);
+
+
 			[r,p]=corrcoef(muStar,mT); 
 			
+
 			xs2 = addStatisticsFields(xs2, t, r, p, T, itStrata);
+
 			xs3 = addStatisticsFields(xs3, t, r, p, T, itStrata);
 			
 			Cp2(iSeason,iStrata)=xCp2; 

@@ -585,7 +585,6 @@ def updateS2(
     s2_copy["cib0"] = cib0
     s2_copy["cib1"] = cib1
     s2_copy["cic2"] = np.nan
-    print(s2_copy)
     return s2_copy
 
 
@@ -671,8 +670,7 @@ def updateS3(
     s3_copy["cib0"] = cib0
     s3_copy["cib1"] = cib1
     s3_copy["cic2"] = cic2
-    print('s3_copy')
-    print(s3_copy)
+
     return s3_copy
 
 
@@ -900,8 +898,7 @@ def fitTwoParameterModel(
     a2int = np.column_stack((a2_lower, a2_upper))
 
     # --- 5) Compute p-value for Fmax2 using user-defined function ---
-    print('Fmax2, n')
-    print(Fmax2, n)
+
     p2 = cpdFmax2pCp2(Fmax2, n)
 
     # --- 6) Decide if Cp2 is significant ---
