@@ -4,7 +4,7 @@ from math import ceil, floor
 from numpy import vectorize
 import numpy as np
 
-def datenum(Y : int | np.ndarray, M : int | np.ndarray, D : int| np.ndarray) -> int | np.ndarray:
+def datenum(Y : int | np.ndarray, M : int | np.ndarray, D : float | np.ndarray) -> float | np.ndarray:
     """
     Convert date to serial date number.
 
@@ -43,13 +43,18 @@ def datenum(Y : int | np.ndarray, M : int | np.ndarray, D : int| np.ndarray) -> 
     # mimic MATLAB's ability to handle scalar or vector inputs
     if (hasattr(Y, "__len__") and len(Y) > 0 and hasattr(Y[0], "__len__")):
         # Input is 2-Dimensional, so vectorise ourselves
-        return vectorize(datenum)(Y,M,D)
+        return vectorize(datenum)(Y, M, D)
+
+    # Separate the integer and fractional parts of D
+    # to allow for fractional days (e.g. D=31.5 means day=31 plus 0.5)
+    day_i = floor(D)       # integer part of day
+    day_f = D - day_i      # fractional part of day
 
     adjustment = td()
     # A zero day means we need to subtract one day
-    if D == 0:
+    if day_i == 0:
       adjustment = td(-1)
-      D = 1
+      day_i = 1
     # A zero month is interpreted as 1
     if M == 0:
       M = 1
@@ -64,18 +69,21 @@ def datenum(Y : int | np.ndarray, M : int | np.ndarray, D : int| np.ndarray) -> 
     if Y < 0:
         # If the year is negative, treat it as if we are in
         # the year 1
-        d = dt(1, M, D, 0, 0, 0)
+        d = dt(1, M, int(day_i), 0, 0, 0)
         # The subtract days for each negative year
         # (note Y is negative here)
         dn = d.toordinal() + Y*365
-        # plus leap year corrections
+        # plus leap year corrections
         dn = dn + ceil(Y / 4)
     else:
-        # Adjust the year forwards by 1 to AD
+        # Adjust the year forwards by 1 to AD
         # then by 3 to get the correct leap year calculate
         # later compenating back by subtracting 3 years of non-leap years
-        d = dt(Y + 4, M, D, 0, 0, 0)
+        d = dt(Y + 4, M, int(day_i), 0, 0, 0)
         dn = d.toordinal() - (365*3)
 
     # turn adjustment (timedelta) in a number of days
-    return dn + adjustment.days
+    dn = dn + adjustment.days
+
+    # Add the fractional part of the day to the final ordinal
+    return dn + day_f

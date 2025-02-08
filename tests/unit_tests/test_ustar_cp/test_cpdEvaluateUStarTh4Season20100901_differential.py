@@ -80,12 +80,9 @@ def test_reorderAndPreprocessData_differential(test_engine, t, T, uStar, NEE, fN
     
     matlab_data = [test_engine.convert(d) for d in data]
     t, T, uStar, NEE, fNight, itAnnual, ntAnnual = test_engine.reorderAndPreprocessData(*matlab_data, nargout=7)
-    # t = test_engine.reorderAndPreprocessData(*matlab_data, nargout=1)
+    
     expected_t, expected_T, expected_uStar, expected_NEE, expected_fNight, expected_itAnnual, expected_ntAnnual = reorderAndPreprocessData(*data)
-    # result = reorder_and_preprocess_data(*data)
-    # print(t[:10])
-    # print(expected_t[:10])
-    # print(result)
+
     assert test_engine.equal(test_engine.convert(t), expected_t)
     assert test_engine.equal(test_engine.convert(T), expected_T)
     assert test_engine.equal(test_engine.convert(uStar), expected_uStar)
@@ -97,14 +94,14 @@ def test_reorderAndPreprocessData_differential(test_engine, t, T, uStar, NEE, fN
 
 
 testcases = [
-    (1, 4, 1000/4, 1000, range(1, 251)), # iSeasons = 1
-    (2, 4, 1000/4, 1000, range(251, 500+1)), # iSeasons = 2
-    (3, 4, 1000/4, 1000, range(501, 750+1)), # iSeasons = 3
-    (4, 4, 1000/4, 1000, range(751, 1000+1)), # iSeasons = 4
-    (1, 4, round(2055/4), 2055, range(1, 514+1)), # iSeasons = 1, ntAnnual is odd
-    (2, 4, round(3879/4), 3879, range(971, 1940+1)), # iSeasons = 2, ntAnnual is odd
-    (3, 4, round(5347/4), 5347, range(2675, 4011+1)), # iSeasons = 3, ntAnnual is odd
-    (4, 4, round(4999/4), 4999, range(3751, 4999+1)), # iSeasons = 4, ntAnnual is odd
+    (0, 4, 1000/4, 1000, range(1, 251)), # iSeasons = 1
+    (1, 4, 1000/4, 1000, range(251, 500+1)), # iSeasons = 2
+    (2, 4, 1000/4, 1000, range(501, 750+1)), # iSeasons = 3
+    (3, 4, 1000/4, 1000, range(751, 1000+1)), # iSeasons = 4
+    (0, 4, round(2055/4), 2055, range(1, 514+1)), # iSeasons = 1, ntAnnual is odd
+    (1, 4, round(3879/4), 3879, range(971, 1940+1)), # iSeasons = 2, ntAnnual is odd
+    (2, 4, round(5347/4), 5347, range(2675, 4011+1)), # iSeasons = 3, ntAnnual is odd
+    (3, 4, round(4999/4), 4999, range(3751, 4999+1)), # iSeasons = 4, ntAnnual is odd
 ]
 @pytest.mark.parametrize('iSeasons, nSeasons, nPerSeason, ntAnnual, expected_jtSeasons', testcases)
 def test_computeSeasonIndices_differential(test_engine, iSeasons, nSeasons, nPerSeason, ntAnnual, expected_jtSeasons):
@@ -114,11 +111,9 @@ def test_computeSeasonIndices_differential(test_engine, iSeasons, nSeasons, nPer
 
     python_jtSeasons = computeSeasonIndices(iSeasons, nSeasons, nPerSeason, ntAnnual)
 
-    jtSeasons = test_engine.computeSeasonIndices(iSeasons, nSeasons, nPerSeason, test_engine.convert(ntAnnual))
+    jtSeasons = test_engine.computeSeasonIndices(test_engine.convert(iSeasons, 'to_matlab'), nSeasons, nPerSeason, test_engine.convert(ntAnnual))
 
-
-    assert test_engine.equal(test_engine.convert(jtSeasons), test_engine.convert(expected_jtSeasons))
-    assert test_engine.equal(test_engine.convert(python_jtSeasons), expected_jtSeasons)
+    assert test_engine.equal(test_engine.convert(list(python_jtSeasons), 'to_matlab'), test_engine.convert(list(jtSeasons)))
     
 
 tetcases = [
