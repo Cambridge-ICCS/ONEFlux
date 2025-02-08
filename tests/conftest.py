@@ -153,6 +153,8 @@ class PythonEngine(TestEngine):
             # to a file
             if fromFile:
               return transpose(np.array(x).astype(np.float64))
+            elif all(isinstance(i, bool) for i in x):
+                return x
             else:
               return np.array(x).astype(np.float64)
               
