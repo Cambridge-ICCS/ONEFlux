@@ -69,12 +69,8 @@ def fitAnnualSineCurve(mt, Cp, iSelect):
     # Perform the fit via non-linear regression
     popt, _ = curve_fit(_annual_sine_for_curve_fit, xdata, ydata, p0=initial_guess)
 
-    print(popt)
-
     # Compute predicted values for the fitted parameters
     predictedCp = fcEqnAnnualSine(np.asarray(popt), xdata)
-
-    print(predictedCp)
 
     # Compute R-squared
     r2 = fcr2Calc(ydata, predictedCp)
@@ -85,5 +81,5 @@ def fitAnnualSineCurve(mt, Cp, iSelect):
     # Return fitted coefficients plus the R-squared value
     # List containing ndarray to make output format match matlab for comparative testing
     sSine = np.array([popt[0], popt[1], popt[2], r2], dtype=float)
-    print(sSine[1])
+
     return sSine
