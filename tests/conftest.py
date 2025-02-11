@@ -84,8 +84,6 @@ MatlabFunc.__new__ = mf_factory
 from abc import ABC, abstractmethod
 import warnings
 
-import oneflux_steps.ustar_cp_python.utilities
-
 # Python version imported here
 from oneflux_steps.ustar_cp_python import *
 from oneflux_steps.ustar_cp_python.fcNaniqr import *
