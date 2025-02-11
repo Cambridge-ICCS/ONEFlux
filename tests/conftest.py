@@ -142,26 +142,23 @@ class PythonEngine(TestEngine):
                 x = x-1
             elif isinstance(x, list):
                 x = np.asarray(x)-1
-        # Explicitly check for NumPy boolean arrays
-        if isinstance(x, np.ndarray) and x.dtype is bool:
-            print("NumPy bool array detected")
-            return x  # Keep as boolean
         elif isinstance(x, list):
-            print("list")
             # Transpose to capture MATLAB data layout
             # when the data has been serialised from MATLAB
             # to a file
             if fromFile:
               return transpose(np.array(x).astype(np.float64))
-            elif all(isinstance(i, bool) for i in x):
-                return x
+            elif len(x) == 1:
+                if all(isinstance(i, bool) for i in x[0]):
+                    return np.array(x).astype(np.bool)
+                elif isinstance(x[0], list):
+                    return np.array(x[0])
             else:
               return np.array(x).astype(np.float64)
               
         elif isinstance(x, tuple):
             return tuple([self.convert(xi) for xi in x])
         else:
-            print("hmm")
             return x
         
     def unconvert(self, x):
@@ -170,6 +167,9 @@ class PythonEngine(TestEngine):
 
     def equal(self, x, y) -> bool:
         """Enhanced equality check for MATLAB arrays."""
+
+        #print(x)
+        #print(y)
         if x is None or y is None:
             raise ValueError("Comparison values cannot be None")
         if isinstance(x, float) or isinstance(y, float):
@@ -263,6 +263,8 @@ class MatlabEngine:
                   return x
 
           def _equal(x, y):
+              print(x)
+              print(y)
               return compare_matlab_arrays(x, y)
 
           # Choose which function to call
@@ -583,6 +585,8 @@ def to_matlab_type(data: Any) -> Any:
         # Convert Python list to MATLAB double array if all elements are numbers
         if all(isinstance(elem, (int, float)) for elem in flatten(data)):
             return matlab.double(data)
+        elif all(isinstance(elem, (bool)) for elem in flatten(data)):
+            return matlab.logical(data)
         else:
             # Create a cell array for lists containing non-numeric data
             return [to_matlab_type(elem) for elem in data]

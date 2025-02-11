@@ -11,7 +11,7 @@ function [CpA, nA, xCpSelect] = aggregateSeasonalAndAnnualValues(xCp, iSelect, n
         
     % Aggregate Values Based on Dimensions
     if nDim == 2
-        CpA = nanmean(xCpGF); 
+        CpA = nanmean(xCpGF);
         nA = sum(~isnan(xCpSelect)); 
     elseif nDim == 3
         CpA = nanmean(reshape(xCpGF, nWindows * nStrata, nBoot)); 

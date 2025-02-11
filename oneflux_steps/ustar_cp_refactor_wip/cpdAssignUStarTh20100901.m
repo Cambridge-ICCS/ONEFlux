@@ -20,7 +20,7 @@ for i = 1:length(varargin)
 end
 
 % Determine Window Sizes
-numDimensions = ndims(Stats); 
+numDimensions = ndims(Stats);
 if numDimensions == 2
     [numWindows, numBootstraps] = size(Stats);
     numTemperatureStrata = 1; temperatureStrataFactor = 0.5; 
@@ -28,7 +28,7 @@ elseif numDimensions == 3
     [numWindows, numTemperatureStrata, numBootstraps] = size(Stats); 
     temperatureStrataFactor = 1; 
 else
-    failureMessage = 'Stats must be 2D or 3D.'; 
+    failureMessage = 'Stats must be 2D or 3D.';
     return; 
 end
 
@@ -115,7 +115,7 @@ fractionSelected = numSelected / numValidMeasurements;
 
 % Abort if Too Few Selections
 if fractionSelected < 0.10
-    failureMessage = 'Less than 10% successful detections.'; 
+    failureMessage = 'Less than 10% successful detections.';
     return; 
 end
 
@@ -127,7 +127,7 @@ else
 end
 
 % Exclude Outliers
-standardizedScores = computeStandardizedScores(regressionMatrix); 
+standardizedScores = computeStandardizedScores(regressionMatrix);
 [outlierFlag, outlierIndices] = identifyOutliers(standardizedScores, 5);
 
 [selectedIndices, numSelected, selectedPointsFlag] = ...

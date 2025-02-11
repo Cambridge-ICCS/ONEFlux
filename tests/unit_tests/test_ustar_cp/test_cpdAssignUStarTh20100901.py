@@ -108,5 +108,59 @@ def test_identify_outliers(test_engine, x_norm_x, threshold, expected_f_out, exp
 
     f_out, i_out = test_engine.identifyOutliers(test_engine.convert(x_norm_x), test_engine.convert(threshold), nargout=2)
 
-    assert np.array_equal(f_out, test_engine.convert(expected_f_out)), "Boolean outlier array does not match expected"
-    assert i_out == test_engine.convert(expected_i_out), "Index output does not match expected"
+    assert test_engine.equal(f_out, test_engine.convert(expected_f_out)), "Boolean outlier array does not match expected"
+    assert test_engine.equal(i_out, test_engine.convert(expected_i_out)), "Index output does not match expected"
+
+
+def test_aggregate_2d_case(matlab_engine):
+    """Test function for 2D case (nDim=2)."""
+    eng = matlab_engine
+    
+    # Define test inputs
+    xCp = matlab.double([1.0, 2.0, np.nan, 3.0, np.nan, 4.0])  # MATLAB double array
+    iSelect = matlab.logical([1, 1, 0, 1, 0, 1])  # Boolean mask in MATLAB logical array
+    nDim = 2
+    nWindows = 0  # Unused for 2D case
+    nStrata = 0   # Unused for 2D case
+    nBoot = 0     # Unused for 2D case
+
+    # Run MATLAB function
+    CpA, nA, xCpSelect = eng.aggregateSeasonalAndAnnualValues(
+        xCp, iSelect, nDim, nWindows, nStrata, nBoot, nargout=3
+    )
+
+    # Convert MATLAB output to NumPy for assertions
+    CpA = np.array(CpA)
+    nA = int(nA)
+    xCpSelect = np.array(xCpSelect)
+
+    # Expected values
+    expected_CpA = np.nanmean([1.0, 2.0, 3.0, 4.0])  # Mean of selected change points
+    expected_nA = 4  # Count of non-NaN values in the selected array
+
+    # Assertions
+    np.testing.assert_almost_equal(CpA, expected_CpA, decimal=5)
+    assert nA == expected_nA
+    assert np.isnan(xCpSelect[2])  # Check if unselected indices remain NaN
+
+@pytest.mark.parametrize(
+    "xCp, iSelect, nDim, nWindows, nStrata, nBoot, expected_CpA, expected_nA, expected_xCpSelect",
+    [
+        ([1.0, 2.0, np.nan, 3.0, np.nan, 4.0], matlab.logical([1, 1, 0, 1, 0, 1]), 2, 0, 0, 0, [2, np.nan, 4], [2, 0, 1], [[1, np.nan, np.nan], [3, np.nan, 4]]),
+         ([[1.0, np.nan, 3.0],[4.0, 5.0, np.nan]], matlab.logical([[1, 0, 1],[0, 1, 0]]), 3, 2, 1, 3, [1.0, 5.0, 3.0], [1.0, 1.0, 1.0], [[1, np.nan, 3.0], [np.nan, 5.0, np.nan]])
+        ]
+)
+
+
+def test_aggregate_3d_case(test_engine, xCp, iSelect, nDim, nWindows, nStrata, nBoot, expected_CpA, expected_nA, expected_xCpSelect):
+    """Test function for aggregateSeasonalAndAnnualValues 2D and 3D cases."""
+
+
+    # Run MATLAB function
+    CpA, nA, xCpSelect = test_engine.aggregateSeasonalAndAnnualValues(
+        test_engine.convert(xCp), iSelect, nDim, nWindows, nStrata, nBoot, nargout=3
+    )
+
+    assert test_engine.equal(CpA, expected_CpA)
+    assert test_engine.equal(nA, expected_nA)
+    assert test_engine.equal(xCpSelect, expected_xCpSelect)

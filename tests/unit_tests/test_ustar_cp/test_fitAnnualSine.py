@@ -29,12 +29,18 @@ def test_fit_output_shape_and_type(test_engine, synthetic_data):
 
     result = test_engine.fitAnnualSineCurve(days, Cp_noisy, iSelect)
     # Expecting [amplitude, offset, phase, r2]
-    assert test_engine.equal(len(test_engine.convert(result[0])), 4)
-    for val in result[0]:
+
+    result = test_engine.convert(result)
+    
+    if len(result) == 1:
+        result = result[0]
+        
+    assert test_engine.equal(len(result), 4)
+    for val in result:
         assert isinstance(val, float)
-    assert np.allclose(result[0][0], true_sine[0], rtol = 0.1) # test offset accuracy
-    assert np.allclose(result[0][1], true_sine[1], rtol = 0.1) # test amplitude accuracy
-    assert np.allclose(result[0][2], true_sine[2], rtol = 0.1) # test phase accuracy
+    assert np.allclose(result[0], true_sine[0], rtol = 0.1) # test offset accuracy
+    assert np.allclose(result[1], true_sine[1], rtol = 0.1) # test amplitude accuracy
+    assert np.allclose(result[2], true_sine[2], rtol = 0.1) # test phase accuracy
 
 def test_fit_on_synthetic_data(test_engine, synthetic_data):
     days, Cp_noisy, iSelect, (true_off, true_amp, true_ph) = synthetic_data
@@ -44,10 +50,18 @@ def test_fit_on_synthetic_data(test_engine, synthetic_data):
                                             test_engine.convert(iSelect))
     
     result = test_engine.convert(result)
-    fitted_amp = result[0][1] 
-    fitted_off = result[0][0] 
-    fitted_ph = result[0][2]
-    fitted_r2 = result[0][3]
+
+    if len(result) == 1: # Matlab case
+        fitted_amp = result[0][1] 
+        fitted_off = result[0][0] 
+        fitted_ph = result[0][2]
+        fitted_r2 = result[0][3]
+    else: #Python case
+        fitted_amp = result[1] 
+        fitted_off = result[0] 
+        fitted_ph = result[2]
+        fitted_r2 = result[3]
+
     # Check that fitted parameters are close to the true parameters.
     # Allow some tolerance due to noise.
     assert np.isclose(fitted_amp, true_amp, rtol=0.2)
@@ -73,9 +87,15 @@ def test_constant_data(test_engine):
 
     result = test_engine.fitAnnualSineCurve(days, Cp, iSelect)
     result = test_engine.convert(result)
-    fitted_amp = result[0][1] 
-    fitted_off = result[0][0]
-    fitted_r2 = result[0][3]
+
+    if len(result) == 1:
+        fitted_amp = result[0][1] 
+        fitted_off = result[0][0]
+        fitted_r2 = result[0][3]
+    else:
+        fitted_amp = result[1] 
+        fitted_off = result[0]
+        fitted_r2 = result[3]
 
     assert abs(fitted_amp)  <  0.5
     assert abs(fitted_off - 5.0) < 0.5

@@ -14,7 +14,7 @@ function sSine = fitAnnualSineCurve(mt, Cp, iSelect)
     r2 = fcr2Calc(Cp(iSelect), predictedCp); 
         
     % Adjust Phase and Wrap to One Year
-    bSine(3) = mod(bSine(3), 365.25); 
+    bSine(3) = mod(bSine(3), 365.25);
         
     % Return Fitted Sine Coefficients and R-Squared
     sSine = [bSine, r2]; 
