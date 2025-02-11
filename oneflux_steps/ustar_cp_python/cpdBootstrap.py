@@ -4,7 +4,7 @@ import json
 from typing import List, Dict, Tuple, Any
 from oneflux_steps.ustar_cp_python.utilities import dot, intersect, round_up
 
-def cpdBootstrapUStarTh4Season20100901(t: np.ndarray, NEE: np.ndarray, uStar: np.ndarray, T: np.ndarray, fNight: np.ndarray, fPlot: int, cSiteYr: str, nBoot: int, *args: Any) -> Tuple[np.ndarray, List[List[List[Dict[str, float]]]], np.ndarray, List[List[List[Dict[str, float]]]]]:
+def cpdBootstrapUStarTh4Season20100901(t: np.ndarray, NEE: np.ndarray, uStar: np.ndarray, T: np.ndarray, fNight: np.ndarray, fPlot: int, cSiteYr: str, nBoot: int) -> Tuple[np.ndarray, List[List[List[Dict[str, float]]]], np.ndarray, List[List[List[Dict[str, float]]]]]:
     """
     Bootstrap the uStarTh for a season.
 
@@ -111,14 +111,6 @@ def cpdBootstrapUStarTh4Season20100901(t: np.ndarray, NEE: np.ndarray, uStar: np
             Stats2[:, :, iBoot] = xStats2
             Cp3[:, :, iBoot] = xCp3
             Stats3[:, :, iBoot] = xStats3
-
-    for a in args:
-        if isinstance(a, list) and a[0] == 'jsonencode':
-            for j in a[1:]:
-                if j == 2:
-                    Stats2 = json.dumps(Stats2, indent=4)
-                elif j == 4:
-                    Stats3 = json.dumps(Stats3, indent=4)
 
     return Cp2, Stats2, Cp3, Stats3
 
