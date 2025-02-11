@@ -258,7 +258,6 @@ class MatlabEngine:
 
           # Choose which function to call
           if self.func._name == "convert":
-            #   print(*args)
               return _convert(*args)
           elif self.func._name == "equal":
               return _equal(*args)
@@ -287,24 +286,6 @@ class MatlabEngine:
                   ret[j] = json.loads(ret[j], object_hook=none2nan)
               if nargout <= 1:
                   ret = ret[0]
-
-       # # Some alternate approach here
-       # nargout = kwargs.get('nargout', 1)
-        # if nargout <= 1:
-        #     ret = [ret]
-        # else:
-        #     ret = list(ret)
-        # for j, y in enumerate(ret):
-        #     if j in jsonencode:
-        #         y = json.loads(y, object_hook=lambda d:
-        #             {k: np.nan if v is None else v for k, v in d.items()})
-        #         ret[j] = struct(y)
-        #     elif isinstance(y, np.ndarray):
-        #         ret[j] = matlabarray(y)
-        # if nargout <= 1:
-        #     ret = ret[0]
-        # return ret
-
           return ret
 
 def mf_factory(cls, *args, **kwargs):
@@ -324,10 +305,6 @@ def test_engine(language, refactored=True):
     Pytest fixture to start a 'running engine' which allows multiple languages
     to be targetted
     """
-    # if request.param == "translated":  # return the translated python module
-    #     import oneflux_steps.ustar_cp_python_auto as eng
-    #     yield eng
-    #     return
     if language == 'python':
         yield PythonEngine()  # Assuming a defined PythonEngine class elsewhere
     else:
@@ -375,7 +352,7 @@ def test_engine(language, refactored=True):
 
         yield eng
 
-        #Close MATLAB engine after tests are done
+        # Close MATLAB engine after tests are done
         eng.quit()
 
 
@@ -622,8 +599,6 @@ def compare_matlab_arrays(result, expected):
 
     # Recursive case
     return all(compare_matlab_arrays(r, e) for r, e in zip(result, expected))
-    # ALT:
-    #return all(objects_are_equal(r, e) for r, e in zip(result, expected))
 
 def read_csv_with_csv_module(file_path):
     """
