@@ -39,7 +39,7 @@ class MFWrapper:
         # make matlab stdout and stderr printed at the end of pytest
         atexit.register(lambda: (s := self.out.getvalue()) and print(f"{name} stdout:\n{s}"))
         atexit.register(lambda: (s := self.err.getvalue()) and print(f"{name} stderr:\n{s}"))
-        
+
     def __call__(self, *args, jsonencode=(), jsondecode=(), **kwargs):
         """
         Call the wrapped function with optional JSON encoding/decoding to handle the issue that non-scalar structs (arrays of structs) cannot be returned from MATLAB functions to Python.
@@ -69,6 +69,7 @@ class MFWrapper:
                 ret = list(ret)
             for j in jsonencode:
                 ret[j] = json.loads(ret[j], object_hook=none2nan)
+
             if nargout <= 1:
                 ret = ret[0]
         return ret
@@ -149,12 +150,12 @@ class PythonEngine(TestEngine):
               return transpose(np.array(x).astype(np.float64))
             else:
               return np.array(x).astype(np.float64)
-              
+
         elif isinstance(x, tuple):
             return tuple([self.convert(xi) for xi in x])
         else:
             return x
-        
+
     def unconvert(self, x):
         """Convert input back to the original type."""
         return x
@@ -167,7 +168,10 @@ class PythonEngine(TestEngine):
             return np.isclose(x, y, equal_nan=True)
         elif isinstance(x, np.ndarray) and isinstance(y, np.ndarray):
             return np.allclose(x, y, equal_nan=True)
-        elif (isinstance(x, list) and isinstance(y, list)) or (isinstance(x, tuple) and isinstance(y, tuple)):
+        elif ((isinstance(x, list) and isinstance(y, list))
+            or (isinstance(x, tuple) and isinstance(y, tuple))):
+            return all(self.equal(xi, yi) for xi, yi in zip(x, y))
+        elif ((isinstance(x, dict) and isinstance(y, dict))):
             return all(self.equal(xi, yi) for xi, yi in zip(x, y))
         else:
             return x == y
@@ -192,14 +196,14 @@ class PythonEngine(TestEngine):
                 func = globals().get(name)
                 if callable(func):
                     return func(*args, **kwargs)
-                else: 
+                else:
                     warnings.warn(f"'function {name}' cannot be found", UserWarning)
             except ImportError:
                 pass
             warnings.warn(f"'{name}' is not callable", UserWarning)
         return newfunc if globals().get(name) else None
 
-# MATLAB Engine wrapper 
+# MATLAB Engine wrapper
 class MatlabEngine:
     def __init__(self, func):
         self.func = func
@@ -285,6 +289,7 @@ class MatlabEngine:
                   ret = list(ret)
               for j in jsonencode:
                   ret[j] = json.loads(ret[j], object_hook=none2nan)
+
               if nargout <= 1:
                   ret = ret[0]
 

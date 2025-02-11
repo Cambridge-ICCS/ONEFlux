@@ -168,9 +168,9 @@ def setup_Stats(n_boot: int, n_seasons: int, n_strata_x: int) -> List[List[List[
                              with value {n}. This may lead undesired behaviour')
 
     # Preallocate stats array
-    stats = [[[generate_statsMT() for _ in range(n_strata_x)]
-              for _ in range(n_seasons)]
-             for _ in range(n_boot)]
+    stats = [[[generate_statsMT() for _ in range(n_boot)]
+              for _ in range(n_strata_x)]
+             for _ in range(n_seasons)]
 
     return stats
 

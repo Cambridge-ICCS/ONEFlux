@@ -63,17 +63,13 @@ def test_cpdBootstrapUStarTh4Season20100901_basic(test_engine, mock_data):
     T_matlab = test_engine.convert(T.tolist())
     fNight_matlab = test_engine.convert(fNight.tolist())
 
-    # Call MATLAB function
+    # Call the function
     Cp2, Stats2, Cp3, Stats3 = test_engine.cpdBootstrapUStarTh4Season20100901(
         t_matlab, NEE_matlab, uStar_matlab, T_matlab, fNight_matlab, fPlot, cSiteYr, nBoot, jsonencode=[1,3], nargout=4
     )
-
     # Assertions for output types
     assert isinstance(Stats2, list), "Stats2 should be a list of structs."
     assert isinstance(Stats3, list), "Stats3 should be a list of structs."
-    # TODO: remove these checks or make language agnostic
-    # assert isinstance(Cp2, matlab.double), "Cp2 should be a MATLAB double array."
-    # assert isinstance(Cp3, matlab.double), "Cp3 should be a MATLAB double array."
 
     # Validate dimensions of the output arrays
     assert len(Cp2) == 4, "Cp2 should have 4 seasons."
@@ -129,18 +125,18 @@ def test_cpdBootstrap_against_testcases(test_engine):
 
         # Convert inputs into a list for function call
         inputs_list = [inputs[str(i)] for i in range(len(inputs))]
-        matlab_args = test_engine.convert(inputs_list)
+        matlab_args = list(map(lambda x : test_engine.convert(x), inputs_list))
 
-        # Call the MATLAB function and capture its output
+        # Call the function and capture its output
         Cp2, Stats2, Cp3, Stats3 = test_engine.cpdBootstrapUStarTh4Season20100901(*matlab_args, jsonencode=[1,3], nargout=4)
 
         # Extract the expected outputs for comparison
         outputs_list = [outputs[str(i)] for i in range(len(outputs))]
 
-        # Assertions to compare MATLAB results to expected outputs
-        assert test_engine.equal(Cp2, outputs_list[0])
+        # Assertions to compare results to expected outputs
+        assert test_engine.equal(Cp2, test_engine.convert(outputs_list[0]))
         assert test_engine.equal(Stats2, outputs_list[1])
-        assert test_engine.equal(Cp3, outputs_list[2])
+        assert test_engine.equal(Cp3, test_engine.convert(outputs_list[2]))
         assert test_engine.equal(Stats3, outputs_list[3])
 
 # Parameterized test for the get_nPerDay function
@@ -195,7 +191,6 @@ def test_update_uStar(test_engine, input_data, expected_result):
     input_data = test_engine.convert(input_data)
     result = test_engine.update_uStar(input_data)
     assert test_engine.equal(result, test_engine.convert(expected_result)), f"Expected {expected_result}, but got {result}"
-
 
 # Parameterized test for the get_ntN function
 @pytest.mark.parametrize("t_input, nSeasons, expected_ntN", [
