@@ -1,4 +1,4 @@
-"""Test module for the cpdBootstrapUStarTh4Season20100901 matlab function.
+"""Test module for the cpdBootstrapUStarTh4Season20100901 function.
 
 This module contains the unit tests for the cpdBootstrapUStarTh4Season20100901.
 These tests cover basic behaviour, edge cases and errors.
@@ -56,16 +56,16 @@ def test_cpdBootstrapUStarTh4Season20100901_basic(test_engine, mock_data):
     cSiteYr = "Site_2024"
     nBoot = 10
 
-    # Convert mock inputs to MATLAB format
-    t_matlab = test_engine.convert(t.tolist())
-    NEE_matlab = test_engine.convert(NEE.tolist())
-    uStar_matlab = test_engine.convert(uStar.tolist())
-    T_matlab = test_engine.convert(T.tolist())
-    fNight_matlab = test_engine.convert(fNight.tolist())
+    # Convert mock inputs to correct format
+    t_input = test_engine.convert(t.tolist())
+    NEE_input = test_engine.convert(NEE.tolist())
+    uStar_input = test_engine.convert(uStar.tolist())
+    T_input = test_engine.convert(T.tolist())
+    fNight_input = test_engine.convert(fNight.tolist())
 
     # Call the function
     Cp2, Stats2, Cp3, Stats3 = test_engine.cpdBootstrapUStarTh4Season20100901(
-        t_matlab, NEE_matlab, uStar_matlab, T_matlab, fNight_matlab, fPlot, cSiteYr, nBoot, jsonencode=[1,3], nargout=4
+        t_input, NEE_input, uStar_input, T_input, fNight_input, fPlot, cSiteYr, nBoot, jsonencode=[1,3], nargout=4
     )
     # Assertions for output types
     assert isinstance(Stats2, list), "Stats2 should be a list of structs."
@@ -92,16 +92,16 @@ def test_cpdBootstrapUStarTh4Season20100901_edge_case_high_bootstrap(test_engine
     cSiteYr = "Site_2024"
     nBoot = 100  # Large number of bootstraps
 
-    # Convert to MATLAB format
-    t_matlab = test_engine.convert(t.tolist())
-    NEE_matlab = test_engine.convert(NEE.tolist())
-    uStar_matlab = test_engine.convert(uStar.tolist())
-    T_matlab = test_engine.convert(T.tolist())
-    fNight_matlab = test_engine.convert(fNight.tolist())
+    # Convert the inputs format
+    t_input = test_engine.convert(t.tolist())
+    NEE_input = test_engine.convert(NEE.tolist())
+    uStar_input = test_engine.convert(uStar.tolist())
+    T_input = test_engine.convert(T.tolist())
+    fNight_input = test_engine.convert(fNight.tolist())
 
-    # Call MATLAB function
+    # Call the function
     Cp2, Stats2, Cp3, Stats3 = test_engine.cpdBootstrapUStarTh4Season20100901(
-        t_matlab, NEE_matlab, uStar_matlab, T_matlab, fNight_matlab, fPlot, cSiteYr, nBoot, jsonencode=[1,3], nargout=4
+        t_input, NEE_input, uStar_input, T_input, fNight_input, fPlot, cSiteYr, nBoot, jsonencode=[1,3], nargout=4
     )
 
     # Validate dimensions with a high bootstrap count
@@ -125,10 +125,10 @@ def test_cpdBootstrap_against_testcases(test_engine):
 
         # Convert inputs into a list for function call
         inputs_list = [inputs[str(i)] for i in range(len(inputs))]
-        matlab_args = list(map(lambda x : test_engine.convert(x), inputs_list))
+        args = list(map(lambda x : test_engine.convert(x), inputs_list))
 
         # Call the function and capture its output
-        Cp2, Stats2, Cp3, Stats3 = test_engine.cpdBootstrapUStarTh4Season20100901(*matlab_args, jsonencode=[1,3], nargout=4)
+        Cp2, Stats2, Cp3, Stats3 = test_engine.cpdBootstrapUStarTh4Season20100901(*args, jsonencode=[1,3], nargout=4)
 
         # Extract the expected outputs for comparison
         outputs_list = [outputs[str(i)] for i in range(len(outputs))]
