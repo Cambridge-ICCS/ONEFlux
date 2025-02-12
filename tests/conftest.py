@@ -237,7 +237,6 @@ class MatlabEngine:
 
           # Locally scoped definitions
           def _convert(x, index='to_python'):
-                print(index)
                 if index == 'to_matlab': # Add 1 for index conversion to MATLAB, types: int, ndarray, list
                     print("Before conversion: ", x)
                     if isinstance(x, (int, float, np.ndarray)):
