@@ -88,7 +88,27 @@ def test_function(test_engine):
 
 This test can then be run against any test engine to target the requisite language. The language can then be switched by passing the command-line argument `--language=LANG` to `pytest` where `LANG` is either `python` or `matlab` (the default at the moment).
 
-# Retirement Plan
+# MATLAB Retirement Plan
 
-For now, we preserve the MATLAB code alongside the Python. The following explains how to finally remove the MATLAB and convert the test suite to be Python only.
+For now, we preserve the MATLAB code alongside the Python. The following explains how to finally remove the MATLAB from the code base, including converting the test suite to be Python only.
 
+## Remove differential tests
+
+The differential tests involve invoking Python and MATLAB and comparing the results. 
+These are in `tests/unit_tests/ustar_cp` and have file names of the form `test_differential_` and so can just be removed via
+
+        git rm ests/unit_tests/ustar_cp/test_differential_*.py
+
+## Remove MATLAB engine test engine and its dependencies
+
+* From `requirements.txt` remove the `matlabengine` line.
+* From `conftest.py` remove any code that is between comments `# <MATLAB>` and `# </MATLAB>` delineating code for matlab test engines.
+* OPTIONAL: remove 'matlab' from the `get_languages():` function
+
+## Switch oneflux_steps to point to ustar_cp_python
+
+Target `launch` function in `oneflux_steps/ustar_cp/python/launch.py`
+
+## Remove the MATLAB code
+
+Delete the `oneflux_steps/ustar_cp` and `oneflux_steps/ustar_cp_recator_wip` folders
