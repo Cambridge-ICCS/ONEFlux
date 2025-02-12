@@ -1,6 +1,6 @@
 """
-This module contains pytest fixtures and utility functions to set up the test environment,
-handle MATLAB engine interactions, and process text files for comparison in unit tests.
+This module contains pytest fixtures and utility functions to set up the test environment for ustar_cp,
+including multi-language testing (between Python and MATLAB), and process text files for comparison in unit tests.
 
 Contents:
     Fixtures:
@@ -20,24 +20,27 @@ Contents:
 
 import pytest
 import os
-import matlab.engine
 import shutil
 import glob
 import json
 import io
 import atexit
 import numpy as np
-from matlab.engine.matlabengine import MatlabFunc
 from typing import Any
 from abc import ABC, abstractmethod
 import warnings
+
+# <MATLAB>
+import matlab.engine
+from matlab.engine.matlabengine import MatlabFunc
+# </MATLAB>
 
 # Setup command-line arguments for the tests to allow switching language
 #  --language=matlab runs the tests against the MATLAB implementation (default)
 #  --language=python runs the tests against the Python implementation
 
 def pytest_addoption(parser):
-    parser.addoption("--language", action="store", default="matlab")
+    parser.addoption("--language", action="store", default="python")
 
 @pytest.fixture(scope="session")
 def language(pytestconfig):
@@ -117,7 +120,7 @@ class PythonEngine(TestEngine):
         return x
 
     def equal(self, x, y) -> bool:
-        """Enhanced equality check for MATLAB arrays."""
+        """Enhanced equality check for arrays."""
         if x is None or y is None:
             raise ValueError("Comparison values cannot be None")
         if isinstance(x, float) or isinstance(y, float):
@@ -159,6 +162,7 @@ class PythonEngine(TestEngine):
             warnings.warn(f"'{name}' is not callable", UserWarning)
         return newfunc if globals().get(name) else None
 
+# <MATLAB>
 # MATLAB wrapper that is then used by the MATLAB TestEngine
 class MFWrapper:
     def __init__(self, func):
@@ -203,7 +207,7 @@ class MFWrapper:
                 ret = ret[0]
         return ret
 
-# MATLAB Engine wrapper 
+# MATLAB TestEngine
 class MatlabEngine:
     def __init__(self, func):
         self.func = func
@@ -298,8 +302,74 @@ def mf_factory(cls, *args, **kwargs):
     return MatlabEngine(f)
 MatlabFunc.__new__ = mf_factory
 
-# Test engine fixture
+def to_matlab_type(data: Any) -> Any:
+    """
+    Converts various Python data types to their MATLAB equivalents.
 
+    Args:
+        data (Any): The input data to be converted.
+
+    Returns:
+        Any: The converted data in a MATLAB-compatible format.
+    """
+    if isinstance(data, dict):
+        # Convert a Python dictionary to a MATLAB struct
+        # TODO: the following doesn't actually work but is not yet used
+        matlab_struct = matlab.struct()
+        for key, value in data.items():
+            matlab_struct[key] = to_matlab_type(value)  # Recursively handle nested structures
+        return matlab_struct
+    elif isinstance(data, np.ndarray):
+        if data.dtype == bool:
+            return matlab.logical(data.tolist())
+        elif np.isreal(data).all():
+            return matlab.double(data.tolist())
+        else:
+            return data.tolist()  # Convert non-numeric arrays to lists
+    elif isinstance(data, list):
+        # Convert Python list to MATLAB double array if all elements are numbers
+        if all(isinstance(elem, (int, float)) for elem in flatten(data)):
+            return matlab.double(data)
+        else:
+            # Create a cell array for lists containing non-numeric data
+            return [to_matlab_type(elem) for elem in data]
+    elif isinstance(data, (int, float)):
+        return matlab.double([data])  # Convert single numbers
+    else:
+      return data  # If the data type is already MATLAB-compatible
+
+# Helper function to compare MATLAB double arrays element-wise, handling NaN comparisons
+def compare_matlab_arrays(result, expected):
+    if isinstance(result, float):
+      # Floating point equality using numpy
+      return np.isclose(result, expected, equal_nan=True)
+
+    if not hasattr(result, '__len__') or not hasattr(expected, '__len__'):
+        return np.allclose(result, expected, equal_nan=True)
+
+    if isinstance(result, dict):
+        if not isinstance(expected, dict):
+            return False
+        if set(result.keys()) != set(expected.keys()):
+            return False
+        return all(compare_matlab_arrays(result[k], expected[k]) for k in result.keys())
+
+    if len(result) != len(expected):
+        # Potentially we are in the situation where the MATLAB is wrapped in an extra layer of array
+        if isinstance(result, matlab.double) and len(result) == 1:
+            result = result[0]
+            return all(compare_matlab_arrays(r, e) for r, e in zip(result, expected))
+        else:
+            return False
+
+    if isinstance(result, matlab.double):
+        return np.allclose(result, expected, equal_nan=True)
+
+    # Recursive case
+    return all(compare_matlab_arrays(r, e) for r, e in zip(result, expected))
+# </MATLAB>
+
+# Test engine fixture
 @pytest.fixture(scope="session")
 def test_engine(language, refactored=True):
     """
@@ -308,8 +378,8 @@ def test_engine(language, refactored=True):
     """
     if language == 'python':
         yield PythonEngine()  # Assuming a defined PythonEngine class elsewhere
+    # <MATLAB>
     else:
-
         """
         Pytest fixture to start a MATLAB engine session, add a specified directory
         to the MATLAB path, and clean up after the tests.
@@ -355,6 +425,7 @@ def test_engine(language, refactored=True):
 
         # Close MATLAB engine after tests are done
         eng.quit()
+        # </MATLAB>
 
 # Other fixtures
 @pytest.fixture
@@ -524,42 +595,6 @@ def compare_text_blocks(text1, text2):
     """
     return text1.replace('\n', '').strip() == text2.replace('\n', '').strip()
 
-def to_matlab_type(data: Any) -> Any:
-    """
-    Converts various Python data types to their MATLAB equivalents.
-
-    Args:
-        data (Any): The input data to be converted.
-
-    Returns:
-        Any: The converted data in a MATLAB-compatible format.
-    """
-    if isinstance(data, dict):
-        # Convert a Python dictionary to a MATLAB struct
-        # TODO: the following doesn't actually work but is not yet used
-        matlab_struct = matlab.struct()
-        for key, value in data.items():
-            matlab_struct[key] = to_matlab_type(value)  # Recursively handle nested structures
-        return matlab_struct
-    elif isinstance(data, np.ndarray):
-        if data.dtype == bool:
-            return matlab.logical(data.tolist())
-        elif np.isreal(data).all():
-            return matlab.double(data.tolist())
-        else:
-            return data.tolist()  # Convert non-numeric arrays to lists
-    elif isinstance(data, list):
-        # Convert Python list to MATLAB double array if all elements are numbers
-        if all(isinstance(elem, (int, float)) for elem in flatten(data)):
-            return matlab.double(data)
-        else:
-            # Create a cell array for lists containing non-numeric data
-            return [to_matlab_type(elem) for elem in data]
-    elif isinstance(data, (int, float)):
-        return matlab.double([data])  # Convert single numbers
-    else:
-      return data  # If the data type is already MATLAB-compatible
-
 def flatten(container):
     """
     Flatten a nested container into a single list.
@@ -570,36 +605,6 @@ def flatten(container):
                 yield j
         else:
             yield i
-
-# Helper function to compare MATLAB double arrays element-wise, handling NaN comparisons
-def compare_matlab_arrays(result, expected):
-    if isinstance(result, float):
-      # Floating point equality using numpy
-      return np.isclose(result, expected, equal_nan=True)
-
-    if not hasattr(result, '__len__') or not hasattr(expected, '__len__'):
-        return np.allclose(result, expected, equal_nan=True)
-
-    if isinstance(result, dict):
-        if not isinstance(expected, dict):
-            return False
-        if set(result.keys()) != set(expected.keys()):
-            return False
-        return all(compare_matlab_arrays(result[k], expected[k]) for k in result.keys())
-
-    if len(result) != len(expected):
-        # Potentially we are in the situation where the MATLAB is wrapped in an extra layer of array
-        if isinstance(result, matlab.double) and len(result) == 1:
-            result = result[0]
-            return all(compare_matlab_arrays(r, e) for r, e in zip(result, expected))
-        else:
-            return False
-
-    if isinstance(result, matlab.double):
-        return np.allclose(result, expected, equal_nan=True)
-
-    # Recursive case
-    return all(compare_matlab_arrays(r, e) for r, e in zip(result, expected))
 
 def read_csv_with_csv_module(file_path):
     """
