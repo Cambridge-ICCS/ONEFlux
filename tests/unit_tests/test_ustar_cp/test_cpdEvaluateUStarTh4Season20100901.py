@@ -132,7 +132,7 @@ def test_filterInvalidPoints_logged_data(test_engine):
             expected_output_data[name] = test_engine.convert(column, 'to_python')
         else:
             expected_output_data[name] = test_engine.convert(column)
-
+        
     uStar, itAnnual, ntAnnual = test_engine.filterInvalidPoints(input_data['uStar'], input_data['fNight'], input_data['NEE'], input_data['T'], nargout=3)
 
     assert test_engine.equal(test_engine.convert(uStar), expected_output_data['uStar'])
