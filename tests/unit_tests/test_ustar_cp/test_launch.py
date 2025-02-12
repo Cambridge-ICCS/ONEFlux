@@ -57,11 +57,6 @@ def assert_csv_files_equal(csv1,csv2, columns):
 
     if isinstance(csv2, str):
         csv2 = pd.read_csv(csv2, names=range(num_columns))
-    print('----------------------------------------------------------------------------------------')
-    print(csv1)
-    print('----------------------------------------------------------------------------------------')
-    print(csv2)
-    print('----------------------------------------------------------------------------------------')
 
     # This assertion will pass if the DataFrames are identical
     assert csv1.equals(csv2), f"File csvs {csv1} and {csv2} do not match."
@@ -219,7 +214,7 @@ def test_missing_keywords(test_engine, setup_test_environment):
         # Read standard out and get last line
         output.seek(0)
         output_string = output.readlines()[-1]
-        print(output_string)
+
         assert (output_string == ("processing n.01, US-ARc_qca_ustar_2023.csv..." + line[0] + " keyword not found.\n")), \
                  "Expected error message for missing keyword"
 
@@ -252,7 +247,7 @@ def test_loadData(test_engine, year, setup_folders):
     filename = f'US-ARc_qca_ustar_{year}.csv'
     notes_file = f'tests/test_artifacts/launch_artifacts/loadData_input_notes_US-ARc_qca_ustar_{year}.csv'
     notes = list(pd.read_csv(notes_file, header=None))
-    print(notes)
+
     input_columns_names = ['USTAR', 'NEE', 'TA', 'PPFD_IN' ,'SW_IN']
     header = output_folder + "header.csv"
     data = output_folder + "data.csv"
@@ -458,10 +453,6 @@ def test_createTimeArray(test_engine, year):
 
     # Call the function
     output_t = test_engine.createTimeArray(ustar, nargout=1)
-
-    # # Convert the output to a numpy array
-    # output_t = output_t.tomemoryview().tolist()
-    # output_t = np.array(output_t).flatten()
 
     # Read the expected output file
     expected_t = pd.read_csv(f'tests/test_artifacts/launch_artifacts/createTimeArray_output_t_US-ARc_qca_ustar_{year}.csv', header=None).iloc[:,0].to_numpy()
