@@ -51,14 +51,15 @@ We have also added
 
 - `tests/conftest.py` - Test engine
 - `tests/unit_tests/test_ustar_cp` - Extensive test suite for `ustar_cp`.
+- `tests/test_artefacts` - Test fixtures mostly comprising site data and intermediate input-output data generated from site data
 
-Tests can be run for the MATLAB code (in `ustar_cp_refactor`) at the top-level by running
+Tests can be run for the MATLAB code (in `ustar_cp_refactor`) by running at the top-level:
 
-   pytest tests/unit_tests/test_ustar_cp --language=matlab
+        pytest tests/unit_tests/test_ustar_cp --language=matlab
 
 and for the Python translation by running:
 
-   pytest tests/unit_tests/test_ustar_cp --language=python
+        pytest tests/unit_tests/test_ustar_cp --language=python
 
 ## Multi-language test suite
 
