@@ -17,7 +17,7 @@ The work also leveraged an initial translation by Peter Isaac (OzFlux).
 ## Migration methodology
 
 1. Modularise MATLAB code into smaller function components;
-2. Write tests language agnostic tests in Python for all functions, which can then be applied
+2. Write language agnostic tests in Python for all functions, which can then be applied
 to the MATLAB code. Test approaches included:
    a. Smoke tests
    b. Unit tests
@@ -53,9 +53,13 @@ The TestEngine abstract base class defines the following methods that need to be
 
 Two concrete implementations are provided inherting
 from the abstract base class: `PythonEngine`
-and `MatlabEngine`. 
+and `MatlabEngine`. Crucially the `MatlabEngine` wraps
+the Python-MATLAB interface and handles calling functions
+in the MATLAB code, mapping any MATLAB errors to Python
+exceptions.
 
-Here is an example usage in a simple `pytest` unit test:
+The following is an example unit test written for `pytest` using
+the `test_engine` fixture provided by `conftest.py`:
 
 ```
 def test_function(test_engine):
@@ -65,8 +69,9 @@ def test_function(test_engine):
     assert test_engine.equal(result, expected)
 ```
 
-The language can then be switched by passing the
-command-line argument `--language=LANG` to `pytest`
+This test can then be run against any test engine to
+target the requisite language. The language can then be switched by passing
+the command-line argument `--language=LANG` to `pytest`
 where `LANG` is either `python` or `matlab` (the default
 at the moment).
 
