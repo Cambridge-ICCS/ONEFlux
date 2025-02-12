@@ -236,7 +236,7 @@ class MatlabEngine:
         if (self.func._name == "convert") | (self.func._name == "unconvert") | (self.func._name == "equal"):
 
           # Locally scoped definitions
-          def _convert(x, index='to_python'):
+          def _convert(x, index='to_python', fromFile=False):
                 if index == 'to_matlab': # Add 1 for index conversion to MATLAB, types: int, ndarray, list
                     print("Before conversion: ", x)
                     if isinstance(x, (int, float, np.ndarray)):
@@ -259,7 +259,6 @@ class MatlabEngine:
 
           # Choose which function to call
           if self.func._name == "convert":
-            #   print(*args)
               return _convert(*args, **kwargs)
           elif self.func._name == "equal":
               return _equal(*args, **kwargs)
