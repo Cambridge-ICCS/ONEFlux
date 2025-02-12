@@ -189,6 +189,19 @@ def setup_Cp(nSeasons : int, nStrataX : int, nBoot : int) -> np.ndarray:
     return dot(np.nan, np.ones([nSeasons, nStrataX, nBoot]))
 
 def get_itNee(NEE : np.ndarray, uStar : np.ndarray, T : np.ndarray, iNight : np.ndarray) -> np.ndarray:
+    """
+    Get the indices of the NEE values (that intersect with the night time values); excluding
+    any indices with a NaN value in NEE, uStar, or T.
+
+    Args:
+        NEE (np.ndarray): Net Ecosystem Exchange values.
+        uStar (np.ndarray): uStar values.
+        T (np.ndarray): Temperature values
+        iNight (np.ndarray): Night time values.
+
+    Returns:
+        np.ndarray: Indices of the NEE values.
+    """
     itNee = np.where(np.logical_not(np.isnan(NEE + uStar + T)))[0]
     # Interect the arrays of itNee and itNight
     itNee = intersect(itNee, iNight)
