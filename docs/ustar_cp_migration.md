@@ -82,16 +82,17 @@ from the abstract base class: `PythonEngine`
 and `MatlabEngine`. Crucially the `MatlabEngine` wraps
 the Python-MATLAB interface and handles calling functions
 in the MATLAB code, mapping any MATLAB errors to Python
-exceptions.
+exceptions, and converting the result to a Python form
+(i.e., we typically do not need to `convert` the result).
 
 The following is an example unit test written for `pytest` using
 the `test_engine` fixture provided by `conftest.py`:
 
 ```
 def test_function(test_engine):
-    input_data = [1, 2, 3]
-    result = test_engine.convert(input_data)
-    expected = test_engine.convert([2, 3, 4])
+    input_data = test_engine.convert([1, 2, 3])
+    result = test_engine.funName(input_data)
+    expected = [2, 3, 4]
     assert test_engine.equal(result, expected)
 ```
 
