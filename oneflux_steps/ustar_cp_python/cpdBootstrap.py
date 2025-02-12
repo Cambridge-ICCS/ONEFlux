@@ -234,7 +234,6 @@ def update_uStar(uStar : np.ndarray) -> np.ndarray:
     Update uStar values in the input array, replacing
     all values below 0 and above 4 with NaN.
     """
-    # TODO: check whether we need to change the indexing
     updated_ustar = uStar.copy() # Initialize to same size as input
     iOut = np.where(np.logical_or(uStar < 0, uStar > 4))[0]
     updated_ustar[iOut] = np.nan
@@ -271,4 +270,13 @@ def get_nPerBin(t : np.ndarray) -> int:
         return 5
 
 def get_nPerDay(t):
+    """
+    Get the number of points per day.
+    
+    Args:
+        t (np.ndarray): Time vector.
+
+    Returns:  
+        int: Number of points per day.
+    """
     return round_up(1 / np.nanmedian(np.diff(t)))
