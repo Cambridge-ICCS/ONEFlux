@@ -88,7 +88,7 @@ def test_function(test_engine):
     assert test_engine.equal(result, expected)
 ```
 
-This test can then be run against any test engine to target the requisite language. The language can then be switched by passing the command-line argument `--language=LANG` to `pytest` where `LANG` is either `python` or `matlab` (the default at the moment).
+This test can then be run against any test engine to target the requisite language. The language can then be switched by passing the command-line argument `--language=LANG` to `pytest` where `LANG` is either `python` (the default) or `matlab`.
 
 # MATLAB Retirement Plan
 
