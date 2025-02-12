@@ -30,7 +30,6 @@ def fcDatevec(t : numpy.ndarray) -> tuple:
     # Quantise the input to the granularity of 0.0001 seconds in a day
     hundredmicrosecond_days = 1.1574074074074074e-09
     t = numpy.round(t / hundredmicrosecond_days) * hundredmicrosecond_days
-
     scalar_input = False
     if t.ndim == 0: # | t.ndim == 1:
         t = t[None]  # Makes x 1D
