@@ -41,24 +41,15 @@ def test_aggregateSeasonalMeans(test_engine, mt, Cp, xmt, iSelect,
     to MATLAB, execute the function, and verify the outputs.
     """
 
-    # Convert Python lists/arrays to MATLAB data types
-    mt_matlab = test_engine.double(mt)       # 1D array of floats
-    Cp_matlab = test_engine.double(Cp)
-    xmt_matlab = test_engine.double(xmt)
-
-    # For a boolean mask (iSelect), convert True/False to 1/0 (logical)
-    # This creates a MATLAB logical array of the same length
-    iSelect_matlab = test_engine.logical([int(x) for x in iSelect])
-
     # Call the MATLAB function. Note nargout=2 to receive two outputs (tW, CpW)
     tW_mat, CpW_mat = test_engine.aggregateSeasonalMeans(
-        mt_matlab,   # mt
-        Cp_matlab,   # Cp
-        xmt_matlab,  # xmt
-        iSelect_matlab,
-        float(nWindows),
-        float(nStrata),
-        float(nBoot),
+        test_engine.convert(mt),   # mt
+        test_engine.convert(Cp),   # Cp
+        test_engine.convert(xmt),  # xmt
+        test_engine.convert(iSelect),
+        test_engine.convert(nWindows),
+        test_engine.convert(nStrata),
+        test_engine.convert(nBoot),
         nargout=2
     )
 
