@@ -145,7 +145,7 @@ def arange(start, stop, step=1, **kwargs):
     expand_value = 1 if step > 0 else -1
     return np.arange(start, stop + expand_value, step, **kwargs)
 
-def round_up(value):
+def round_up(value : float) -> int:
     """
     Round a number to the nearest integer, with ties rounding away from zero.
 

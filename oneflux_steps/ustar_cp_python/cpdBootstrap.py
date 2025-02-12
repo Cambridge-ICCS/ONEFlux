@@ -1,7 +1,6 @@
 import numpy as np
 from typing import Dict, List
-import json
-from typing import List, Dict, Tuple, Any
+from typing import List, Dict, Tuple
 from oneflux_steps.ustar_cp_python.utilities import dot, intersect, round_up
 
 def cpdBootstrapUStarTh4Season20100901(t: np.ndarray, NEE: np.ndarray, uStar: np.ndarray, T: np.ndarray, fNight: np.ndarray, fPlot: int, cSiteYr: str, nBoot: int) -> Tuple[np.ndarray, List[List[List[Dict[str, float]]]], np.ndarray, List[List[List[Dict[str, float]]]]]:
