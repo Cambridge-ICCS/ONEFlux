@@ -2,10 +2,12 @@
 
 import numpy as np
 import json
+from decimal import Decimal, ROUND_HALF_UP
 
 def prctile(A: np.ndarray, p: float) -> float|np.ndarray:
     """
-    Compute the p-th percentile of array A using MATLAB's percentile algorithm.
+    Compute the p-th percentile of array A in a way that has
+    (as far as we can tell) the same semantics MATLAB's percentile algorithm.
 
     Args:
         A (np.ndarray): Input 1D array.
@@ -18,18 +20,18 @@ def prctile(A: np.ndarray, p: float) -> float|np.ndarray:
     n = len(A)
     if n == 0:
         return np.nan
-    
+
     A_sorted = np.sort(A)
-    
+
     # Define percentiles at sorted element positions
     percentiles = 100 * (np.arange(0.5, n) / n)
-    
+
     # Handle bounds explicitly
     #if p <= percentiles[0]:
         #return A_sorted[0]
     #elif p >= percentiles[-1]:
         #return A_sorted[-1]
-    
+
     # Linear interpolation
     return np.interp(p, percentiles, A_sorted)
 
@@ -42,7 +44,6 @@ def prctile_hazen(a, q):
         return np.full_like(q, np.nan)
     a = np.percentile(np.asarray(a), q, method="hazen")
     return a
-
 
 def dot(a : np.ndarray, b : np.ndarray) -> np.ndarray:
     """
@@ -63,14 +64,14 @@ def floor(a : np.ndarray) -> np.ndarray:
 def intersect(a : np.ndarray, b : np.ndarray) -> np.ndarray:
     """
     Return the intersection of two arrays.
-    
+
     Parameters:
     a : np.ndarray
         The first array to intersect
 
     b : np.ndarray
         The second array to intersect
-    
+
     nargout : int
         The number of output arguments to return
 
@@ -86,9 +87,17 @@ def intersect(a : np.ndarray, b : np.ndarray) -> np.ndarray:
     elif isinstance(a, list):
         return c
     else:
+        if (len(a.shape) > 1) and (a.shape[1] > 1):
+          return transpose(np.array(c))
+        else:
+          if len(c) == 1:
+            # If the result is a singleton, return it as a scalar
+            return c[0]
+          else:
+            return np.array(c)
         # FIXME: the result is a column vector if
         # both args are column vectors; otherwise row vector
-        return np.array(c).reshape((1, -1) if a.shape[1] > 1 else (-1, 1))
+        #return np.array(c).reshape((1, -1) if a.shape[1] > 1 else (-1, 1))
 
 def jsonencode(a):
     return a if isinstance(a, cellarray) else json.dumps(a)
@@ -136,6 +145,18 @@ def arange(start, stop, step=1, **kwargs):
     expand_value = 1 if step > 0 else -1
     return np.arange(start, stop + expand_value, step, **kwargs)
 
+def round_up(value : float) -> int:
+    """
+    Round a number to the nearest integer, with ties rounding away from zero.
+
+    Parameters:
+    value (float): The number to round.
+
+    Returns:
+    int: The rounded integer.
+    """
+    return int(Decimal(value).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+
 def size(a : np.ndarray, b=0, nargout=1) -> np.ndarray:
     """
     Return the size of an array.
@@ -156,7 +177,7 @@ def size(a : np.ndarray, b=0, nargout=1) -> np.ndarray:
             return np.squeeze(s)
     except IndexError:
         return 1
-    
+
 def squeeze(a : np.ndarray, axis=None) -> np.ndarray:
     """
     Remove single-dimensional entries from the shape of an array.
@@ -173,7 +194,7 @@ def transpose(a : np.ndarray | list | float | int) -> np.ndarray:
     A multi-purpose transpose function that
     - on 2-dimensions, does the usual matrix transpotision
     - on 1-dimensional data, converts a row vector to a column vector
-     
+
     Note that a column vector already looks 2-dimensional, and so its
      transpose gives us back a row-vector (but as a matrix), thus
      this operation is not an involution.

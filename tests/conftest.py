@@ -82,13 +82,14 @@ from oneflux_steps.ustar_cp_python.utilities import *
 from oneflux_steps.ustar_cp_python.cpd_evaluate_functions import *
 from oneflux_steps.ustar_cp_python.cpdFindChangePoint_functions import *
 from oneflux_steps.ustar_cp_python.cpdBootstrap import *
+from oneflux_steps.ustar_cp_python.fcEqnAnnualSine import *
 
 # Python TestEngine
 class PythonEngine(TestEngine):
     def _repr_pretty_(self, *args):
         return "Python Test Engine"
 
-    def convert(self, x, index=False, fromFile=False):
+    def convert(self, x, index='to_matlab', fromFile=False):
         """Convert input to a compatible type."""
         if x is None:
             raise ValueError("Input cannot be None")
@@ -105,12 +106,12 @@ class PythonEngine(TestEngine):
               return transpose(np.array(x).astype(np.float64))
             else:
               return np.array(x).astype(np.float64)
-              
+
         elif isinstance(x, tuple):
             return tuple([self.convert(xi) for xi in x])
         else:
             return x
-        
+
     def unconvert(self, x):
         """Convert input back to the original type."""
         return x
@@ -123,7 +124,10 @@ class PythonEngine(TestEngine):
             return np.isclose(x, y, equal_nan=True)
         elif isinstance(x, np.ndarray) and isinstance(y, np.ndarray):
             return np.allclose(x, y, equal_nan=True)
-        elif (isinstance(x, list) and isinstance(y, list)) or (isinstance(x, tuple) and isinstance(y, tuple)):
+        elif ((isinstance(x, list) and isinstance(y, list))
+            or (isinstance(x, tuple) and isinstance(y, tuple))):
+            return all(self.equal(xi, yi) for xi, yi in zip(x, y))
+        elif ((isinstance(x, dict) and isinstance(y, dict))):
             return all(self.equal(xi, yi) for xi, yi in zip(x, y))
         else:
             return x == y
@@ -148,7 +152,7 @@ class PythonEngine(TestEngine):
                 func = globals().get(name)
                 if callable(func):
                     return func(*args, **kwargs)
-                else: 
+                else:
                     warnings.warn(f"'function {name}' cannot be found", UserWarning)
             except ImportError:
                 pass
@@ -234,9 +238,8 @@ class MatlabEngine:
         if (self.func._name == "convert") | (self.func._name == "unconvert") | (self.func._name == "equal"):
 
           # Locally scoped definitions
-          def _convert(x, index=None):
+          def _convert(x, index='to_python', fromFile=False):
                 if index == 'to_matlab': # Add 1 for index conversion to MATLAB, types: int, ndarray, list
-                    print(index)
                     print("Before conversion: ", x)
                     if isinstance(x, (int, float, np.ndarray)):
                         x = x+1
@@ -258,11 +261,11 @@ class MatlabEngine:
 
           # Choose which function to call
           if self.func._name == "convert":
-              return _convert(*args)
+              return _convert(*args, **kwargs)
           elif self.func._name == "equal":
-              return _equal(*args)
+              return _equal(*args, **kwargs)
           elif self.func._name == "unconvert":
-              return _unconvert(*args)
+              return _unconvert(*args, **kwargs)
 
         else:
           # Calls mostly going through to the MATLAB engine
@@ -284,6 +287,7 @@ class MatlabEngine:
                   ret = list(ret)
               for j in jsonencode:
                   ret[j] = json.loads(ret[j], object_hook=none2nan)
+
               if nargout <= 1:
                   ret = ret[0]
           return ret

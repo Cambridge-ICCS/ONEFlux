@@ -1,4 +1,4 @@
-"""Test module for the cpdBootstrapUStarTh4Season20100901 matlab function.
+"""Test module for the cpdBootstrapUStarTh4Season20100901 function.
 
 This module contains the unit tests for the cpdBootstrapUStarTh4Season20100901.
 These tests cover basic behaviour, edge cases and errors.
@@ -56,24 +56,20 @@ def test_cpdBootstrapUStarTh4Season20100901_basic(test_engine, mock_data):
     cSiteYr = "Site_2024"
     nBoot = 10
 
-    # Convert mock inputs to MATLAB format
-    t_matlab = test_engine.convert(t.tolist())
-    NEE_matlab = test_engine.convert(NEE.tolist())
-    uStar_matlab = test_engine.convert(uStar.tolist())
-    T_matlab = test_engine.convert(T.tolist())
-    fNight_matlab = test_engine.convert(fNight.tolist())
+    # Convert mock inputs to correct format
+    t_input = test_engine.convert(t.tolist())
+    NEE_input = test_engine.convert(NEE.tolist())
+    uStar_input = test_engine.convert(uStar.tolist())
+    T_input = test_engine.convert(T.tolist())
+    fNight_input = test_engine.convert(fNight.tolist())
 
-    # Call MATLAB function
+    # Call the function
     Cp2, Stats2, Cp3, Stats3 = test_engine.cpdBootstrapUStarTh4Season20100901(
-        t_matlab, NEE_matlab, uStar_matlab, T_matlab, fNight_matlab, fPlot, cSiteYr, nBoot, jsonencode=[1,3], nargout=4
+        t_input, NEE_input, uStar_input, T_input, fNight_input, fPlot, cSiteYr, nBoot, jsonencode=[1,3], nargout=4
     )
-
     # Assertions for output types
     assert isinstance(Stats2, list), "Stats2 should be a list of structs."
     assert isinstance(Stats3, list), "Stats3 should be a list of structs."
-    # TODO: remove these checks or make language agnostic
-    # assert isinstance(Cp2, matlab.double), "Cp2 should be a MATLAB double array."
-    # assert isinstance(Cp3, matlab.double), "Cp3 should be a MATLAB double array."
 
     # Validate dimensions of the output arrays
     assert len(Cp2) == 4, "Cp2 should have 4 seasons."
@@ -96,16 +92,16 @@ def test_cpdBootstrapUStarTh4Season20100901_edge_case_high_bootstrap(test_engine
     cSiteYr = "Site_2024"
     nBoot = 100  # Large number of bootstraps
 
-    # Convert to MATLAB format
-    t_matlab = test_engine.convert(t.tolist())
-    NEE_matlab = test_engine.convert(NEE.tolist())
-    uStar_matlab = test_engine.convert(uStar.tolist())
-    T_matlab = test_engine.convert(T.tolist())
-    fNight_matlab = test_engine.convert(fNight.tolist())
+    # Convert the inputs format
+    t_input = test_engine.convert(t.tolist())
+    NEE_input = test_engine.convert(NEE.tolist())
+    uStar_input = test_engine.convert(uStar.tolist())
+    T_input = test_engine.convert(T.tolist())
+    fNight_input = test_engine.convert(fNight.tolist())
 
-    # Call MATLAB function
+    # Call the function
     Cp2, Stats2, Cp3, Stats3 = test_engine.cpdBootstrapUStarTh4Season20100901(
-        t_matlab, NEE_matlab, uStar_matlab, T_matlab, fNight_matlab, fPlot, cSiteYr, nBoot, jsonencode=[1,3], nargout=4
+        t_input, NEE_input, uStar_input, T_input, fNight_input, fPlot, cSiteYr, nBoot, jsonencode=[1,3], nargout=4
     )
 
     # Validate dimensions with a high bootstrap count
@@ -129,18 +125,18 @@ def test_cpdBootstrap_against_testcases(test_engine):
 
         # Convert inputs into a list for function call
         inputs_list = [inputs[str(i)] for i in range(len(inputs))]
-        matlab_args = test_engine.convert(inputs_list)
+        args = list(map(lambda x : test_engine.convert(x), inputs_list))
 
-        # Call the MATLAB function and capture its output
-        Cp2, Stats2, Cp3, Stats3 = test_engine.cpdBootstrapUStarTh4Season20100901(*matlab_args, jsonencode=[1,3], nargout=4)
+        # Call the function and capture its output
+        Cp2, Stats2, Cp3, Stats3 = test_engine.cpdBootstrapUStarTh4Season20100901(*args, jsonencode=[1,3], nargout=4)
 
         # Extract the expected outputs for comparison
         outputs_list = [outputs[str(i)] for i in range(len(outputs))]
 
-        # Assertions to compare MATLAB results to expected outputs
-        assert test_engine.equal(Cp2, outputs_list[0])
+        # Assertions to compare results to expected outputs
+        assert test_engine.equal(Cp2, test_engine.convert(outputs_list[0]))
         assert test_engine.equal(Stats2, outputs_list[1])
-        assert test_engine.equal(Cp3, outputs_list[2])
+        assert test_engine.equal(Cp3, test_engine.convert(outputs_list[2]))
         assert test_engine.equal(Stats3, outputs_list[3])
 
 # Parameterized test for the get_nPerDay function
@@ -154,7 +150,7 @@ def test_cpdBootstrap_against_testcases(test_engine):
 def test_get_nPerDay(test_engine, input_data, expected_result):
     input_data = test_engine.convert(input_data)
     result = test_engine.get_nPerDay(input_data)
-    assert result == expected_result, f"Expected {expected_result}, but got {result}"
+    assert result == expected_result, f"Expected {expected_result}, but got {result} for input {input_data}"
 
 # Parameterized test for the get_nPerBin function
 @pytest.mark.parametrize("input_data, expected_result", [
@@ -171,16 +167,16 @@ def test_get_nPerBin(test_engine, input_data, expected_result):
 
 # Parameterized test for the get_iNight function
 @pytest.mark.parametrize("input_data, expected_result", [
-    ([0, 1, 0, 1, 0], [2.0, 4.0]),                # Two true values at indices 2 and 4 (MATLAB uses 1-based indexing)
-    ([1, 1, 1, 1], [1.0, 2.0, 3.0, 4.0]),             # All true values, expect all indices
-    ([0, 0, 0, 0], [[]]),                       # No true values, expect empty array
-    # TODO: check whether we should include this
-    #([0, 1, np.nan, 1, 0], matlab.double([2.0, 4.0])),           # NaN should be ignored, expect indices 2 and 4
-    ([1, 0, 0, 1, 1, 0], [1.0, 4.0, 5.0])           # True values at indices 1, 4, and 5
+    ([0, 1, 0, 1, 0], [1.0, 3.0]),                # Two true values at indices 1 and 3
+    ([1, 1, 1, 1], [0.0, 1.0, 2.0, 3.0]),         # All true values, expect all indices
+    ([0, 0, 0, 0], [[]]),                         # No true values, expect empty array
+    ([0, 1, np.nan, 1, 0], [1.0, 2.0, 3.0]),      # NaN should be ignored
+    ([1, 0, 0, 1, 1, 0], [0.0, 3.0, 4.0])         # True values at indices 0, 3, and 4
 ])
 def test_get_iNight(test_engine, input_data, expected_result):
     input_data = test_engine.convert(input_data)
     result = test_engine.get_iNight(input_data)
+    expected_result = test_engine.convert(expected_result, index='to_matlab')
     assert test_engine.equal(result, expected_result), f"Expected {expected_result}, but got {result}"
 
 # Parameterized test for the update_ustar function
@@ -194,8 +190,7 @@ def test_get_iNight(test_engine, input_data, expected_result):
 def test_update_uStar(test_engine, input_data, expected_result):
     input_data = test_engine.convert(input_data)
     result = test_engine.update_uStar(input_data)
-    assert test_engine.equal(result, expected_result), f"Expected {expected_result}, but got {result}"
-
+    assert test_engine.equal(result, test_engine.convert(expected_result)), f"Expected {expected_result}, but got {result}"
 
 # Parameterized test for the get_ntN function
 @pytest.mark.parametrize("t_input, nSeasons, expected_ntN", [
@@ -217,40 +212,37 @@ def test_get_ntN(test_engine, t_input, nSeasons, expected_ntN):
     "NEE, uStar, T, iNight, expected_itNee",
     [
         # Case 1: No NaNs and full intersection with iNight
-        ([1, 2, 3, 4], [1, 1, 1, 1], [1, 1, 1, 1], [1, 2, 3], [1.0,2.0,3.0]),
+        ([1, 2, 3, 4], [1, 1, 1, 1], [1, 1, 1, 1], [0, 1, 2], [0.0, 1.0, 2.0]),
 
         # Case 2: Some NaN values, partial intersection with iNight
-        ([1, np.nan, 3, 4], [1, 1, np.nan, 1], [1, 1, 1, np.nan], [1, 3], 1.0),
+        ([1, np.nan, 3, 4], [1, 1, np.nan, 1], [0, 0, 0, np.nan], [0, 2], 0.0),
+
+        # Case 2b: Some NaN values, partial intersection with iNight
+        ([4, 1, np.nan, 3, 4], [6, 4, 1, np.nan, 1], [np.nan, 0, 0, 0.0, 0], [1, 3], 1.0),
 
         # Case 3: No intersection with iNight
-        ([1, 2, 3, 4], [1, 1, 1, 1], [1, 1, 1, 1], [5, 6], [[]]),
+        ([1, 2, 3, 4], [1, 1, 1, 1], [1, 1, 1, 1], [4, 5], [[]]),
 
         # Case 4: All elements are NaN, so no valid indices
-        ([np.nan, np.nan], [np.nan, np.nan], [np.nan, np.nan], [1, 2], [[]]),
+        ([np.nan, np.nan], [np.nan, np.nan], [np.nan, np.nan], [0, 1], [[]]),
 
         # Case 5: All valid values, but no intersection with iNight
         ([1, 2, 3, 4], [1, 1, 1, 1], [1, 1, 1, 1], [], []),
 
         # Case 6: All valid values and full intersection with iNight
-        ([1, 2, 3], [1, 1, 1], [1, 1, 1], [1, 2, 3], [1.0, 2.0, 3.0])
+        ([1, 2, 3], [1, 1, 1], [1, 1, 1], [0, 1, 2], [0.0, 1.0, 2.0])
     ]
 )
 def test_get_itNee(test_engine, NEE, uStar, T, iNight, expected_itNee):
-    # Convert input arrays to MATLAB-compatible types
-    NEE_matlab = test_engine.convert(NEE)
-    uStar_matlab = test_engine.convert(uStar)
-    T_matlab = test_engine.convert(T)
-    iNight_matlab = test_engine.convert(iNight)
+    NEE_input = test_engine.convert(NEE)
+    uStar_input = test_engine.convert(uStar)
+    T_input = test_engine.convert(T)
+    iNight_input = test_engine.convert(iNight, index='to_matlab')
 
-    # Call the MATLAB function
-    itNee = test_engine.get_itNee(NEE_matlab, uStar_matlab, T_matlab, iNight_matlab)
-
+    # Call the function
+    itNee = test_engine.get_itNee(NEE_input, uStar_input, T_input, iNight_input)
     # Compare results
-    # TODO: probably collapse
-    if not isinstance(itNee, float):
-        assert test_engine.equal(itNee, expected_itNee), f"Expected {expected_itNee}, but got {itNee}"
-    else:
-        assert test_engine.equal(itNee, expected_itNee)
+    assert test_engine.equal(itNee, test_engine.convert(expected_itNee, index='to_matlab')), f"Expected {expected_itNee}, but got {itNee}"
 
 # Test for the setup_Cp function
 @pytest.mark.parametrize(
@@ -275,12 +267,10 @@ def test_get_itNee(test_engine, NEE, uStar, T, iNight, expected_itNee):
 def test_setup_Cp(test_engine, nSeasons, nStrataX, nBoot, expected_shape):
     Cp = test_engine.setup_Cp(nSeasons, nStrataX, nBoot)
 
-    # TODO remove these lines
-    # Convert the MATLAB output to numpy arrays for comparison
     Cp_array = np.array(Cp)
 
     # Check the shape of Cp2 and Cp3
-    assert test_engine.equal(Cp_array.shape, test_engine.convert(expected_shape)), f"Expected shape {expected_shape} for Cp, but got {Cp_array.shape}"
+    assert test_engine.equal(Cp_array.shape, test_engine.convert(expected_shape)), f"Expected shape {test_engine.convert(expected_shape)} for Cp, but got {Cp_array.shape}"
 
     # Ensure all elements are NaN
     assert np.isnan(Cp_array).all(), "Not all elements in Cp2 are NaN"
