@@ -41,12 +41,12 @@ Within the top-level directory we have:
 
 - `oneflux_steps/ustar_cp` - Original MATLAB
 - `oneflux_steps/ustar_cp_refactor` - Modularised MATLAB code
-- `oneflux_steps/ustar_cp_python` - Python translation.
+- `oneflux_steps/ustar_cp_python` - Python translation
 
 We have also added
 
 - `tests/conftest.py` - Test engine
-- `tests/unit_tests/test_ustar_cp` - Extensive test suite for `ustar_cp`.
+- `tests/unit_tests/test_ustar_cp` - Extensive test suite for `ustar_cp`
 - `tests/test_artefacts` - Test fixtures mostly comprising site data and intermediate input-output data generated from site data
 
 Tests can be run for the MATLAB code (in `ustar_cp_refactor`) by running at the top-level:
