@@ -38,6 +38,28 @@ The actual translation process combined a number of techniques:
   c. Using LLMs;
   d. Hand translation.
 
+## Resulting code structure
+
+Within the top-level directory we
+have:
+
+- `oneflux_steps/ustar_cp` - Original MATLAB
+- `oneflux_steps/ustar_cp_refactor` - Moduralised MATLAB code
+- `oneflux_steps/ustar_cp_python` - Python translation.
+
+We have also added
+
+- `tests/conftest.py` - Test engine
+- `tests/unit_tests/test_ustar_cp` - Extensive test suite for `ustar_cp`.
+
+Tests can be run for the MATLAB code (in `ustar_cp_refactor`) at the top-level by running
+
+   pytest tests/unit_tests/test_ustar_cp --language=matlab
+
+and for the Python translation by running:
+
+   pytest tests/unit_tests/test_ustar_cp --language=python
+
 ## Multi-language test suite
 
 We provide a language-agnostic test suite that can switch between MATLAB (using the [matlab.engine FFI](https://uk.mathworks.com/help/matlab/matlab-engine-for-python.html)
@@ -77,15 +99,6 @@ target the requisite language. The language can then be switched by passing
 the command-line argument `--language=LANG` to `pytest`
 where `LANG` is either `python` or `matlab` (the default
 at the moment).
-
-## Resulting code structure
-
-Within the top-level `oneflux_steps` directory we
-have:
-
-- `ustar_cp` - Original MATLAB
-- `ustar_cp_refactor` - Moduralised MATLAB code
-- `ustar_cp_python` - Python translation.
 
 # Retirement Plan
 
