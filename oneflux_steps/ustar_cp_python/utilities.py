@@ -6,7 +6,8 @@ from decimal import Decimal, ROUND_HALF_UP
 
 def prctile(A: np.ndarray, p: float) -> float|np.ndarray:
     """
-    Compute the p-th percentile of array A using MATLAB's percentile algorithm.
+    Compute the p-th percentile of array A in a way that has
+    (as far as we can tell) the same semantics MATLAB's percentile algorithm.
 
     Args:
         A (np.ndarray): Input 1D array.
