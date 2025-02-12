@@ -316,11 +316,9 @@ def test_ppfdColExists(test_engine, columns_index, expected_ppfd_from_rg, expect
 
     # Create the input data
     ppfd_index = test_engine.convert(4, 'to_python')
-    if isinstance(test_engine, PythonEngine):
-        new_columns_index = [i-1 if i != -1 else i for i in columns_index]
-        columns_index = test_engine.convert(np.array(new_columns_index))
-    else:
-        columns_index = test_engine.convert(np.array(columns_index))
+
+    columns_index = test_engine.convert(np.array(columns_index), 'to_python')
+
     input_columns_names = ['USTAR', 'NEE', 'TA', 'PPFD_IN' ,'SW_IN']
 
     # Call the function

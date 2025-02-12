@@ -138,10 +138,17 @@ class PythonEngine(TestEngine):
         if x is None:
             raise ValueError("Input cannot be None")
         if index == 'to_python':
-            if isinstance(x, (int, float, np.ndarray)):
-                x = x-1
-            elif isinstance(x, list):
-                x = np.asarray(x)-1
+            if isinstance(x, list):
+                x = np.asarray(x)
+        
+            if isinstance(x, (int, float)):
+                if x != -1:
+                    x = x-1
+            elif isinstance(x, np.ndarray):
+                print("Before conversion: ", x)
+                x = np.asarray(x)
+                x = np.where(x!=-1, x-1, x)
+                print("After conversion: ", x)
         if isinstance(x, list):
             # Transpose to capture MATLAB data layout
             # when the data has been serialised from MATLAB
