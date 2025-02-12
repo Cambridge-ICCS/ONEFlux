@@ -1,47 +1,50 @@
 # Migrating ustar_cp from MATLAB to Python
 
-In 2024, a team from the Institute of Computing for
-Climate Science undertook to translate the MATLAB implementation 
-of ustar_cp into Python 3. This document summarises the
-approach and provides a final 'retirement plan' for the
-MATLAB code.
+In 2024-25, a team from the Institute of Computing for
+Climate Science undertook to translate the MATLAB implementation  of the ustar_cp step of ONEFlux
+into Python 3. This document summarises the approach and provides a final 'retirement plan' for the MATLAB code.
 
-Team:
+Team at Cambridge:
+
 * Isaac Akanho
 * James Emberton
 * Dominic Orchard
 * Tianzhang Cai
 
-The work also leveraged an initial translation by Peter Isaac (OzFlux).
+The work also leveraged an initial translation by Peter Isaac (OzFlux). With thanks to discussion and input also from Gilberto Pastorello (Lawrence Berkeley Labs) and Omar Jamil (ICCS, Cambridge).
 
 ## Migration methodology
 
+We follow a test-driven approach to migration to ensure,
+as far as possible, semantic preservation from the MATLAB
+to Python. Our approach had three steps:
+
 1. Modularise MATLAB code into smaller function components;
-2. Write language agnostic tests in Python for all functions, which can then be applied
-to the MATLAB code. Test approaches included:
-   a. Smoke tests
-   b. Unit tests
-   c. Property-based tests
-   d. Data-driven tests generated from site data.
-3. Traverse the dependency graph of the MATLAB code from leaf to root,
-translating each function in turn and ensuring that the Python tests
-pass.
+
+2. Write language-agnostic tests in Python for all functions, which can then be applied to the MATLAB code. Test approaches included:
+    a. Smoke tests
+    b. Unit tests
+    c. Property-based tests
+    d. Data-driven tests generated from site data.
+
+3. Traverse the dependency graph of the MATLAB code from leaf to root, translating each function in turn and ensuring that the Python tests all pass.
 
 In some cases additional 'differential' tests were employed,
-generating random data and comparing the MATLAB and python implementations.
+generating random data and comparing the MATLAB and Python implementations.
 
 The actual translation process combined a number of techniques:
-  a. Using the inital hand-translation by Peter Isaac;
-  b. Using an in-house extended version of the [https://github.com/victorlei/smop/](libsmop) tool, called [Matopy](https://github.com/tztsai/MatoPy).
-  c. Using LLMs
-  d. Hand translation
+  a. Using the initial hand-translation by Peter Isaac;
+  b. Using an in-house extended version of the [https://github.com/victorlei/smop/](libsmop) tool, called [Matopy](https://github.com/tztsai/MatoPy);
+  c. Using LLMs;
+  d. Hand translation.
 
 ## Multi-language test suite
 
-We provide a language-agnostic test suite that can switch between MATLAB (using the matlab.engine FFI
+We provide a language-agnostic test suite that can switch between MATLAB (using the [matlab.engine FFI](https://uk.mathworks.com/help/matlab/matlab-engine-for-python.html)
 for connecting Pythont to MATLAB) and Python code. This approach allows the same set of tests to be run against both MATLAB and Python implementations, ensuring consistency and correctness across different languages.
 
-In `contest.py` an abstract base class `TestEngine` defines the language-agnostic interface
+The core of this functionality is provided by test fixtures
+in `tests/conftest.py`. Here, an abstract base class `TestEngine` defines the language-agnostic interface
 against which instances of the class provide MATLAB and Python test runners. 
 
 The TestEngine abstract base class defines the following methods that need to be implemented by any concrete test engine:
@@ -75,8 +78,18 @@ the command-line argument `--language=LANG` to `pytest`
 where `LANG` is either `python` or `matlab` (the default
 at the moment).
 
+## Resulting code structure
+
+Within the top-level `oneflux_steps` directory we
+have:
+
+- `ustar_cp` - Original MATLAB
+- `ustar_cp_refactor` - Moduralised MATLAB code
+- `ustar_cp_python` - Python translation.
+
 # Retirement Plan
 
 For now, we preserve the MATLAB code alongside the Python.
 The following explains how to finally remove the MATLAB
 and convert the test suite to be Python only.
+
