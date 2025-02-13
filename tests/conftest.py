@@ -94,6 +94,7 @@ from oneflux_steps.ustar_cp_python.utilities import *
 from oneflux_steps.ustar_cp_python.cpd_evaluate_functions import *
 from oneflux_steps.ustar_cp_python.cpdFindChangePoint_functions import *
 from oneflux_steps.ustar_cp_python.cpdBootstrap import *
+from oneflux_steps.ustar_cp_python.fcEqnAnnualSine import *
 from oneflux_steps.ustar_cp_python.launch import *
 
 def pytest_addoption(parser):
