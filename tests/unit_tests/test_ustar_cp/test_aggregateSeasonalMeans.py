@@ -9,27 +9,29 @@ import numpy as np
         (
             [10, 20, 30],          # mt
             [1.0, 2.0, 3.0],       # Cp
-            [10, 20, 30],          # xmt
+            [20],          # xmt
             [True, True, True],    # iSelect (bool mask)
             1,                     # nWindows
             1,                     # nStrata
             1,                     # nBoot
-            [20.0],                # expected_tW (mock result; you must refine)
-            [2.0],                 # expected_CpW (mock result)
+            [10.0],                # expected_tW (mock result; you must refine)
+            [1.0],                 # expected_CpW (mock result)
         ),
 
         # -- Test Case 2: Multiple windows, partial selection --
         (
-            [10, 20, 30, 40, 50],
-            [1.0, 2.0, 4.0, 8.0, 16.0],
-            [10, 20, 30, 40, 50],
-            [False, True, True, True, False],  # iSelect
-            2,
-            1,
-            1,
-            [25.0, 40.0],          # expected_tW (mock result; you must refine)
-            [3.0, 8.0],           # expected_CpW (mock result)
-        ),
+    [10, 20, 30, 40, 50],               # mt
+    [1.0, 2.0, 4.0, 8.0, 16.0],         # Cp
+    [10, 20, 30, 40, 50, 60, 70, 80, 90, 
+     100,110,120,130,140,150,160,170,180,190,
+     200,210,220,230,240],  # <-- 24 elements for xmt
+    [False, True, True, True, False],  # iSelect
+    4,                                  # nWindows
+    3,                                  # nStrata
+    2,                                  # nBoot
+    [25.0, 40.0],                       # expected_tW
+    [3.0, 8.0],                         # expected_CpW
+),
     ]
 )
 def test_aggregateSeasonalMeans(test_engine, mt, Cp, xmt, iSelect,
