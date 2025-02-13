@@ -48,4 +48,4 @@ def test_fcEqnAnnualSine_edge_cases(test_engine, b, t, expected, request):
     result = test_engine.fcEqnAnnualSine(b_input, t_input)
 
     # Verify result
-    assert test_engine.equal(result, expected)
+    assert test_engine.equal(result, test_engine.convert(expected))
