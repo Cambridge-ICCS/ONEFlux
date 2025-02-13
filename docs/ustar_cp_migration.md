@@ -59,7 +59,9 @@ and for the Python translation by running:
 
 ## Multi-language test suite
 
-We provide a language-agnostic test suite that can switch between MATLAB (using the [matlab.engine FFI](https://uk.mathworks.com/help/matlab/matlab-engine-for-python.html) for connecting Python to MATLAB) and Python code. This approach allows the same set of tests to be run against both MATLAB and Python implementations, ensuring consistency and correctness across different languages.
+We provide a language-agnostic test suite that can switch between MATLAB (using the [matlab.engine FFI](https://uk.mathworks.com/help/matlab/matlab-engine-for-python.html) for connecting Python to MATLAB) and Python code. This approach allows the same set of tests to be run against both MATLAB and Python implementations, ensuring consistency and correctness across different languages. The original Matlab code was written and then compiled using Matlab 2018a. 
+
+The ONEFlux code uses the Matlab compiler runtime (MCR) to run the compiled Matlab code. Our tests are run using Matlab 2024a which can evaluate the raw code directly without need for compilation. We chose this route in part due to the lack of ARM cpu support from that specific version of the runtime, and the need to read, modularise and test the Matlab code prior to translation.
 
 The core of this functionality is provided by test fixtures in `tests/conftest.py`. Here, an abstract base class `TestEngine` defines the language-agnostic interface
 against which instances of the class provide MATLAB and Python test runners. 
