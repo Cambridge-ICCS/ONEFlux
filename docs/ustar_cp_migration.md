@@ -1,6 +1,6 @@
 # Migrating ustar_cp from MATLAB to Python
 
-In 2024-25, a team from the Institute of Computing for Climate Science undertook to translate the MATLAB implementation of the ustar_cp step of ONEFlux into Python 3. This document summarises the approach and provides a final 'retirement plan' for the MATLAB code.
+In 2024-25, a team from the Institute of Computing for Climate Science, University of Cambridge, undertook to translate the MATLAB implementation of the ustar_cp step of ONEFlux into Python 3. This document summarises the approach and provides a final 'retirement plan' for the MATLAB code.
 
 Team at Cambridge:
 
