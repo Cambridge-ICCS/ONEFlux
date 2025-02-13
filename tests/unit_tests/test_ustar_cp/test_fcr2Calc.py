@@ -104,7 +104,7 @@ def test_r2_measure_properties(test_engine, data1, data2, expected):
    (([19999.999999999996, 1.175494351e-38, 5.960464477539063e-08, -228728061.81411815]
      , [2.00001, 1e-05, -940842685.2845484, -0.3333333333333333])
    , 924.8086116300157)])
-def test_r2_scale_invariance_fixed(test_engine, list_data, scalar):
+def test_r2_scale_invariance_specific_case(test_engine, list_data, scalar):
   data1, data2 = list_data
   conv = test_engine.convert
 
