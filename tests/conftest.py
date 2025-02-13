@@ -75,7 +75,7 @@ class TestEngine(ABC):
         """Compare two values for equality in the representation used by this engine"""
         pass
 
-# Python version imported here
+# Python version of ustar_cp imported here
 from oneflux_steps.ustar_cp_python import *
 from oneflux_steps.ustar_cp_python.fcNaniqr import *
 from oneflux_steps.ustar_cp_python.cpdFmax2pCore import *
@@ -212,12 +212,9 @@ class MFWrapper:
                 ret = list(ret)
             for j in jsonencode:
                 ret[j] = json.loads(ret[j], object_hook=none2nan)
-
             if nargout <= 1:
                 ret = ret[0]
         return ret
-    
-
 
 # MATLAB TestEngine
 class MatlabEngine:
@@ -306,7 +303,6 @@ class MatlabEngine:
 
               if nargout <= 1:
                   ret = ret[0]
-
           return ret
 
 def mf_factory(cls, *args, **kwargs):
@@ -314,6 +310,42 @@ def mf_factory(cls, *args, **kwargs):
     f.__init__(*args, **kwargs)
     return MatlabEngine(f)
 MatlabFunc.__new__ = mf_factory
+
+def to_matlab_type(data: Any) -> Any:
+    """
+    Converts various Python data types to their MATLAB equivalents.
+
+    Args:
+        data (Any): The input data to be converted.
+
+    Returns:
+        Any: The converted data in a MATLAB-compatible format.
+    """
+    if isinstance(data, dict):
+        # Convert a Python dictionary to a MATLAB struct
+        # TODO: the following doesn't actually work but is not yet used
+        matlab_struct = matlab.struct()
+        for key, value in data.items():
+            matlab_struct[key] = to_matlab_type(value)  # Recursively handle nested structures
+        return matlab_struct
+    elif isinstance(data, np.ndarray):
+        if data.dtype == bool:
+            return matlab.logical(data.tolist())
+        elif np.isreal(data).all():
+            return matlab.double(data.tolist())
+        else:
+            return data.tolist()  # Convert non-numeric arrays to lists
+    elif isinstance(data, list):
+        # Convert Python list to MATLAB double array if all elements are numbers
+        if all(isinstance(elem, (int, float)) for elem in flatten(data)):
+            return matlab.double(data)
+        else:
+            # Create a cell array for lists containing non-numeric data
+            return [to_matlab_type(elem) for elem in data]
+    elif isinstance(data, (int, float)):
+        return matlab.double([data])  # Convert single numbers
+    else:
+      return data  # If the data type is already MATLAB-compatible
 
 
 @pytest.fixture(scope="session")
@@ -544,41 +576,6 @@ def compare_text_blocks(text1, text2):
     """
     return text1.replace('\n', '').strip() == text2.replace('\n', '').strip()
 
-def to_matlab_type(data: Any) -> Any:
-    """
-    Converts various Python data types to their MATLAB equivalents.
-
-    Args:
-        data (Any): The input data to be converted.
-
-    Returns:
-        Any: The converted data in a MATLAB-compatible format.
-    """
-    if isinstance(data, dict):
-        # Convert a Python dictionary to a MATLAB struct
-        # TODO: the following doesn't actually work but is not yet used
-        matlab_struct = matlab.struct()
-        for key, value in data.items():
-            matlab_struct[key] = to_matlab_type(value)  # Recursively handle nested structures
-        return matlab_struct
-    elif isinstance(data, np.ndarray):
-        if data.dtype == bool:
-            return matlab.logical(data.tolist())
-        elif np.isreal(data).all():
-            return matlab.double(data.tolist())
-        else:
-            return data.tolist()  # Convert non-numeric arrays to lists
-    elif isinstance(data, list):
-        # Convert Python list to MATLAB double array if all elements are numbers
-        if all(isinstance(elem, (int, float)) for elem in flatten(data)):
-            return matlab.double(data)
-        else:
-            # Create a cell array for lists containing non-numeric data
-            return [to_matlab_type(elem) for elem in data]
-    elif isinstance(data, (int, float)):
-        return matlab.double([data])  # Convert single numbers
-    else:
-      return data  # If the data type is already MATLAB-compatible
 
 def flatten(container):
     """
