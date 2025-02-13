@@ -1,6 +1,6 @@
 """
-This module contains pytest fixtures and utility functions to set up the test environment,
-handle MATLAB engine interactions, and process text files for comparison in unit tests.
+This module contains pytest fixtures and utility functions to set up the test environment for ustar_cp,
+including multi-language testing (between Python and MATLAB), and process text files for comparison in unit tests.
 
 Contents:
     Fixtures:
@@ -40,7 +40,7 @@ from matlab.engine.matlabengine import MatlabFunc
 #  --language=python runs the tests against the Python implementation
 
 def pytest_addoption(parser):
-    parser.addoption("--language", action="store", default="matlab")
+    parser.addoption("--language", action="store", default="python")
 
 @pytest.fixture(scope="session")
 def language(pytestconfig):
@@ -129,7 +129,7 @@ class PythonEngine(TestEngine):
         return x
 
     def equal(self, x, y) -> bool:
-        """Enhanced equality check for MATLAB arrays."""
+        """Enhanced equality check for arrays."""
         if x is None or y is None:
             raise ValueError("Comparison values cannot be None")
         if isinstance(x, float) or isinstance(y, float):
@@ -182,7 +182,7 @@ class MFWrapper:
         # make matlab stdout and stderr printed at the end of pytest
         atexit.register(lambda: (s := self.out.getvalue()) and print(f"{name} stdout:\n{s}"))
         atexit.register(lambda: (s := self.err.getvalue()) and print(f"{name} stderr:\n{s}"))
-
+        
     def __call__(self, *args, jsonencode=(), jsondecode=(), **kwargs):
         """
         Call the wrapped function with optional JSON encoding/decoding to handle the issue that non-scalar structs (arrays of structs) cannot be returned from MATLAB functions to Python.
@@ -347,21 +347,48 @@ def to_matlab_type(data: Any) -> Any:
     else:
       return data  # If the data type is already MATLAB-compatible
 
+# Helper function to compare MATLAB double arrays element-wise, handling NaN comparisons
+def compare_matlab_arrays(result, expected):
+    if isinstance(result, float):
+      # Floating point equality using numpy
+      return np.isclose(result, expected, equal_nan=True)
 
+    if not hasattr(result, '__len__') or not hasattr(expected, '__len__'):
+        return np.allclose(result, expected, equal_nan=True)
+
+    if isinstance(result, dict):
+        if not isinstance(expected, dict):
+            return False
+        if set(result.keys()) != set(expected.keys()):
+            return False
+        return all(compare_matlab_arrays(result[k], expected[k]) for k in result.keys())
+
+    if len(result) != len(expected):
+        # Potentially we are in the situation where the MATLAB is wrapped in an extra layer of array
+        if isinstance(result, matlab.double) and len(result) == 1:
+            result = result[0]
+            return all(compare_matlab_arrays(r, e) for r, e in zip(result, expected))
+        else:
+            return False
+
+    if isinstance(result, matlab.double):
+        return np.allclose(result, expected, equal_nan=True)
+
+    # Recursive case
+    return all(compare_matlab_arrays(r, e) for r, e in zip(result, expected))
+# </MATLAB>
+
+# Test engine fixture
 @pytest.fixture(scope="session")
 def test_engine(language, refactored=True):
     """
     Pytest fixture to start a 'running engine' which allows multiple languages
     to be targetted
     """
-    # if request.param == "translated":  # return the translated python module
-    #     import oneflux_steps.ustar_cp_python_auto as eng
-    #     yield eng
-    #     return
     if language == 'python':
         yield PythonEngine()  # Assuming a defined PythonEngine class elsewhere
+    # <MATLAB>
     else:
-
         """
         Pytest fixture to start a MATLAB engine session, add a specified directory
         to the MATLAB path, and clean up after the tests.
@@ -405,10 +432,11 @@ def test_engine(language, refactored=True):
 
         yield eng
 
-        #Close MATLAB engine after tests are done
+        # Close MATLAB engine after tests are done
         eng.quit()
+        # </MATLAB>
 
-
+# Other fixtures
 @pytest.fixture
 def setup_folders(tmp_path, request, testcase: str = "US_ARc"):
     """
@@ -576,7 +604,6 @@ def compare_text_blocks(text1, text2):
     """
     return text1.replace('\n', '').strip() == text2.replace('\n', '').strip()
 
-
 def flatten(container):
     """
     Flatten a nested container into a single list.
@@ -587,38 +614,6 @@ def flatten(container):
                 yield j
         else:
             yield i
-
-# Helper function to compare MATLAB double arrays element-wise, handling NaN comparisons
-def compare_matlab_arrays(result, expected):
-    if isinstance(result, float):
-      # Floating point equality using numpy
-      return np.isclose(result, expected, equal_nan=True)
-
-    if not hasattr(result, '__len__') or not hasattr(expected, '__len__'):
-        return np.allclose(result, expected, equal_nan=True)
-
-    if isinstance(result, dict):
-        if not isinstance(expected, dict):
-            return False
-        if set(result.keys()) != set(expected.keys()):
-            return False
-        return all(compare_matlab_arrays(result[k], expected[k]) for k in result.keys())
-
-    if len(result) != len(expected):
-        # Potentially we are in the situation where the MATLAB is wrapped in an extra layer of array
-        if isinstance(result, matlab.double) and len(result) == 1:
-            result = result[0]
-            return all(compare_matlab_arrays(r, e) for r, e in zip(result, expected))
-        else:
-            return False
-
-    if isinstance(result, matlab.double):
-        return np.allclose(result, expected, equal_nan=True)
-
-    # Recursive case
-    return all(compare_matlab_arrays(r, e) for r, e in zip(result, expected))
-    # ALT:
-    #return all(objects_are_equal(r, e) for r, e in zip(result, expected))
 
 def read_csv_with_csv_module(file_path):
     """

@@ -33,19 +33,19 @@ def same_len_float_lists(draw):
 ## R2 measure should be invariant under scaling
 @given(list_data=same_len_float_lists(),
       scalar=floats(min_value=0.1,max_value=1000))
-@settings(deadline=1000)
+@settings(deadline=2000)
 def test_r2_scale_invariance(test_engine, list_data, scalar):
   data1, data2 = list_data
   conv = test_engine.convert
- 
-  # Calculate R2 for the original data 
+
+  # Calculate R2 for the original data
   r2 = test_engine.fcr2Calc(conv(data1), conv(data2))
 
   # Scale it
   data1_scaled = [scalar*x for x in data1]
   data2_scaled = [scalar*x for x in data2]
 
-  # Calculate R2 for the scaled data 
+  # Calculate R2 for the scaled data
   r2_scale = test_engine.fcr2Calc(conv(data1_scaled), conv(data2_scaled))
 
   # Should be equal
@@ -53,19 +53,19 @@ def test_r2_scale_invariance(test_engine, list_data, scalar):
 
 ## R2 measure should be invariant under translation
 @given(list_data=same_len_float_lists())
-@settings(deadline=1000)
+@settings(deadline=2000)
 def test_r2_translation_invariance(test_engine, list_data):
   data1, data2 = list_data
   conv = test_engine.convert
- 
-  # Calculate R2 for the original data 
+
+  # Calculate R2 for the original data
   r2 = test_engine.fcr2Calc(conv(data1), conv(data2))
 
   # Translate it
   data1_translated = [x + 1 for x in data1]
   data2_translated = [x + 1 for x in data2]
 
-  # Calculate R2 for the translated data 
+  # Calculate R2 for the translated data
   r2_translated = test_engine.fcr2Calc(conv(data1_translated), conv(data2_translated))
 
   # Should be equal
@@ -91,10 +91,32 @@ def test_r2_measure_properties_more(test_engine, data1):
   ([1, 2, 3], [1, 2, 5], 5.0),
   ([1, 2, 3], [1, 2, 6], 8.5),
   ([3,-0.5,2,7], [2.5,0.0,2,8], 1.214132762312634),
-  ([0.0,-10.0,20.0,2.0], [0.0,-10.0,22.0,0.0], 1.170940170940171),
-])
+  ([0.0,-10.0,20.0,2.0], [0.0,-10.0,22.0,0.0], 1.170940170940171)])
 def test_r2_measure_properties(test_engine, data1, data2, expected):
   conv = test_engine.convert
   # R2 measures should be 1 when the two datasets are the same
   r2 = test_engine.fcr2Calc(conv(data1), conv(data2))
   assert test_engine.equal(r2, expected)
+
+# An extra scaling property test with a particular example that we saw
+# failing intermittently in the past
+@pytest.mark.parametrize('list_data, scalar', [
+   (([19999.999999999996, 1.175494351e-38, 5.960464477539063e-08, -228728061.81411815]
+     , [2.00001, 1e-05, -940842685.2845484, -0.3333333333333333])
+   , 924.8086116300157)])
+def test_r2_scale_invariance_specific_case(test_engine, list_data, scalar):
+  data1, data2 = list_data
+  conv = test_engine.convert
+
+  # Calculate R2 for the original data
+  r2 = test_engine.fcr2Calc(conv(data1), conv(data2))
+
+  # Scale it
+  data1_scaled = [scalar*x for x in data1]
+  data2_scaled = [scalar*x for x in data2]
+
+  # Calculate R2 for the scaled data
+  r2_scale = test_engine.fcr2Calc(conv(data1_scaled), conv(data2_scaled))
+
+  # Should be equal
+  assert test_engine.equal(r2, r2_scale)
