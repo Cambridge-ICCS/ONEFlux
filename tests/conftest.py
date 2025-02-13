@@ -27,8 +27,19 @@ import json
 import io
 import atexit
 import numpy as np
-from matlab.engine.matlabengine import MatlabFunc
+from abc import ABC, abstractmethod
+import warnings
 from typing import Any
+
+
+# <MATLAB>
+import matlab.engine
+from matlab.engine.matlabengine import MatlabFunc
+# </MATLAB>
+
+# Setup command-line arguments for the tests to allow switching language
+#  --language=matlab runs the tests against the MATLAB implementation (default)
+#  --language=python runs the tests against the Python implementation
 
 class MFWrapper:
     def __init__(self, func):
@@ -80,9 +91,6 @@ def mf_factory(cls, *args, **kwargs):
     return MFWrapper(f)
 MatlabFunc.__new__ = mf_factory
 
-# from oneflux_steps.ustar_cp_py.libsmop import matlabarray, struct
-from abc import ABC, abstractmethod
-import warnings
 
 # Python version imported here
 from oneflux_steps.ustar_cp_python import *
