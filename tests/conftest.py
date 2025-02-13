@@ -20,17 +20,15 @@ Contents:
 
 import pytest
 import os
-import matlab.engine
 import shutil
 import glob
 import json
 import io
 import atexit
 import numpy as np
+from typing import Any
 from abc import ABC, abstractmethod
 import warnings
-from typing import Any
-
 
 # <MATLAB>
 import matlab.engine
@@ -41,70 +39,6 @@ from matlab.engine.matlabengine import MatlabFunc
 #  --language=matlab runs the tests against the MATLAB implementation (default)
 #  --language=python runs the tests against the Python implementation
 
-class MFWrapper:
-    def __init__(self, func):
-        self.func = func
-        self.out = io.StringIO()
-        self.err = io.StringIO()
-        name = func._name
-        # make matlab stdout and stderr printed at the end of pytest
-        atexit.register(lambda: (s := self.out.getvalue()) and print(f"{name} stdout:\n{s}"))
-        atexit.register(lambda: (s := self.err.getvalue()) and print(f"{name} stderr:\n{s}"))
-
-    def __call__(self, *args, jsonencode=(), jsondecode=(), **kwargs):
-        """
-        Call the wrapped function with optional JSON encoding/decoding to handle the issue that non-scalar structs (arrays of structs) cannot be returned from MATLAB functions to Python.
-        Args:
-            *args: Positional arguments to pass to the wrapped function.
-            jsonencode (tuple, optional): Indices of output arguments to JSON encode (into string) before the matlab function returns.
-            jsondecode (tuple, optional): Indices of input arguments to JSON decode (from string) at the beginning of the matlab function.
-            **kwargs: Keyword arguments to pass to the wrapped function.
-        Returns:
-            The result of the wrapped function, with specified outputs JSON decoded if necessary.
-        """
-        args = list(args)
-        if jsonencode:
-            args.append(['jsonencode'] + [i+1 for i in jsonencode])
-        if jsondecode:
-            for i in jsondecode:
-                args[i] = json.dumps(args[i])
-            args.append(['jsondecode'] + [i+1 for i in jsondecode])
-        out = kwargs.pop('stdout', self.out)
-        err = kwargs.pop('stderr', self.err)
-        ret = self.func(*args, **kwargs, stdout=out, stderr=err)
-        if jsonencode:
-            nargout = kwargs.get('nargout', 1)
-            if nargout <= 1:
-                ret = [ret]
-            else:
-                ret = list(ret)
-            for j in jsonencode:
-                ret[j] = json.loads(ret[j], object_hook=none2nan)
-
-            if nargout <= 1:
-                ret = ret[0]
-        return ret
-
-def mf_factory(cls, *args, **kwargs):
-    f = object.__new__(MatlabFunc)
-    f.__init__(*args, **kwargs)
-    return MFWrapper(f)
-MatlabFunc.__new__ = mf_factory
-
-
-# Python version imported here
-from oneflux_steps.ustar_cp_python import *
-from oneflux_steps.ustar_cp_python.fcNaniqr import *
-from oneflux_steps.ustar_cp_python.cpdFmax2pCore import *
-from oneflux_steps.ustar_cp_python.fcDatenum import *
-from oneflux_steps.ustar_cp_python.cpdFmax2pCp3 import *
-from oneflux_steps.ustar_cp_python.utilities import *
-from oneflux_steps.ustar_cp_python.cpd_evaluate_functions import *
-from oneflux_steps.ustar_cp_python.cpdFindChangePoint_functions import *
-from oneflux_steps.ustar_cp_python.cpdBootstrap import *
-from oneflux_steps.ustar_cp_python.fcEqnAnnualSine import *
-from oneflux_steps.ustar_cp_python.launch import *
-
 def pytest_addoption(parser):
     parser.addoption("--language", action="store", default="matlab")
 
@@ -112,7 +46,12 @@ def pytest_addoption(parser):
 def language(pytestconfig):
     return pytestconfig.getoption("language")
 
-# Specification of a `TestEngine`
+@pytest.fixture(scope = "session")
+def get_languages():
+    return ["python", "matlab"]
+
+# Specification of a `TestEngine` which enables language-agnostic tests
+
 class TestEngine(ABC):
     @abstractmethod
     def _repr_pretty_(self, *args):
@@ -135,6 +74,20 @@ class TestEngine(ABC):
     def equal(self, x, y) -> bool:
         """Compare two values for equality in the representation used by this engine"""
         pass
+
+# Python version imported here
+from oneflux_steps.ustar_cp_python import *
+from oneflux_steps.ustar_cp_python.fcNaniqr import *
+from oneflux_steps.ustar_cp_python.cpdFmax2pCore import *
+from oneflux_steps.ustar_cp_python.fcDatenum import *
+from oneflux_steps.ustar_cp_python.cpdFmax2pCp3 import *
+from oneflux_steps.ustar_cp_python.utilities import *
+from oneflux_steps.ustar_cp_python.cpd_evaluate_functions import *
+from oneflux_steps.ustar_cp_python.cpdFindChangePoint_functions import *
+from oneflux_steps.ustar_cp_python.cpdBootstrap import *
+from oneflux_steps.ustar_cp_python.fcEqnAnnualSine import *
+from oneflux_steps.ustar_cp_python.launch import *
+
 
 # Python TestEngine
 class PythonEngine(TestEngine):
@@ -218,7 +171,55 @@ class PythonEngine(TestEngine):
             warnings.warn(f"'{name}' is not callable", UserWarning)
         return newfunc if globals().get(name) else None
 
-# MATLAB Engine wrapper
+# <MATLAB>
+# MATLAB wrapper that is then used by the MATLAB TestEngine
+class MFWrapper:
+    def __init__(self, func):
+        self.func = func
+        self.out = io.StringIO()
+        self.err = io.StringIO()
+        name = func._name
+        # make matlab stdout and stderr printed at the end of pytest
+        atexit.register(lambda: (s := self.out.getvalue()) and print(f"{name} stdout:\n{s}"))
+        atexit.register(lambda: (s := self.err.getvalue()) and print(f"{name} stderr:\n{s}"))
+
+    def __call__(self, *args, jsonencode=(), jsondecode=(), **kwargs):
+        """
+        Call the wrapped function with optional JSON encoding/decoding to handle the issue that non-scalar structs (arrays of structs) cannot be returned from MATLAB functions to Python.
+        Args:
+            *args: Positional arguments to pass to the wrapped function.
+            jsonencode (tuple, optional): Indices of output arguments to JSON encode (into string) before the matlab function returns.
+            jsondecode (tuple, optional): Indices of input arguments to JSON decode (from string) at the beginning of the matlab function.
+            **kwargs: Keyword arguments to pass to the wrapped function.
+        Returns:
+            The result of the wrapped function, with specified outputs JSON decoded if necessary.
+        """
+        args = list(args)
+        if jsonencode:
+            args.append(['jsonencode'] + [i+1 for i in jsonencode])
+        if jsondecode:
+            for i in jsondecode:
+                args[i] = json.dumps(args[i])
+            args.append(['jsondecode'] + [i+1 for i in jsondecode])
+        out = kwargs.pop('stdout', self.out)
+        err = kwargs.pop('stderr', self.err)
+        ret = self.func(*args, **kwargs, stdout=out, stderr=err)
+        if jsonencode:
+            nargout = kwargs.get('nargout', 1)
+            if nargout <= 1:
+                ret = [ret]
+            else:
+                ret = list(ret)
+            for j in jsonencode:
+                ret[j] = json.loads(ret[j], object_hook=none2nan)
+
+            if nargout <= 1:
+                ret = ret[0]
+        return ret
+    
+
+
+# MATLAB TestEngine
 class MatlabEngine:
     def __init__(self, func):
         self.func = func
@@ -306,23 +307,6 @@ class MatlabEngine:
               if nargout <= 1:
                   ret = ret[0]
 
-       # # Some alternate approach here
-       # nargout = kwargs.get('nargout', 1)
-        # if nargout <= 1:
-        #     ret = [ret]
-        # else:
-        #     ret = list(ret)
-        # for j, y in enumerate(ret):
-        #     if j in jsonencode:
-        #         y = json.loads(y, object_hook=lambda d:
-        #             {k: np.nan if v is None else v for k, v in d.items()})
-        #         ret[j] = struct(y)
-        #     elif isinstance(y, np.ndarray):
-        #         ret[j] = matlabarray(y)
-        # if nargout <= 1:
-        #     ret = ret[0]
-        # return ret
-
           return ret
 
 def mf_factory(cls, *args, **kwargs):
@@ -331,10 +315,6 @@ def mf_factory(cls, *args, **kwargs):
     return MatlabEngine(f)
 MatlabFunc.__new__ = mf_factory
 
-@pytest.fixture(scope = "session")
-def get_languages():
-
-    return ["python", "matlab"]
 
 @pytest.fixture(scope="session")
 def test_engine(language, refactored=True):
