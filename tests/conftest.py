@@ -1,6 +1,6 @@
 """
-This module contains pytest fixtures and utility functions to set up the test environment,
-handle MATLAB engine interactions, and process text files for comparison in unit tests.
+This module contains pytest fixtures and utility functions to set up the test environment for ustar_cp,
+including multi-language testing (between Python and MATLAB), and process text files for comparison in unit tests.
 
 Contents:
     Fixtures:
@@ -20,89 +20,38 @@ Contents:
 
 import pytest
 import os
-import matlab.engine
 import shutil
 import glob
 import json
 import io
 import atexit
 import numpy as np
-from matlab.engine.matlabengine import MatlabFunc
 from typing import Any
-
-class MFWrapper:
-    def __init__(self, func):
-        self.func = func
-        self.out = io.StringIO()
-        self.err = io.StringIO()
-        name = func._name
-        # make matlab stdout and stderr printed at the end of pytest
-        atexit.register(lambda: (s := self.out.getvalue()) and print(f"{name} stdout:\n{s}"))
-        atexit.register(lambda: (s := self.err.getvalue()) and print(f"{name} stderr:\n{s}"))
-
-    def __call__(self, *args, jsonencode=(), jsondecode=(), **kwargs):
-        """
-        Call the wrapped function with optional JSON encoding/decoding to handle the issue that non-scalar structs (arrays of structs) cannot be returned from MATLAB functions to Python.
-        Args:
-            *args: Positional arguments to pass to the wrapped function.
-            jsonencode (tuple, optional): Indices of output arguments to JSON encode (into string) before the matlab function returns.
-            jsondecode (tuple, optional): Indices of input arguments to JSON decode (from string) at the beginning of the matlab function.
-            **kwargs: Keyword arguments to pass to the wrapped function.
-        Returns:
-            The result of the wrapped function, with specified outputs JSON decoded if necessary.
-        """
-        args = list(args)
-        if jsonencode:
-            args.append(['jsonencode'] + [i+1 for i in jsonencode])
-        if jsondecode:
-            for i in jsondecode:
-                args[i] = json.dumps(args[i])
-            args.append(['jsondecode'] + [i+1 for i in jsondecode])
-        out = kwargs.pop('stdout', self.out)
-        err = kwargs.pop('stderr', self.err)
-        ret = self.func(*args, **kwargs, stdout=out, stderr=err)
-        if jsonencode:
-            nargout = kwargs.get('nargout', 1)
-            if nargout <= 1:
-                ret = [ret]
-            else:
-                ret = list(ret)
-            for j in jsonencode:
-                ret[j] = json.loads(ret[j], object_hook=none2nan)
-
-            if nargout <= 1:
-                ret = ret[0]
-        return ret
-
-def mf_factory(cls, *args, **kwargs):
-    f = object.__new__(MatlabFunc)
-    f.__init__(*args, **kwargs)
-    return MFWrapper(f)
-MatlabFunc.__new__ = mf_factory
-
-# from oneflux_steps.ustar_cp_py.libsmop import matlabarray, struct
 from abc import ABC, abstractmethod
 import warnings
 
-# Python version imported here
-from oneflux_steps.ustar_cp_python import *
-from oneflux_steps.ustar_cp_python.fcNaniqr import *
-from oneflux_steps.ustar_cp_python.cpdFmax2pCore import *
-from oneflux_steps.ustar_cp_python.fcDatenum import *
-from oneflux_steps.ustar_cp_python.cpdFmax2pCp3 import *
-from oneflux_steps.ustar_cp_python.utilities import *
-from oneflux_steps.ustar_cp_python.cpd_evaluate_functions import *
-from oneflux_steps.ustar_cp_python.cpdFindChangePoint_functions import *
-from oneflux_steps.ustar_cp_python.cpdBootstrap import *
+# <MATLAB>
+import matlab.engine
+from matlab.engine.matlabengine import MatlabFunc
+# </MATLAB>
+
+# Setup command-line arguments for the tests to allow switching language
+#  --language=matlab runs the tests against the MATLAB implementation (default)
+#  --language=python runs the tests against the Python implementation
 
 def pytest_addoption(parser):
-    parser.addoption("--language", action="store", default="matlab")
+    parser.addoption("--language", action="store", default="python")
 
 @pytest.fixture(scope="session")
 def language(pytestconfig):
     return pytestconfig.getoption("language")
 
-# Specification of a `TestEngine`
+@pytest.fixture(scope = "session")
+def get_languages():
+    return ["python", "matlab"]
+
+# Specification of a `TestEngine` which enables language-agnostic tests
+
 class TestEngine(ABC):
     @abstractmethod
     def _repr_pretty_(self, *args):
@@ -125,6 +74,18 @@ class TestEngine(ABC):
     def equal(self, x, y) -> bool:
         """Compare two values for equality in the representation used by this engine"""
         pass
+
+# Python version of ustar_cp imported here
+from oneflux_steps.ustar_cp_python import *
+from oneflux_steps.ustar_cp_python.fcNaniqr import *
+from oneflux_steps.ustar_cp_python.cpdFmax2pCore import *
+from oneflux_steps.ustar_cp_python.fcDatenum import *
+from oneflux_steps.ustar_cp_python.cpdFmax2pCp3 import *
+from oneflux_steps.ustar_cp_python.utilities import *
+from oneflux_steps.ustar_cp_python.cpd_evaluate_functions import *
+from oneflux_steps.ustar_cp_python.cpdFindChangePoint_functions import *
+from oneflux_steps.ustar_cp_python.cpdBootstrap import *
+from oneflux_steps.ustar_cp_python.fcEqnAnnualSine import *
 
 # Python TestEngine
 class PythonEngine(TestEngine):
@@ -159,7 +120,7 @@ class PythonEngine(TestEngine):
         return x
 
     def equal(self, x, y) -> bool:
-        """Enhanced equality check for MATLAB arrays."""
+        """Enhanced equality check for arrays."""
         if x is None or y is None:
             raise ValueError("Comparison values cannot be None")
         if isinstance(x, float) or isinstance(y, float):
@@ -201,7 +162,52 @@ class PythonEngine(TestEngine):
             warnings.warn(f"'{name}' is not callable", UserWarning)
         return newfunc if globals().get(name) else None
 
-# MATLAB Engine wrapper
+# <MATLAB>
+# MATLAB wrapper that is then used by the MATLAB TestEngine
+class MFWrapper:
+    def __init__(self, func):
+        self.func = func
+        self.out = io.StringIO()
+        self.err = io.StringIO()
+        name = func._name
+        # make matlab stdout and stderr printed at the end of pytest
+        atexit.register(lambda: (s := self.out.getvalue()) and print(f"{name} stdout:\n{s}"))
+        atexit.register(lambda: (s := self.err.getvalue()) and print(f"{name} stderr:\n{s}"))
+        
+    def __call__(self, *args, jsonencode=(), jsondecode=(), **kwargs):
+        """
+        Call the wrapped function with optional JSON encoding/decoding to handle the issue that non-scalar structs (arrays of structs) cannot be returned from MATLAB functions to Python.
+        Args:
+            *args: Positional arguments to pass to the wrapped function.
+            jsonencode (tuple, optional): Indices of output arguments to JSON encode (into string) before the matlab function returns.
+            jsondecode (tuple, optional): Indices of input arguments to JSON decode (from string) at the beginning of the matlab function.
+            **kwargs: Keyword arguments to pass to the wrapped function.
+        Returns:
+            The result of the wrapped function, with specified outputs JSON decoded if necessary.
+        """
+        args = list(args)
+        if jsonencode:
+            args.append(['jsonencode'] + [i+1 for i in jsonencode])
+        if jsondecode:
+            for i in jsondecode:
+                args[i] = json.dumps(args[i])
+            args.append(['jsondecode'] + [i+1 for i in jsondecode])
+        out = kwargs.pop('stdout', self.out)
+        err = kwargs.pop('stderr', self.err)
+        ret = self.func(*args, **kwargs, stdout=out, stderr=err)
+        if jsonencode:
+            nargout = kwargs.get('nargout', 1)
+            if nargout <= 1:
+                ret = [ret]
+            else:
+                ret = list(ret)
+            for j in jsonencode:
+                ret[j] = json.loads(ret[j], object_hook=none2nan)
+            if nargout <= 1:
+                ret = ret[0]
+        return ret
+
+# MATLAB TestEngine
 class MatlabEngine:
     def __init__(self, func):
         self.func = func
@@ -288,24 +294,6 @@ class MatlabEngine:
 
               if nargout <= 1:
                   ret = ret[0]
-
-       # # Some alternate approach here
-       # nargout = kwargs.get('nargout', 1)
-        # if nargout <= 1:
-        #     ret = [ret]
-        # else:
-        #     ret = list(ret)
-        # for j, y in enumerate(ret):
-        #     if j in jsonencode:
-        #         y = json.loads(y, object_hook=lambda d:
-        #             {k: np.nan if v is None else v for k, v in d.items()})
-        #         ret[j] = struct(y)
-        #     elif isinstance(y, np.ndarray):
-        #         ret[j] = matlabarray(y)
-        # if nargout <= 1:
-        #     ret = ret[0]
-        # return ret
-
           return ret
 
 def mf_factory(cls, *args, **kwargs):
@@ -314,25 +302,84 @@ def mf_factory(cls, *args, **kwargs):
     return MatlabEngine(f)
 MatlabFunc.__new__ = mf_factory
 
-@pytest.fixture(scope = "session")
-def get_languages():
+def to_matlab_type(data: Any) -> Any:
+    """
+    Converts various Python data types to their MATLAB equivalents.
 
-    return ["python", "matlab"]
+    Args:
+        data (Any): The input data to be converted.
 
+    Returns:
+        Any: The converted data in a MATLAB-compatible format.
+    """
+    if isinstance(data, dict):
+        # Convert a Python dictionary to a MATLAB struct
+        # TODO: the following doesn't actually work but is not yet used
+        matlab_struct = matlab.struct()
+        for key, value in data.items():
+            matlab_struct[key] = to_matlab_type(value)  # Recursively handle nested structures
+        return matlab_struct
+    elif isinstance(data, np.ndarray):
+        if data.dtype == bool:
+            return matlab.logical(data.tolist())
+        elif np.isreal(data).all():
+            return matlab.double(data.tolist())
+        else:
+            return data.tolist()  # Convert non-numeric arrays to lists
+    elif isinstance(data, list):
+        # Convert Python list to MATLAB double array if all elements are numbers
+        if all(isinstance(elem, (int, float)) for elem in flatten(data)):
+            return matlab.double(data)
+        else:
+            # Create a cell array for lists containing non-numeric data
+            return [to_matlab_type(elem) for elem in data]
+    elif isinstance(data, (int, float)):
+        return matlab.double([data])  # Convert single numbers
+    else:
+      return data  # If the data type is already MATLAB-compatible
+
+# Helper function to compare MATLAB double arrays element-wise, handling NaN comparisons
+def compare_matlab_arrays(result, expected):
+    if isinstance(result, float):
+      # Floating point equality using numpy
+      return np.isclose(result, expected, equal_nan=True)
+
+    if not hasattr(result, '__len__') or not hasattr(expected, '__len__'):
+        return np.allclose(result, expected, equal_nan=True)
+
+    if isinstance(result, dict):
+        if not isinstance(expected, dict):
+            return False
+        if set(result.keys()) != set(expected.keys()):
+            return False
+        return all(compare_matlab_arrays(result[k], expected[k]) for k in result.keys())
+
+    if len(result) != len(expected):
+        # Potentially we are in the situation where the MATLAB is wrapped in an extra layer of array
+        if isinstance(result, matlab.double) and len(result) == 1:
+            result = result[0]
+            return all(compare_matlab_arrays(r, e) for r, e in zip(result, expected))
+        else:
+            return False
+
+    if isinstance(result, matlab.double):
+        return np.allclose(result, expected, equal_nan=True)
+
+    # Recursive case
+    return all(compare_matlab_arrays(r, e) for r, e in zip(result, expected))
+# </MATLAB>
+
+# Test engine fixture
 @pytest.fixture(scope="session")
 def test_engine(language, refactored=True):
     """
     Pytest fixture to start a 'running engine' which allows multiple languages
     to be targetted
     """
-    # if request.param == "translated":  # return the translated python module
-    #     import oneflux_steps.ustar_cp_python_auto as eng
-    #     yield eng
-    #     return
     if language == 'python':
         yield PythonEngine()  # Assuming a defined PythonEngine class elsewhere
+    # <MATLAB>
     else:
-
         """
         Pytest fixture to start a MATLAB engine session, add a specified directory
         to the MATLAB path, and clean up after the tests.
@@ -376,10 +423,11 @@ def test_engine(language, refactored=True):
 
         yield eng
 
-        #Close MATLAB engine after tests are done
+        # Close MATLAB engine after tests are done
         eng.quit()
+        # </MATLAB>
 
-
+# Other fixtures
 @pytest.fixture
 def setup_folders(tmp_path, request, testcase: str = "US_ARc"):
     """
@@ -547,42 +595,6 @@ def compare_text_blocks(text1, text2):
     """
     return text1.replace('\n', '').strip() == text2.replace('\n', '').strip()
 
-def to_matlab_type(data: Any) -> Any:
-    """
-    Converts various Python data types to their MATLAB equivalents.
-
-    Args:
-        data (Any): The input data to be converted.
-
-    Returns:
-        Any: The converted data in a MATLAB-compatible format.
-    """
-    if isinstance(data, dict):
-        # Convert a Python dictionary to a MATLAB struct
-        # TODO: the following doesn't actually work but is not yet used
-        matlab_struct = matlab.struct()
-        for key, value in data.items():
-            matlab_struct[key] = to_matlab_type(value)  # Recursively handle nested structures
-        return matlab_struct
-    elif isinstance(data, np.ndarray):
-        if data.dtype == bool:
-            return matlab.logical(data.tolist())
-        elif np.isreal(data).all():
-            return matlab.double(data.tolist())
-        else:
-            return data.tolist()  # Convert non-numeric arrays to lists
-    elif isinstance(data, list):
-        # Convert Python list to MATLAB double array if all elements are numbers
-        if all(isinstance(elem, (int, float)) for elem in flatten(data)):
-            return matlab.double(data)
-        else:
-            # Create a cell array for lists containing non-numeric data
-            return [to_matlab_type(elem) for elem in data]
-    elif isinstance(data, (int, float)):
-        return matlab.double([data])  # Convert single numbers
-    else:
-      return data  # If the data type is already MATLAB-compatible
-
 def flatten(container):
     """
     Flatten a nested container into a single list.
@@ -593,38 +605,6 @@ def flatten(container):
                 yield j
         else:
             yield i
-
-# Helper function to compare MATLAB double arrays element-wise, handling NaN comparisons
-def compare_matlab_arrays(result, expected):
-    if isinstance(result, float):
-      # Floating point equality using numpy
-      return np.isclose(result, expected, equal_nan=True)
-
-    if not hasattr(result, '__len__') or not hasattr(expected, '__len__'):
-        return np.allclose(result, expected, equal_nan=True)
-
-    if isinstance(result, dict):
-        if not isinstance(expected, dict):
-            return False
-        if set(result.keys()) != set(expected.keys()):
-            return False
-        return all(compare_matlab_arrays(result[k], expected[k]) for k in result.keys())
-
-    if len(result) != len(expected):
-        # Potentially we are in the situation where the MATLAB is wrapped in an extra layer of array
-        if isinstance(result, matlab.double) and len(result) == 1:
-            result = result[0]
-            return all(compare_matlab_arrays(r, e) for r, e in zip(result, expected))
-        else:
-            return False
-
-    if isinstance(result, matlab.double):
-        return np.allclose(result, expected, equal_nan=True)
-
-    # Recursive case
-    return all(compare_matlab_arrays(r, e) for r, e in zip(result, expected))
-    # ALT:
-    #return all(objects_are_equal(r, e) for r, e in zip(result, expected))
 
 def read_csv_with_csv_module(file_path):
     """
