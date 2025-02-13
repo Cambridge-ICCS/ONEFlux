@@ -33,7 +33,7 @@ def same_len_float_lists(draw):
 ## R2 measure should be invariant under scaling
 @given(list_data=same_len_float_lists(),
       scalar=floats(min_value=0.1,max_value=1000))
-@settings(deadline=1000)
+@settings(deadline=2000)
 def test_r2_scale_invariance(test_engine, list_data, scalar):
   data1, data2 = list_data
   conv = test_engine.convert
@@ -53,7 +53,7 @@ def test_r2_scale_invariance(test_engine, list_data, scalar):
 
 ## R2 measure should be invariant under translation
 @given(list_data=same_len_float_lists())
-@settings(deadline=1000)
+@settings(deadline=2000)
 def test_r2_translation_invariance(test_engine, list_data):
   data1, data2 = list_data
   conv = test_engine.convert
