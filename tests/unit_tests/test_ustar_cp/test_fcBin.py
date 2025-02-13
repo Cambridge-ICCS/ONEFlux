@@ -14,33 +14,33 @@ from hypothesis.strategies import floats, lists, integers
 
 import os
 
-def avoidOverflows(data, maxFloatSize=1e6, depth=0, max_depth=20):
-    if depth > max_depth: # Just in case there is too much recursion
-        return data
-    if np.all((np.abs(item) <= maxFloatSize or np.isnan(item)) for item in data):
-        return data
-    # Scale down and increment recursion depth
-    scaled_data = [item / maxFloatSize if not np.isnan(item) else item for item in data]
-    return avoidOverflows(scaled_data, maxFloatSize, depth + 1, max_depth)
+def avoidOverflows(data, maxFloatSize=1e10):
+  """
+  Helper function to avoid overflows in the test data
+  by making the floats smaller
+  """
+  if np.all(np.abs(item) <= maxFloatSize or np.isnan(item) for item in data):
+    return data
+  else:
+    fmax = np.finfo(np.float64).max
+    # Scale floats between [-fmax,fmax] * maxFloatSize
+    return [(item / fmax) * maxFloatSize if not np.isnan(item) else item for item in data]
   
 # Hypothesis tests for fcBin
-@given(data=lists(floats(allow_nan=True, allow_infinity=False), min_size=2),
+@given(dataIn=lists(floats(allow_nan=True, allow_infinity=False), min_size=2),
        scale=floats(allow_infinity=False),
        translate=floats(allow_infinity=False))
 @settings(deadline=1000)
-def test_singleton_bins_1D_data(data, scale, translate, test_engine):
+def test_singleton_bins_1D_data(dataIn, scale, translate, test_engine):
     """
     Tests the behaviour of `fcBin` for binning based on discrete bins of size 1
     for one dimemsional data"""
 
     # Use the initial data to generate two vectors worth of data
     # based on some scaling and translation to get data2
-    data = avoidOverflows(data)
-    data1 = data
-    data2 = [scale * item + translate for item in data]
-
     # If data is very big, scale it down to avoid overflows in the tests
-    data2 = avoidOverflows(data2)
+    data1 = avoidOverflows(dataIn)
+    data2 = avoidOverflows([scale * item + translate for item in data1])
 
     # Use `fcBin`
     nBins, mx, my  = test_engine.fcBin(test_engine.convert(data1), test_engine.convert(data2),
