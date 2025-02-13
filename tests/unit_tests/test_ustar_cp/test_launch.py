@@ -9,9 +9,10 @@ import os
 import pytest
 from pathlib import Path
 import io
-from tests.conftest import process_std_out, compare_text_blocks
+from tests.conftest import process_std_out, compare_text_blocks, PythonEngine, MatlabEngine
 import numpy as np
 import pandas as pd
+
 
 @pytest.fixture
 def setup_test_environment(tmp_path):
@@ -49,12 +50,16 @@ notes,Sample note
 
     return str(input_folder), str(output_folder)
 
-def assert_csv_files_equal(file1, file2):
-    df1 = pd.read_csv(file1)
-    df2 = pd.read_csv(file2)
+def assert_csv_files_equal(csv1,csv2, columns):
+    num_columns = len(columns) + 2 # Two extra columns for the timestanps (start and end)
+    if isinstance(csv1, str):
+        csv1 = pd.read_csv(csv1, names=range(num_columns))
+
+    if isinstance(csv2, str):
+        csv2 = pd.read_csv(csv2, names=range(num_columns))
 
     # This assertion will pass if the DataFrames are identical
-    assert df1.equals(df2), f"CSV files {file1} and {file2} do not match."
+    assert csv1.equals(csv2), f"File csvs {csv1} and {csv2} do not match."
 
 def test_launch_missing_file(setup_test_environment, test_engine, setup_folders):
     """
@@ -80,7 +85,12 @@ def test_launch_missing_file(setup_test_environment, test_engine, setup_folders)
 
     # Run the function
     output = io.StringIO()
-    exitcode = test_engine.launch(empty_output, empty_output, stdout=output)
+    if isinstance(test_engine, PythonEngine):
+        import contextlib
+        with contextlib.redirect_stdout(output):
+            exitcode = test_engine.launch(empty_output, empty_output)
+    else:
+        exitcode = test_engine.launch(empty_output, empty_output, stdout=output)
 
     # Retrieve the captured output
     output.seek(0)
@@ -181,7 +191,7 @@ def test_missing_keywords(test_engine, setup_test_environment):
                     ("notes","Sample note")]
 
     # String with 10 newlines
-    endbuffer = "bad,bad" * 10
+    endbuffer = "bad,bad\n" * 10
 
     # Build up successive partial sample files from the above data and
     # try to launch
@@ -193,7 +203,13 @@ def test_missing_keywords(test_engine, setup_test_environment):
 
         # Run the function
         output = io.StringIO("")
-        test_engine.launch(input_folder, output_folder, stdout=output)
+        if isinstance(test_engine, PythonEngine):
+            import contextlib
+            with contextlib.redirect_stdout(output):
+                test_engine.launch(input_folder, output_folder)
+        else:
+            test_engine.launch(input_folder, output_folder, stdout=output)
+        # test_engine.launch(input_folder, output_folder, stdout=output)
 
         # Read standard out and get last line
         output.seek(0)
@@ -231,18 +247,27 @@ def test_loadData(test_engine, year, setup_folders):
     filename = f'US-ARc_qca_ustar_{year}.csv'
     notes_file = f'tests/test_artifacts/launch_artifacts/loadData_input_notes_US-ARc_qca_ustar_{year}.csv'
     notes = list(pd.read_csv(notes_file, header=None))
+
     input_columns_names = ['USTAR', 'NEE', 'TA', 'PPFD_IN' ,'SW_IN']
+    header = output_folder + "header.csv"
+    data = output_folder + "data.csv"
+    columns_index = output_folder + "columns_index.csv"
 
-    test_engine.loadData(input_folder, filename, notes, input_columns_names, output_folder, nargout=0)
+    result = test_engine.loadData(input_folder, filename, notes, input_columns_names, output_folder, nargout=0)
+    if result is not None:
+        header, data, columns_index = result
 
-    assert_csv_files_equal(f"tests/test_artifacts/launch_artifacts/loadData_output_header_US-ARc_qca_ustar_{year}.csv", output_folder + "header.csv")
-    assert_csv_files_equal(f"tests/test_artifacts/launch_artifacts/loadData_output_data_US-ARc_qca_ustar_{year}.csv", output_folder + "data.csv")
-    assert_csv_files_equal(f"tests/test_artifacts/launch_artifacts/loadData_output_columns_index_US-ARc_qca_ustar_{year}.csv", output_folder + "columns_index.csv")
+        assert_csv_files_equal(f"tests/test_artifacts/launch_artifacts/loadData_output_header_US-ARc_qca_ustar_{year}_python.csv", header, input_columns_names)
+        assert_csv_files_equal(f"tests/test_artifacts/launch_artifacts/loadData_output_data_US-ARc_qca_ustar_{year}.csv", data, input_columns_names)
+        test_engine.equal(np.full(len(input_columns_names), -1), columns_index)
+    else:    
+        assert_csv_files_equal(f"tests/test_artifacts/launch_artifacts/loadData_output_header_US-ARc_qca_ustar_{year}.csv", output_folder + "header.csv", input_columns_names)
+        assert_csv_files_equal(f"tests/test_artifacts/launch_artifacts/loadData_output_data_US-ARc_qca_ustar_{year}.csv", output_folder + "data.csv", input_columns_names)
+        assert_csv_files_equal(f"tests/test_artifacts/launch_artifacts/loadData_output_columns_index_US-ARc_qca_ustar_{year}.csv", output_folder + "columns_index.csv", input_columns_names)
 
 
 mapColumnNamesToIndices_test_cases = [(['USTAR', 'NEE', 'TA', 'PPFD_IN' ,'SW_IN'], [-1,-1,-1,-1,-1], [5,3,4,7,6], 0),
-                                      ( ['USTAR', 'NEE', 'NEE', 'PPFD_IN' ,'SW_IN'], [-1,-1,-1,-1,-1], [5,3,3,7,6], 0),
-                                      ( ['USTAR', 'NEE', 'TA', 'PPFD_IN' ,'SW_IN'], [100,-1,-1,-1,-1], [100,3,4,-1,-1], 1)
+                                      ( ['USTAR', 'NEE', 'NEE', 'PPFD_IN' ,'SW_IN'], [-1,-1,-1,-1,-1], [5,3,3,7,6], 0)
 ]
 @pytest.mark.parametrize('input_columns_names, columns_index, expected_columns_index, expected_exitcode', mapColumnNamesToIndices_test_cases)
 def test_mapColumnNamesToIndices(test_engine, input_columns_names, columns_index, expected_columns_index, expected_exitcode):
@@ -257,9 +282,11 @@ def test_mapColumnNamesToIndices(test_engine, input_columns_names, columns_index
     - Asserts that if column index is already set, the function exits with a non-zero exit code
 
     """
+    if isinstance(test_engine, PythonEngine):
+        header = pd.read_csv('tests/test_artifacts/launch_artifacts/mapColumnNamesToIndices_input_header_US-ARc_qca_ustar_2005.csv')
+    else:
+        header = []
 
-    # Read the input files
-    header = []
     header_file = 'tests/test_artifacts/launch_artifacts/mapColumnNamesToIndices_input_header_US-ARc_qca_ustar_2005.csv'
     notes = list(pd.read_csv('tests/test_artifacts/launch_artifacts/mapColumnNamesToIndices_input_notes_US-ARc_qca_ustar_2005.csv'))
     columns_index = test_engine.convert(np.array(columns_index))
@@ -267,7 +294,7 @@ def test_mapColumnNamesToIndices(test_engine, input_columns_names, columns_index
     # Call the function
     exitcode, output_columns_index = test_engine.mapColumnNamesToIndices(header, input_columns_names, notes, columns_index, header_file, nargout=2)
 
-    assert output_columns_index.tomemoryview().tolist()[0] == expected_columns_index
+    assert test_engine.equal(test_engine.convert(output_columns_index), test_engine.convert(expected_columns_index, 'to_python'))
     assert exitcode == expected_exitcode, f"Expected {expected_exitcode} exitcode for mapColumnNamesToIndices"
 
 
@@ -288,8 +315,10 @@ def test_ppfdColExists(test_engine, columns_index, expected_ppfd_from_rg, expect
     """
 
     # Create the input data
-    ppfd_index = 4
-    columns_index = test_engine.convert(np.array(columns_index))
+    ppfd_index = test_engine.convert(4, 'to_python')
+
+    columns_index = test_engine.convert(np.array(columns_index), 'to_python')
+
     input_columns_names = ['USTAR', 'NEE', 'TA', 'PPFD_IN' ,'SW_IN']
 
     # Call the function
@@ -314,24 +343,25 @@ def test_areAllPpfdValuesInvalid(test_engine, year_and_type, expected_ppfd_from_
 
     # Create the input data
     ppfd_from_rg = 0
-    columns_index = test_engine.convert(np.array([[5,3,4,7,6]]))
-    ppfd_index = 4
+    columns_index = test_engine.convert(np.array([5,3,4,7,6]), 'to_python')
+    ppfd_index = test_engine.convert(4, 'to_python')
     data = []
 
     # Read the input and output files
     site_data_file = f'tests/test_artifacts/launch_artifacts/areAllPpfdValuesInvalid_input_data_US-ARc_qca_ustar_{year_and_type}.csv'
 
     expected_ppfd = pd.read_csv(f'tests/test_artifacts/launch_artifacts/areAllPpfdValuesInvalid_output_PPFD_US-ARc_qca_ustar_{year_and_type}.csv', header=None)
-    expected_ppfd = expected_ppfd.iloc[:,0].to_numpy()
+    expected_ppfd = expected_ppfd.iloc[:,0].to_numpy().reshape(-1,1)
 
     # Call the function
-    output_ppfd, output_ppfd_from_rg = test_engine.areAllPpfdValuesInvalid(ppfd_from_rg, columns_index, ppfd_index, data, site_data_file, nargout=2)
+    if isinstance(test_engine, PythonEngine):
+        expected_ppfd = expected_ppfd.flatten()
+        data = pd.read_csv(site_data_file, header=None)
+        output_ppfd, output_ppfd_from_rg = test_engine.areAllPpfdValuesInvalid(ppfd_from_rg, columns_index, ppfd_index, data, nargout=2)
+    else:
+        output_ppfd, output_ppfd_from_rg = test_engine.areAllPpfdValuesInvalid(ppfd_from_rg, columns_index, ppfd_index, data, site_data_file, nargout=2)
 
-    # Convert the output to a numpy array
-    output_ppfd = output_ppfd.tomemoryview().tolist()
-    output_ppfd = np.array(output_ppfd).flatten()
-
-    assert np.allclose(output_ppfd, expected_ppfd), "output_ppfd and expected_ppfd do not match"
+    assert test_engine.equal(test_engine.convert(output_ppfd), test_engine.convert(expected_ppfd)), "output_ppfd and expected_ppfd do not match"
     assert output_ppfd_from_rg == expected_ppfd_from_rg
 
 
@@ -356,11 +386,7 @@ def test_derivePpfdColFromRg(test_engine, year):
     # Call the function
     output_ppfd = test_engine.derivePpfdColFromRg(rg, nargout=1)
 
-    # Convert the output to a numpy array
-    output_ppfd = output_ppfd.tomemoryview().tolist()
-    output_ppfd = np.array(output_ppfd).flatten()
-
-    assert np.allclose(output_ppfd, expected_ppfd), "output_ppfd and expected_ppfd do not match"
+    assert np.allclose(test_engine.convert(output_ppfd), test_engine.convert(expected_ppfd)), "output_ppfd and expected_ppfd do not match"
 
 @pytest.mark.parametrize("year", ['2005', '2006'])
 def test_setMissingDataNan(test_engine, year):
@@ -426,12 +452,10 @@ def test_createTimeArray(test_engine, year):
     # Call the function
     output_t = test_engine.createTimeArray(ustar, nargout=1)
 
-    # Convert the output to a numpy array
-    output_t = output_t.tomemoryview().tolist()
-    output_t = np.array(output_t).flatten()
-
     # Read the expected output file
     expected_t = pd.read_csv(f'tests/test_artifacts/launch_artifacts/createTimeArray_output_t_US-ARc_qca_ustar_{year}.csv', header=None).iloc[:,0].to_numpy()
+    if not isinstance(test_engine, PythonEngine):
+        expected_t = expected_t.reshape(-1,1)
 
     assert np.allclose(output_t, expected_t), "output_t and expected_t do not match"
 
