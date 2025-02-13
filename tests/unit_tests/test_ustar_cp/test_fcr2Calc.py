@@ -37,15 +37,15 @@ def same_len_float_lists(draw):
 def test_r2_scale_invariance(test_engine, list_data, scalar):
   data1, data2 = list_data
   conv = test_engine.convert
- 
-  # Calculate R2 for the original data 
+
+  # Calculate R2 for the original data
   r2 = test_engine.fcr2Calc(conv(data1), conv(data2))
 
   # Scale it
   data1_scaled = [scalar*x for x in data1]
   data2_scaled = [scalar*x for x in data2]
 
-  # Calculate R2 for the scaled data 
+  # Calculate R2 for the scaled data
   r2_scale = test_engine.fcr2Calc(conv(data1_scaled), conv(data2_scaled))
 
   # Should be equal
@@ -57,15 +57,15 @@ def test_r2_scale_invariance(test_engine, list_data, scalar):
 def test_r2_translation_invariance(test_engine, list_data):
   data1, data2 = list_data
   conv = test_engine.convert
- 
-  # Calculate R2 for the original data 
+
+  # Calculate R2 for the original data
   r2 = test_engine.fcr2Calc(conv(data1), conv(data2))
 
   # Translate it
   data1_translated = [x + 1 for x in data1]
   data2_translated = [x + 1 for x in data2]
 
-  # Calculate R2 for the translated data 
+  # Calculate R2 for the translated data
   r2_translated = test_engine.fcr2Calc(conv(data1_translated), conv(data2_translated))
 
   # Should be equal
