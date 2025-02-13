@@ -1,5 +1,6 @@
 """
-Test module for the cpdEvaluateUStarTh4Season20100901 matlab function.
+Test module for the cpdEvaluateUStarTh4Season20100901.
+Differential tests between the MATLAB and Python code.
 
 This module contains the unit tests for the cpdEvaluateUStarTh4Season20100901. 
 These tests cover basic behaviour, edge cases and errors.
