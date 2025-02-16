@@ -1,37 +1,44 @@
-# test_aggregateSeasonalMeans.py
 import pytest
 import numpy as np
 
 @pytest.mark.parametrize(
     "mt, Cp, xmt, iSelect, nWindows, nStrata, nBoot, expected_tW, expected_CpW",
     [
-        # -- Test Case 1: Simple data, single "window" scenario --
+        #
+        # Test Case 1: Single window, select all points with numeric indices
+        #
         (
             [10, 20, 30],          # mt
             [1.0, 2.0, 3.0],       # Cp
-            [20],          # xmt
-            [True, True, True],    # iSelect (bool mask)
+            [20],                  # xmt => length=1 => reshape(1,1*1)
+            [1, 2, 3],            # iSelect as numeric indices (MATLAB is 1-based)
             1,                     # nWindows
             1,                     # nStrata
             1,                     # nBoot
-            [10.0],                # expected_tW (mock result; you must refine)
-            [1.0],                 # expected_CpW (mock result)
+            [20.0],                # expected_tW
+            [2.0],                 # expected_CpW
         ),
 
-        # -- Test Case 2: Multiple windows, partial selection --
+        #
+        # Test Case 2: Multiple windows, partial selection
+        # Here iSelect = [2,3,4] means we are selecting the 2nd, 3rd, and 4th elements
+        # in the arrays mt/Cp. xmt must have 4*(3*2) = 24 elements for reshape().
+        #
         (
-    [10, 20, 30, 40, 50],               # mt
-    [1.0, 2.0, 4.0, 8.0, 16.0],         # Cp
-    [10, 20, 30, 40, 50, 60, 70, 80, 90, 
-     100,110,120,130,140,150,160,170,180,190,
-     200,210,220,230,240],  # <-- 24 elements for xmt
-    [False, True, True, True, False],  # iSelect
-    4,                                  # nWindows
-    3,                                  # nStrata
-    2,                                  # nBoot
-    [25.0, 40.0],                       # expected_tW
-    [3.0, 8.0],                         # expected_CpW
-),
+            [10, 20, 30, 40, 50],               # mt
+            [1.0, 2.0, 4.0, 8.0, 16.0],         # Cp
+            [
+                10, 20, 30, 40, 50, 60, 70, 80, 90,
+                100,110,120,130,140,150,160,170,180,190,
+                200,210,220,230,240
+            ],                                  # xmt => 24 elements
+            [2, 3, 4],                          # iSelect => partial selection
+            4,                                  # nWindows
+            3,                                  # nStrata
+            2,                                  # nBoot
+            [20.0, 30.0, 30.0, 40.0],                       # expected_tW
+            [2.0, 4.0, 4.0, 8.0],                         # expected_CpW (mock result)
+        ),
     ]
 )
 def test_aggregateSeasonalMeans(test_engine, mt, Cp, xmt, iSelect,
@@ -41,27 +48,50 @@ def test_aggregateSeasonalMeans(test_engine, mt, Cp, xmt, iSelect,
     Test the MATLAB function aggregateSeasonalMeans by calling it via
     the MATLAB Engine API for Python. We pass arrays from Python
     to MATLAB, execute the function, and verify the outputs.
+
+    Key point:
+    ----------
+    - In the original cpdAssignUStarTh20100901.m code, `iSelect` is a
+      numeric array of indices (found via `find(...)`) rather than a
+      logical mask. This avoids the mixing of sort(...) and logical
+      indexing that caused errors.
+    - We ensure length(xmt) == nWindows * nStrata * nBoot so reshape(xmt, ...)
+      is valid in MATLAB.
+    - The `expected_tW` and `expected_CpW` here are "mock" placeholders to
+      show the format of the test. Adjust them based on what you actually
+      expect from fcBin.
     """
 
-    # Call the MATLAB function. Note nargout=2 to receive two outputs (tW, CpW)
+    # Convert Python lists/arrays to MATLAB data
+    mt_matlab = test_engine.convert(mt)
+    Cp_matlab = test_engine.convert(Cp)
+    xmt_matlab = test_engine.convert(xmt)
+
+    # Important: iSelect is now numeric. For MATLAB, it's 1-based indexing.
+    # This means if iSelect=[2,3], we are selecting the 2nd, 3rd elements of mt/Cp.
+    iSelect_matlab = test_engine.convert(iSelect, index = "to_python")
+
+    nWindows_matlab = test_engine.convert(nWindows)
+    nStrata_matlab = test_engine.convert(nStrata)
+    nBoot_matlab = test_engine.convert(nBoot)
+
+    # Call the MATLAB function
     tW_mat, CpW_mat = test_engine.aggregateSeasonalMeans(
-        test_engine.convert(mt),   # mt
-        test_engine.convert(Cp),   # Cp
-        test_engine.convert(xmt),  # xmt
-        test_engine.convert(iSelect),
-        test_engine.convert(nWindows),
-        test_engine.convert(nStrata),
-        test_engine.convert(nBoot),
+        mt_matlab,
+        Cp_matlab,
+        xmt_matlab,
+        iSelect_matlab,
+        nWindows_matlab,
+        nStrata_matlab,
+        nBoot_matlab,
         nargout=2
     )
 
-    # Convert outputs from MATLAB arrays back to Python floats/arrays
-    # MATLAB returns "double" arrays. We turn them into NumPy arrays.
+    # Convert MATLAB outputs to NumPy arrays
     tW = np.array(tW_mat).flatten()
     CpW = np.array(CpW_mat).flatten()
 
-    # Compare the results with the expected values (within a tolerance).
-    # Adjust `rtol`, `atol` as needed, or do exact match if you expect integer results.
+    # Compare the results with the expected values
     assert np.allclose(tW, expected_tW, rtol=1e-5, atol=1e-8), \
            f"tW mismatch: got {tW}, expected {expected_tW}"
     assert np.allclose(CpW, expected_CpW, rtol=1e-5, atol=1e-8), \

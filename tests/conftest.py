@@ -96,6 +96,8 @@ from oneflux_steps.ustar_cp_python.cpd_evaluate_functions import *
 from oneflux_steps.ustar_cp_python.cpdFindChangePoint_functions import *
 from oneflux_steps.ustar_cp_python.cpdBootstrap import *
 from oneflux_steps.ustar_cp_python.cpdAssignUStarTh import *
+from oneflux_steps.ustar_cp_python.aggregateSeasonalMeans import aggregateSeasonalMeans
+from oneflux_steps.ustar_cp_python.aggregateSeasonalAndAnnualValues import aggregateSeasonalAndAnnualValues
 
 def pytest_addoption(parser):
     parser.addoption("--language", action="store", default="matlab")
@@ -142,13 +144,16 @@ class PythonEngine(TestEngine):
                 x = x-1
             elif isinstance(x, list):
                 x = np.asarray(x)-1
-        elif isinstance(x, list):
+                print(x)
+        if isinstance(x, list):
             # Transpose to capture MATLAB data layout
             # when the data has been serialised from MATLAB
             # to a file
             if fromFile:
               return transpose(np.array(x).astype(np.float64))
             elif len(x) == 1:
+                if isinstance(x, list) and all(isinstance(item, (int, float)) for item in x):
+                    return np.asarray(x)
                 if all(isinstance(i, bool) for i in x[0]):
                     return np.array(x).astype(np.bool)
                 elif isinstance(x[0], list):
