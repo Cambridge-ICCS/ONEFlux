@@ -98,7 +98,7 @@ def test_cpdAssignUStarTh20100901_edge_cases(test_engine, mock_data):
         ([0.5, 1.2, 3.5, 0.1, 2.8], 2.0, [[False, False, True, False, True]], [[3.0, 5.0]]),  # Basic test
         ([0.1, 0.2, 0.3], 1.0, [[False, False, False]], [[]]),  # No outliers
         ([3.1, 2.9, 3.5], 2.0, [[True, True, True]], [[1, 2, 3]]),  # All outliers
-        ([], 2.0, np.bool([]), []),  # Empty input case
+        ([], 2.0, [], []),  # Empty input case
         ([-3, -2, -1, 0, 1, 2, 3], -1.0, [[False, False, False, True, True, True, True]], [[4.0, 5.0, 6.0, 7.0]]),  # Negative threshold
     ]
 )
