@@ -35,23 +35,27 @@ def aggregateSeasonalAndAnnualValues(
     xCpSelect : np.ndarray
         Same shape as xCp, with NaN everywhere except the selected positions.
     """
-    # Convert inputs to float arrays
-    xCp = np.asarray(xCp, dtype=float)
+    # # Convert inputs to float arrays
+    # xCp = np.asarray(xCp, dtype=float)
 
     # Prepare an output array (same shape) filled with NaNs
     xCpSelect = np.full_like(xCp, np.nan, dtype=float)
 
     # Flatten both arrays in column-major (Fortran) order to replicate MATLAB indexing
-    xCp_flat_F = xCp.flatten(order='F')
-    xCpSelect_flat_F = xCpSelect.flatten(order='F')
+#    xCp_flat_F = xCp.flatten(order='F')
+#    xCpSelect_flat_F = xCpSelect.flatten(order='F')
 
     iSelect_array = np.asarray(iSelect, dtype=int)
 
     # Assign the selected change points in the flattened array
-    xCpSelect_flat_F[iSelect_array] = xCp_flat_F[iSelect_array]
-
+    # mask xCp using iSelect_array
+    xCpSelect = xCp.copy()
+    for i in range(len(xCp)):
+        if iSelect_array[i] == 0:
+            xCpSelect[i] = np.nan
+    
     # Reshape back to original shape (column-major)
-    xCpSelect = xCpSelect_flat_F.reshape(xCp.shape, order='F')
+    #xCpSelect = xCpSelect_flat_F.reshape(xCp.shape, order='F')
     xCpGF = xCpSelect  # Just like the MATLAB code
 
     # Aggregate values based on dimensions
