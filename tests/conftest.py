@@ -588,10 +588,10 @@ def to_matlab_type(data: Any) -> Any:
             return data.tolist()  # Convert non-numeric arrays to lists
     elif isinstance(data, list):
         # Convert Python list to MATLAB double array if all elements are numbers
-        if all(isinstance(elem, (int, float)) for elem in flatten(data)):
-            return matlab.double(data)
-        elif all(isinstance(elem, (bool)) for elem in flatten(data)):
+        if all(isinstance(elem, (bool)) for elem in flatten(data)):
             return matlab.logical(data)
+        elif all(isinstance(elem, (int, float)) for elem in flatten(data)):
+            return matlab.double(data)
         else:
             # Create a cell array for lists containing non-numeric data
             return [to_matlab_type(elem) for elem in data]
