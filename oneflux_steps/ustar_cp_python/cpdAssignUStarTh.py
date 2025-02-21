@@ -7,6 +7,7 @@ from oneflux_steps.ustar_cp_python.fcr2Calc import fcr2Calc
 from typing import Tuple
 from numpy.typing import NDArray
 from oneflux_steps.ustar_cp_python.fcBin import fcBin
+from oneflux_steps.ustar_cp_python.utilities import index_or_mark_array_update
 
 def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
     """
@@ -407,35 +408,18 @@ def aggregateSeasonalAndAnnualValues(
     # Prepare an output array (same shape) filled with NaNs
     xCpSelect = np.full_like(xCp, np.nan, dtype=float)
 
-    # Treat selection arrays an array of integers
-    # (this allows both an array of booleans and an array of integers to be used
-    # for iselect)
-    iSelect_array = np.asarray(iSelect, dtype=int)
+    # Index using iSelect which could be a mask or a set of indices
+    xCpSelect = index_or_mark_array_update(xCpSelect, iSelect, xCp)
 
+    print(f"nDim = {nDim}")
     # Aggregate values based on dimensions
     if nDim == 2:
-        # mask xCp using iSelect_array
-        xCpSelect = xCp.copy()
-        for i in range(len(xCp)):
-            if iSelect_array[i] == 0:
-                xCpSelect[i] = np.nan
-
         xCpGF = xCpSelect  # naming convention
-
         # xCp shape = [nWindows, nBoot]
-        CpA = np.nanmean(xCpGF)
-        nA  = np.sum(~np.isnan(xCpSelect))
+        CpA = np.nanmean(xCpGF, axis=0)
+        nA  = np.sum(~np.isnan(xCpSelect), axis = 0)
     elif nDim == 3:
-
-        # mask xCp using iSelect_array
-        xCpSelect = xCp.copy()
-        for i in range(len(xCp)):
-            for j in range(len(xCp[i])):
-              if iSelect_array[i][j] == 0:
-                  xCpSelect[i][j] = np.nan
-
         xCpGF = xCpSelect  # Naming convention
-
         # xCp shape = [nWindows, nStrata, nBoot]
         # reshape => (nWindows*nStrata, nBoot) in column-major
         xCpGF_reshaped = np.reshape(xCpGF, (nWindows * nStrata, nBoot), order='F')

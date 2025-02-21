@@ -95,13 +95,11 @@ def test_aggregateSeasonalAndAnnualValues(
     expected_xCpSelect
 ):
     """
-    Test the MATLAB function aggregateSeasonalAndAnnualValues by calling it via
-    the MATLAB Engine API for Python. We pass arrays from Python to MATLAB,
-    execute the function, and verify the outputs.
+    Test the function aggregateSeasonalAndAnnualValues
 
     Explanation:
     ------------
-    - xCp is provided in a shape that (in MATLAB) should be [nWindows, nBoot] if nDim=2,
+    - xCp is provided in a shape that should be [nWindows, nBoot] if nDim=2,
       or [nWindows, nStrata, nBoot] if nDim=3. Because MATLAB uses column-major order,
       the exact flattening can be tricky in Python. We keep the nested structure so
       the final shape is correct in MATLAB once passed through the engine.
@@ -112,8 +110,7 @@ def test_aggregateSeasonalAndAnnualValues(
       dimensional differences).
     """
 
-    # Call the MATLAB function with nargout=3
-    CpA_mat, nA_mat, xCpSelect_mat = test_engine.aggregateSeasonalAndAnnualValues(
+    CpA, nA, xCpSelect = test_engine.aggregateSeasonalAndAnnualValues(
         test_engine.convert(xCp),
         test_engine.convert(iSelect, index = "to_python"),
         test_engine.convert(nDim),
@@ -122,7 +119,7 @@ def test_aggregateSeasonalAndAnnualValues(
         test_engine.convert(nBoot),
         nargout=3
     )
-    
-    assert test_engine.equal(CpA_mat, test_engine.convert(expected_CpA))
-    assert test_engine.equal(nA_mat, test_engine.convert(expected_nA))
-    assert test_engine.equal(xCpSelect_mat, test_engine.convert(expected_xCpSelect))
+
+    assert test_engine.equal(CpA, test_engine.convert(expected_CpA))
+    assert test_engine.equal(nA, test_engine.convert(expected_nA))
+    assert test_engine.equal(xCpSelect, test_engine.convert(expected_xCpSelect))

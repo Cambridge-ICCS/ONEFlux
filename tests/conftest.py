@@ -124,7 +124,7 @@ class PythonEngine(TestEngine):
                 elif isinstance(x[0], list):
                     return np.array(x[0])
             else:
-              if ((len(x) > 1) and (isinstance(x[0], bool))):
+              if (all(isinstance(i, np.bool_) for i in np.array(x).flat)):
                 return np.array(x).astype(bool)
               else:
                 return np.array(x).astype(np.float64)
