@@ -155,7 +155,7 @@ class PythonEngine(TestEngine):
                 if isinstance(x, list) and all(isinstance(item, (int, float)) for item in x):
                     return np.asarray(x)
                 if all(isinstance(i, bool) for i in x[0]):
-                    return np.array(x).astype(np.bool)
+                    return np.array(x).astype(bool)
                 elif isinstance(x[0], list):
                     return np.array(x[0])
             else:
