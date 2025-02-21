@@ -97,6 +97,7 @@
 			end; 
 		end; 
 	end;
+
 	
 	disp(' ');
 	fprintf('cpdBootstrapUStarTh20100901  %s   nObs: %g %g %g %g \n',cSiteYr,nt,sum(~isnan([NEE uStar T])));

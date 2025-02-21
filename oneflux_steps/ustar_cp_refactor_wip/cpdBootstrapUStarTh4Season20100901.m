@@ -93,7 +93,6 @@ function [Cp2, Stats2, Cp3, Stats3] = cpdBootstrapUStarTh4Season20100901(t, NEE,
 	%fprintf('cpdBootstrapUStarTh4Season20100901  %s   nObs: %g %g %g %g \n',cSiteYr,nt,sum(~isnan([NEE uStar T])));
 	%disp(' ');
 
-	
 	if ntNee>=ntN;
 		
 		% Boot-strapping.

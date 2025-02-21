@@ -13,6 +13,7 @@ from .cpdFmax2pCore import interpolate_FmaxCritical, calculate_p_low, calculate_
 from .fcDatenum import datenum
 from .fcBin import fcBin
 from .cpdAssignUStarTh import identifyOutliers
+from .fcEqnAnnualSine import fcEqnAnnualSine
 
 from os.path import dirname, basename, isfile, join
 import glob
