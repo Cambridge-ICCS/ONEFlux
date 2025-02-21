@@ -3,8 +3,12 @@ from scipy.optimize import curve_fit
 from oneflux_steps.ustar_cp_python.fcNaniqr import fcNaniqr
 from oneflux_steps.ustar_cp_python.fcEqnAnnualSine import fcEqnAnnualSine
 from oneflux_steps.ustar_cp_python.fcr2Calc import fcr2Calc
+from typing import Tuple
+from numpy.typing import NDArray
+from oneflux_steps.ustar_cp_python.fcBin import fcBin
 
-
+def cpdAssignUStarTh20100901(*args):
+    return None, None, None, None, None, None, None, None, None, None, None, None
 
 
 def identifyOutliers(x_norm_x, threshold):
@@ -83,3 +87,184 @@ def fitAnnualSineCurve(mt, Cp, iSelect):
     sSine = np.array([popt[0], popt[1], popt[2], r2], dtype=float)
 
     return sSine
+
+def aggregateSeasonalAndAnnualValues(
+    xCp, 
+    iSelect, 
+    nDim, 
+    nWindows, 
+    nStrata, 
+    nBoot
+):
+    """
+    Python equivalent of the MATLAB function aggregateSeasonalAndAnnualValues.
+
+    Parameters
+    ----------
+    xCp : array-like
+        Can be 2D [nWindows, nBoot] or 3D [nWindows, nStrata, nBoot].
+    iSelect : array-like of int
+        1-based linear indices in MATLAB's column-major ordering that should be selected.
+    nDim : int
+        2 or 3 (to indicate if xCp is 2D or 3D).
+    nWindows : int
+    nStrata : int
+    nBoot : int
+
+    Returns
+    -------
+    CpA : np.ndarray
+        Aggregated mean of selected change points along the appropriate dimension.
+        For nDim=2, shape is (nBoot,). For nDim=3, shape is (nBoot,).
+    nA : np.ndarray
+        Count of non-NaN selected points. Same shape as CpA.
+    xCpSelect : np.ndarray
+        Same shape as xCp, with NaN everywhere except the selected positions.
+    """
+    # Prepare an output array (same shape) filled with NaNs
+    xCpSelect = np.full_like(xCp, np.nan, dtype=float)
+
+    # Treat selection arrays an array of integers
+    # (this allows both an array of booleans and an array of integers to be used
+    # for iselect)
+    iSelect_array = np.asarray(iSelect, dtype=int)
+
+    # Aggregate values based on dimensions
+    if nDim == 2:
+        # mask xCp using iSelect_array
+        xCpSelect = xCp.copy()
+        for i in range(len(xCp)):
+            if iSelect_array[i] == 0:
+                xCpSelect[i] = np.nan
+
+        xCpGF = xCpSelect  # naming convention
+
+        # xCp shape = [nWindows, nBoot]
+        CpA = np.nanmean(xCpGF)
+        nA  = np.sum(~np.isnan(xCpSelect))
+    elif nDim == 3:
+        
+        # mask xCp using iSelect_array
+        xCpSelect = xCp.copy()
+        for i in range(len(xCp)):
+            for j in range(len(xCp[i])):
+              if iSelect_array[i][j] == 0:
+                  xCpSelect[i][j] = np.nan
+
+        xCpGF = xCpSelect  # Naming convention
+
+        # xCp shape = [nWindows, nStrata, nBoot]
+        # reshape => (nWindows*nStrata, nBoot) in column-major
+        xCpGF_reshaped = np.reshape(xCpGF, (nWindows * nStrata, nBoot), order='F')
+        CpA = np.nanmean(xCpGF_reshaped, axis=0)
+        nA  = np.sum(~np.isnan(xCpGF_reshaped), axis=0)
+    else:
+        raise ValueError("Invalid number of dimensions: Expected 2D or 3D Stats.")
+
+    return CpA, nA, xCpSelect
+
+
+def aggregateSeasonalMeans(mt: NDArray, Cp: NDArray, xmt: NDArray, iSelect: NDArray, nWindows: int, nStrata: int, nBoot: int)-> Tuple[NDArray, NDArray]:
+    """
+    Python equivalent of the MATLAB function aggregateSeasonalMeans.
+    Aggregates seasonal means for time and change points.
+
+    Parameters
+    ----------
+    mt : array-like
+        The time data.
+    Cp : array-like
+        The corresponding change point values.
+    xmt : array-like
+        A reference array that must reshape cleanly to (nWindows, nStrata * nBoot).
+        Used to compute the median number of windows (nW).
+    iSelect : array-like of int
+        Numeric indices (1-based in MATLAB) of selected measurements to use.
+        For Python (0-based), ensure you pass valid 0-based indices.
+    nWindows : int
+    nStrata : int
+    nBoot : int
+
+    Returns
+    -------
+    tW : np.ndarray
+        The seasonal mean times for each bin.
+    CpW : np.ndarray
+        The seasonal mean change points for each bin.
+    """
+
+    # ----------------------------------------------------------
+    # 1) Calculate Median Number of Windows
+    #    In MATLAB: 
+    #       reshape(xmt, nWindows, nStrata * nBoot)
+    #    Here we reshape the 1D array xmt => shape (nWindows, nStrata*nBoot)
+    # ----------------------------------------------------------
+    try:
+        xmt_reshaped = xmt.reshape(nWindows, nStrata * nBoot)
+    except ValueError:
+        raise ValueError(
+            f"Cannot reshape xmt of length {xmt.size} "
+            f"to shape ({nWindows}, {nStrata*nBoot})."
+        )
+
+    # sum(~isnan(...)) in MATLAB => np.sum(~np.isnan(...)) in NumPy
+    # nanmedian(...) => np.nanmedian(...)
+    # => sum over axis=1 if you want row sums (assuming typical usage)
+    # but in the MATLAB code it's sum( (nWindows, nStrata*nBoot) ) => axis=0 by default
+    nW_array = np.sum(~np.isnan(xmt_reshaped), axis=0)  # shape: (nStrata*nBoot,)
+    nW = np.nanmedian(nW_array)
+
+    # ----------------------------------------------------------
+    # 2) Sort Selected Measurements
+    #    MATLAB:
+    #      [mtSelect, i] = sort(mt(iSelect));
+    #      CpSelect = Cp(iSelect(i));
+    # ----------------------------------------------------------
+    # *In Python*, iSelect is an array of *0-based* indices.
+    # We then do:
+    iSelect = iSelect.astype(int) 
+    selected_mt = mt[iSelect]
+    # Sort them while keeping track of the sorted order
+    sort_order = np.argsort(selected_mt)  # array of int
+    mtSelect = selected_mt[sort_order]
+    # Now reorder Cp similarly
+    selected_Cp = Cp[iSelect]
+    CpSelect = selected_Cp[sort_order]
+
+    # ----------------------------------------------------------
+    # 3) Define Bins Based on Percentiles
+    #    xBins = prctile(mtSelect, 0:(100/nW):100);
+    # In Python, np.percentile(...)
+    # and we create an array of percentiles from 0 to 100 in steps of (100/nW)
+    # But nW might be float => we do something like
+    # np.linspace(0, 100, int(nW)+1) or something similar. However,
+    # to replicate MATLAB's 0:(100/nW):100 exactly, we must handle floats carefully.
+    # We'll do:
+    if nW < 1:
+        # Fallback: if nW < 1 for some reason, do 1 bin, i.e. [0, 100]
+        pct_array = [0, 100]
+    else:
+        step = 100.0 / nW  # step size
+        # The number of steps is int(nW)+1 if nW is integer-like. 
+        # However, if nW is float, MATLAB still enumerates 0, step, 2*step,..., up to 100.
+        # We'll replicate that logic using np.arange, then clip at <=100
+        pct_array = []
+        current = 0.0
+        while current < 100.0 + 1e-9:
+            pct_array.append(current)
+            current += step
+        # In case floating arithmetic overshoots 100 a bit
+        pct_array[-1] = 100.0
+
+    # Now compute bin edges from these percentiles
+    xBins = np.percentile(mtSelect, pct_array)
+
+    # ----------------------------------------------------------
+    # 4) fcBin equivalent in Python
+    #    [~, tW, CpW] = fcBin(mtSelect, CpSelect, xBins, 0);
+
+
+    # Run fcBin
+    nCount, tW, CpW = fcBin(mtSelect, CpSelect, xBins, 0)
+
+    return tW, CpW

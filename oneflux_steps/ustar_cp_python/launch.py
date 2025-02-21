@@ -748,8 +748,6 @@ def createTimeArray(uStar: Union[np.ndarray, pd.Series]) -> np.ndarray:
 
 
 
-def cpdAssignUStarTh20100901(*args):
-    return None, None, None, None, None, None, None, None, None, None, None, None
 
 def saveResult(*args):
     return None, None, None
