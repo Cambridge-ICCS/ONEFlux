@@ -143,14 +143,6 @@ import numpy as np
 #     assert nA == expected_nA
 #     assert np.isnan(xCpSelect[2])  # Check if unselected indices remain NaN
 
-def toLogical(xs):
-    def convert(x):
-      if (x == 0):
-        False
-      else:
-          True
-    return list(map(lambda x: list(map(convert, x)), xs))
-
 @pytest.mark.parametrize(
     "xCp, iSelect, nDim, nWindows, nStrata, nBoot, expected_CpA, expected_nA, expected_xCpSelect",
     [
@@ -158,7 +150,6 @@ def toLogical(xs):
           , [True, True, False, True, False, True]
           , 2, 0, 0, 0
            # expected
-           #, 2, np.nan, 4], [2, 0, 1], [[1, np.nan, np.nan], [3, np.nan, 4]]
           , 2.5, 4.0, [1.0,2.0,np.nan,3.0,np.nan,4.0]
          )
         , ([[1.0, np.nan, 3.0],[4.0, 5.0, np.nan]]
@@ -178,6 +169,6 @@ def test_aggregate_3d_case(test_engine, xCp, iSelect, nDim, nWindows, nStrata, n
         test_engine.convert(xCp), test_engine.convert(iSelect), nDim, nWindows, test_engine.convert(nStrata), test_engine.convert(nBoot), nargout=3
     )
 
-    assert test_engine.equal(CpA, expected_CpA)
-    assert test_engine.equal(nA, expected_nA)
+    assert test_engine.equal(CpA, test_engine.convert(expected_CpA))
+    assert test_engine.equal(nA, test_engine.convert(expected_nA))
     assert test_engine.equal(xCpSelect, test_engine.convert(expected_xCpSelect))

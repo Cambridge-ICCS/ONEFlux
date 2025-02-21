@@ -14,11 +14,9 @@ def aggregateSeasonalAndAnnualValues(
     Parameters
     ----------
     xCp : array-like
-        In MATLAB, can be 2D [nWindows, nBoot] or 3D [nWindows, nStrata, nBoot].
-        In Python, pass a nested list or NumPy array with the same shape.
+        Can be 2D [nWindows, nBoot] or 3D [nWindows, nStrata, nBoot].
     iSelect : array-like of int
         1-based linear indices in MATLAB's column-major ordering that should be selected.
-        We subtract 1 and interpret them in the same column-major order in Python.
     nDim : int
         2 or 3 (to indicate if xCp is 2D or 3D).
     nWindows : int
@@ -35,39 +33,41 @@ def aggregateSeasonalAndAnnualValues(
     xCpSelect : np.ndarray
         Same shape as xCp, with NaN everywhere except the selected positions.
     """
-    # # Convert inputs to float arrays
-    # xCp = np.asarray(xCp, dtype=float)
-
     # Prepare an output array (same shape) filled with NaNs
     xCpSelect = np.full_like(xCp, np.nan, dtype=float)
 
-    # Flatten both arrays in column-major (Fortran) order to replicate MATLAB indexing
-#    xCp_flat_F = xCp.flatten(order='F')
-#    xCpSelect_flat_F = xCpSelect.flatten(order='F')
-
+    # Treat selection arrays an array of integers
+    # (this allows both an array of booleans and an array of integers to be used
+    # for iselect)
     iSelect_array = np.asarray(iSelect, dtype=int)
-
-    # Assign the selected change points in the flattened array
-    # mask xCp using iSelect_array
-    xCpSelect = xCp.copy()
-    for i in range(len(xCp)):
-        if iSelect_array[i] == 0:
-            xCpSelect[i] = np.nan
-    
-    # Reshape back to original shape (column-major)
-    #xCpSelect = xCpSelect_flat_F.reshape(xCp.shape, order='F')
-    xCpGF = xCpSelect  # Just like the MATLAB code
 
     # Aggregate values based on dimensions
     if nDim == 2:
+        # mask xCp using iSelect_array
+        xCpSelect = xCp.copy()
+        for i in range(len(xCp)):
+            if iSelect_array[i] == 0:
+                xCpSelect[i] = np.nan
+
+        xCpGF = xCpSelect  # naming convention
+
         # xCp shape = [nWindows, nBoot]
-        # MATLAB default nanmean(xCpGF) => mean across axis=0 in Python
-        CpA = np.nanmean(xCpGF, axis=0)
-        nA  = np.sum(~np.isnan(xCpSelect), axis=0)
+        CpA = np.nanmean(xCpGF)
+        nA  = np.sum(~np.isnan(xCpSelect))
     elif nDim == 3:
+        
+        # mask xCp using iSelect_array
+        xCpSelect = xCp.copy()
+        for i in range(len(xCp)):
+            for j in range(len(xCp[i])):
+              if iSelect_array[i][j] == 0:
+                  xCpSelect[i][j] = np.nan
+
+        xCpGF = xCpSelect  # Naming convention
+
         # xCp shape = [nWindows, nStrata, nBoot]
         # reshape => (nWindows*nStrata, nBoot) in column-major
-        xCpGF_reshaped = xCpGF.reshape(nWindows * nStrata, nBoot, order='F')
+        xCpGF_reshaped = np.reshape(xCpGF, (nWindows * nStrata, nBoot), order='F')
         CpA = np.nanmean(xCpGF_reshaped, axis=0)
         nA  = np.sum(~np.isnan(xCpGF_reshaped), axis=0)
     else:
