@@ -268,3 +268,36 @@ def aggregateSeasonalMeans(mt: NDArray, Cp: NDArray, xmt: NDArray, iSelect: NDAr
     nCount, tW, CpW = fcBin(mtSelect, CpSelect, xBins, 0)
 
     return tW, CpW
+
+def updateSelectedIndices(iSelect : np.ndarray, iOut : np.ndarray, fSelect : np.ndarray, fOut : np.ndarray) -> (np.ndarray, int, np.ndarray):
+    """
+    Parameters
+    ----------
+    iSelect : np.ndarray (int)
+        Array of selected indices.
+    iOut : np.ndarray (int)
+        Array of outlier indices to remove from iSelect.
+    fSelect : np.ndarray (bool)
+        Boolean array indicating whether each point is selected.
+    fOut : np.ndarray (bool)
+        Boolean array indicating outlier points.
+
+    Returns
+    -------
+    iSelect : np.ndarray (int)
+        Updated array of selected indices after outlier removal.
+    nSelect : int
+        Length of the updated iSelect.
+    fSelect : np.ndarray (bool)
+        Updated boolean array with outliers removed from selection.
+    """
+    # Remove outlier indices from iSelect
+    iSelect = np.setdiff1d(iSelect, iOut)
+
+    # Count the remaining selected indices
+    nSelect = len(iSelect)
+
+    # Exclude outliers from fSelect (element-wise "and not")
+    fSelect = fSelect & np.logical_not(fOut)
+
+    return iSelect, nSelect, fSelect

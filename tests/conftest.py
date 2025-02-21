@@ -124,7 +124,10 @@ class PythonEngine(TestEngine):
                 elif isinstance(x[0], list):
                     return np.array(x[0])
             else:
-              return np.array(x).astype(np.float64)
+              if ((len(x) > 1) and (isinstance(x[0], bool))):
+                return np.array(x).astype(bool)
+              else:
+                return np.array(x).astype(np.float64)
 
         elif isinstance(x, tuple):
             return tuple([self.convert(xi) for xi in x])
