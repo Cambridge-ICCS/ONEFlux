@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.optimize import curve_fit
+from oneflux_steps.ustar_cp_python.fcReadFields import fcReadFields
 from oneflux_steps.ustar_cp_python.fcNaniqr import fcNaniqr
 from oneflux_steps.ustar_cp_python.fcEqnAnnualSine import fcEqnAnnualSine
 from oneflux_steps.ustar_cp_python.fcr2Calc import fcr2Calc
@@ -7,9 +8,291 @@ from typing import Tuple
 from numpy.typing import NDArray
 from oneflux_steps.ustar_cp_python.fcBin import fcBin
 
-def cpdAssignUStarTh20100901(*args):
-    return None, None, None, None, None, None, None, None, None, None, None, None
+def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
+    """
+    Parameters:
+    -----------
+    Stats : array-like or str
+        Stats structure that may be JSON-encoded (depending on *args).
+    plotFlag : bool or int
+        Flag indicating whether to plot (unused in this excerpt).
+    siteYearText : str
+        String describing site year (unused in this excerpt).
+    *args : list
+        Variable-length argument list. Can contain instructions like
+        ['jsondecode', 1], specifying that Stats should be decoded from JSON.
 
+    Returns:
+    --------
+    annualChangePoint : np.ndarray
+    numAnnualSelected : np.ndarray
+    seasonalTimeWindow : np.ndarray
+    seasonalChangePoint : np.ndarray
+    dominantMode : str
+    failureMessage : str
+    selectedPointsFlag : np.ndarray (bool)
+    sineCurve : np.ndarray
+    fractionSignificant : float
+    fractionModeD : float
+    fractionSelected : float
+
+    The logic follows the MATLAB code step-by-step, including:
+    - Decoding JSON if required.
+    - Checking dimensions of Stats.
+    - Extracting relevant fields (like Cp, b1, p).
+    - Determining significance and modes (D/E).
+    - Excluding outliers, aggregating results.
+    - Fitting annual sine curve.
+    """
+
+    # -------------------------------------------------------------------------
+    # 1) Initialize Output Variables
+
+    annualChangePoint = []
+    numAnnualSelected = []
+    seasonalTimeWindow = []
+    seasonalChangePoint = []
+    selectedPointsFlag = []
+    dominantMode = ''
+    failureMessage = ''
+    sineCurve = []
+    fractionSignificant = []
+    fractionModeD = []
+    fractionSelected = []
+
+    # -------------------------------------------------------------------------
+    # 2) Decode JSON if Required
+    # TODO - PROBABLY REMOVE
+
+    # In MATLAB, the code checks 'varargin' for a cell array with 'jsondecode'.
+    # In Python, we check if `args` includes something like ['jsondecode', 1].
+    for arg in args:
+        # Example check: if arg is a list, arg[0] might be 'jsondecode'
+        if isinstance(arg, list) and len(arg) > 0 and arg[0] == 'jsondecode':
+            # Then check subsequent entries for numeric IDs
+            for j in arg[1:]:
+                # If j == 1, decode Stats from JSON
+                if j == 1:
+                    if isinstance(Stats, str):
+                        Stats = json.loads(Stats)
+
+    # -------------------------------------------------------------------------
+    # 3) Determine Dimension Sizes of Stats
+
+    # The MATLAB code checks ndims(Stats) and shape(Stats).
+    # We assume Stats is a NumPy array (or a nested list that's been
+    # converted to an array).
+    if not isinstance(Stats, np.ndarray):
+        # Attempt to convert Stats to a NumPy array if it's still a list
+        Stats = np.array(Stats, dtype=object)
+
+    numDimensions = Stats.ndim
+
+    if numDimensions == 2:
+        numWindows, numBootstraps = Stats.shape
+        numTemperatureStrata = 1
+        temperatureStrataFactor = 0.5
+
+    elif numDimensions == 3:
+        numWindows, numTemperatureStrata, numBootstraps = Stats.shape
+        temperatureStrataFactor = 1
+
+    else:
+        failureMessage = 'Stats must be 2D or 3D.'
+        return (annualChangePoint, numAnnualSelected, seasonalTimeWindow,
+                seasonalChangePoint, dominantMode, failureMessage,
+                selectedPointsFlag, sineCurve, fractionSignificant,
+                fractionModeD, fractionSelected)
+
+    # -------------------------------------------------------------------------
+    # 4) Set Reference Values
+
+    referenceWindows = 4
+    requiredSelectionCount = referenceWindows * temperatureStrataFactor * numBootstraps
+
+    # -------------------------------------------------------------------------
+    # 5) Preallocate Outputs
+
+    annualChangePoint = np.full((numBootstraps,), np.nan)
+    numAnnualSelected = np.full((numBootstraps,), np.nan)
+    seasonalTimeWindow = np.full((numWindows,), np.nan)
+    seasonalChangePoint = np.full((numWindows,), np.nan)
+
+    # -------------------------------------------------------------------------
+    # 6) Extract Variables from Stats Structure
+    # The MATLAB code uses fcReadFields and fcx2colvec to read each field and reshape.
+    # Here, we assume Python equivalents: readFields(Stats, varName) and x2colvec().
+    # In an actual implementation, these must be defined or replaced by direct indexing.
+
+    variableNames = ['mt', 'Cp', 'b1', 'c2', 'cib1', 'cic2', 'p']
+    # We'll store them in a dictionary by field name.
+    b1 = fcReadFields(Stats, 'b1')
+    c2 = fcReadFields(Stats, 'c2')
+    cib1 = fcReadFields(Stats, 'cib1')
+    cic2 = fcReadFields(Stats, 'cic2')
+    p = fcReadFields(Stats, 'p')
+
+    measurementTime = fcReadFields(Stats, 'mt')
+    changePoint = fcReadFields(Stats, 'Cp')
+
+    # -------------------------------------------------------------------------
+    # 7) Identify Significant Change Points
+
+    significanceThreshold = 0.05
+    # p <= threshold is True/False mask
+    significantFlag = (p <= significanceThreshold)
+
+    # -------------------------------------------------------------------------
+    # 8) Identify Model Type (2-parameter vs 3-parameter)
+
+    # If all c2 are NaN => effectively 2 parameters
+    # The MATLAB code checks sum(~isnan(c2)) == 0
+    if np.sum(~np.isnan(c2)) == 0:
+        numParameters = 2
+        c2 = np.zeros_like(b1)
+        cic2 = np.zeros_like(b1)
+    else:
+        numParameters = 3
+
+    # -------------------------------------------------------------------------
+    # 9) Classify Significant Change Points:
+
+    # Indices that are valid (not NaN in b1+c2+Cp):
+    validMask = ~np.isnan(b1 + c2 + changePoint)
+    validIndices = np.where(~np.isnan(measurementTime))[0]
+    numValidMeasurements = len(validIndices)
+
+    # Non-significant
+    nonSignificantIndices = np.where((~significantFlag) & validMask)[0]
+    numNonSignificant = len(nonSignificantIndices)
+
+    # Significant
+    significantIndices = np.where(significantFlag & validMask)[0]
+    numSignificant = len(significantIndices)
+
+    # Mode E: b1 < c2
+    modeEIndices = np.where(significantFlag & (b1 < c2) & validMask)[0]
+    numModeE = len(modeEIndices)
+
+    # Mode D: b1 >= c2
+    modeDIndices = np.where(significantFlag & (b1 >= c2) & validMask)[0]
+    numModeD = len(modeDIndices)
+
+    # Decide dominant mode
+    if numModeD >= numModeE:
+        selectedIndices = modeDIndices
+        dominantMode = 'D'
+    else:
+        selectedIndices = modeEIndices
+        dominantMode = 'E'
+
+    numSelected = len(selectedIndices)
+
+    # Update Selection Flags
+    selectedPointsFlag = np.zeros_like(significantFlag, dtype=bool)
+    selectedPointsFlag[selectedIndices] = True
+
+    modeDFlag = np.full_like(significantFlag, np.nan, dtype=float)
+    modeDFlag[modeDIndices] = 1
+
+    modeEFlag = np.full_like(significantFlag, np.nan, dtype=float)
+    modeEFlag[modeEIndices] = 1
+
+    # Fractions
+    if numValidMeasurements > 0:
+        fractionSignificant = numSignificant / numValidMeasurements
+        fractionModeD = numModeD / max(numSignificant, 1)  # avoid zero-div
+        fractionSelected = numSelected / numValidMeasurements
+    else:
+        fractionSignificant, fractionModeD, fractionSelected = (0, 0, 0)
+
+    # -------------------------------------------------------------------------
+    # 10) Abort if Too Few Selections
+
+    if fractionSelected < 0.10:
+        failureMessage = 'Less than 10% successful detections.'
+        return (annualChangePoint, numAnnualSelected, seasonalTimeWindow,
+                seasonalChangePoint, dominantMode, failureMessage,
+                selectedPointsFlag, np.array([]), fractionSignificant,
+                fractionModeD, fractionSelected)
+
+    # -------------------------------------------------------------------------
+    # 11) Configure Regression Matrix
+
+    if numParameters == 2:
+        regressionMatrix = np.column_stack([changePoint, b1, cib1])
+    else:
+        regressionMatrix = np.column_stack([changePoint, b1, c2, cib1, cic2])
+
+    # -------------------------------------------------------------------------
+    # 12) Exclude Outliers Based on Standardized Scores
+
+    standardizedScores = computeStandardizedScores(regressionMatrix)  # user-defined
+    outlierFlag, outlierIndices = identifyOutliers(standardizedScores, 5)  # user-defined
+
+    selectedIndices, numSelected, selectedPointsFlag = updateSelectedIndices(
+        selectedIndices, outlierIndices, selectedPointsFlag, outlierFlag
+    )
+
+    modeDIndices, numModeD = updateModes(modeDFlag, outlierIndices)   # user-defined
+    modeEIndices, _         = updateModes(modeEFlag, outlierIndices)  # user-defined
+
+    # Recompute significantIndices, etc.
+    significantIndices = np.union1d(modeDIndices, modeEIndices)
+    numSignificant = len(significantIndices)
+
+    if numValidMeasurements > 0:
+        fractionSignificant = numSignificant / numValidMeasurements
+        fractionModeD = numModeD / max(numSignificant, 1)
+        fractionSelected = numSelected / numValidMeasurements
+
+    # -------------------------------------------------------------------------
+    # 13) Check If Enough Change Points Remain
+
+    if numSelected < requiredSelectionCount:
+        failureMessage = f'Too few selected change points: {numSelected}/{requiredSelectionCount}'
+        return (annualChangePoint, numAnnualSelected, seasonalTimeWindow,
+                seasonalChangePoint, dominantMode, failureMessage,
+                selectedPointsFlag, np.array([]), fractionSignificant,
+                fractionModeD, fractionSelected)
+
+    # -------------------------------------------------------------------------
+    # 14) Aggregate Seasonal and Annual Values
+
+    annualChangePoint, numAnnualSelected, _ = aggregateSeasonalAndAnnualValues(
+        changePoint, selectedIndices, numDimensions, numWindows,
+        numTemperatureStrata, numBootstraps
+    )
+
+    # -------------------------------------------------------------------------
+    # 15) Aggregate Seasonal Means
+
+    seasonalTimeWindow, seasonalChangePoint = aggregateSeasonalMeans(
+        measurementTime, changePoint, measurementTime, selectedIndices,
+        numWindows, numTemperatureStrata, numBootstraps
+    )
+
+    # -------------------------------------------------------------------------
+    # 16) Fit Annual Sine Curve
+
+    sineCurve = fitAnnualSineCurve(
+        measurementTime, changePoint, selectedIndices
+    )
+
+    # -------------------------------------------------------------------------
+    # Return All Outputs in the Same Order as the MATLAB Code
+
+    return (annualChangePoint,
+            numAnnualSelected,
+            seasonalTimeWindow,
+            seasonalChangePoint,
+            dominantMode,
+            failureMessage,
+            selectedPointsFlag,
+            sineCurve,
+            fractionSignificant,
+            fractionModeD,
+            fractionSelected)
 
 def identifyOutliers(x_norm_x, threshold):
     """
@@ -89,11 +372,11 @@ def fitAnnualSineCurve(mt, Cp, iSelect):
     return sSine
 
 def aggregateSeasonalAndAnnualValues(
-    xCp, 
-    iSelect, 
-    nDim, 
-    nWindows, 
-    nStrata, 
+    xCp,
+    iSelect,
+    nDim,
+    nWindows,
+    nStrata,
     nBoot
 ):
     """
@@ -143,7 +426,7 @@ def aggregateSeasonalAndAnnualValues(
         CpA = np.nanmean(xCpGF)
         nA  = np.sum(~np.isnan(xCpSelect))
     elif nDim == 3:
-        
+
         # mask xCp using iSelect_array
         xCpSelect = xCp.copy()
         for i in range(len(xCp)):
@@ -195,7 +478,7 @@ def aggregateSeasonalMeans(mt: NDArray, Cp: NDArray, xmt: NDArray, iSelect: NDAr
 
     # ----------------------------------------------------------
     # 1) Calculate Median Number of Windows
-    #    In MATLAB: 
+    #    In MATLAB:
     #       reshape(xmt, nWindows, nStrata * nBoot)
     #    Here we reshape the 1D array xmt => shape (nWindows, nStrata*nBoot)
     # ----------------------------------------------------------
@@ -222,7 +505,7 @@ def aggregateSeasonalMeans(mt: NDArray, Cp: NDArray, xmt: NDArray, iSelect: NDAr
     # ----------------------------------------------------------
     # *In Python*, iSelect is an array of *0-based* indices.
     # We then do:
-    iSelect = iSelect.astype(int) 
+    iSelect = iSelect.astype(int)
     selected_mt = mt[iSelect]
     # Sort them while keeping track of the sorted order
     sort_order = np.argsort(selected_mt)  # array of int
@@ -245,7 +528,7 @@ def aggregateSeasonalMeans(mt: NDArray, Cp: NDArray, xmt: NDArray, iSelect: NDAr
         pct_array = [0, 100]
     else:
         step = 100.0 / nW  # step size
-        # The number of steps is int(nW)+1 if nW is integer-like. 
+        # The number of steps is int(nW)+1 if nW is integer-like.
         # However, if nW is float, MATLAB still enumerates 0, step, 2*step,..., up to 100.
         # We'll replicate that logic using np.arange, then clip at <=100
         pct_array = []
@@ -301,3 +584,34 @@ def updateSelectedIndices(iSelect : np.ndarray, iOut : np.ndarray, fSelect : np.
     fSelect = fSelect & np.logical_not(fOut)
 
     return iSelect, nSelect, fSelect
+
+def updateModes(fModeX: np.ndarray, iOut: np.ndarray):
+    """
+    Recalculates mode indices after removing outliers, mirroring updateModes.m.
+
+    Parameters
+    ----------
+    fModeX : np.ndarray
+        Array indicating whether each point belongs to the mode (1) or not
+        (0/NaN). This array is modified in-place, setting the elements
+        at indices iOut to np.nan.
+    iOut : np.ndarray
+        Array of outlier indices to remove from the mode.
+
+    Returns
+    -------
+    iModeX : np.ndarray
+        Updated indices where fModeX is exactly 1.
+    nModeX : int
+        Number of such indices.
+    """
+    # Mark outlier positions in fModeX as NaN
+    fModeX[iOut] = np.nan
+
+    # Find indices where fModeX is exactly 1
+    iModeX = np.where(fModeX == 1)[0]
+
+    # Count them
+    nModeX = len(iModeX)
+
+    return iModeX, nModeX
