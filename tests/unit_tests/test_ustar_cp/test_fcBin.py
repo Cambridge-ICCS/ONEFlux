@@ -14,18 +14,24 @@ from hypothesis.strategies import floats, lists, integers
 
 import os
 
-def avoidOverflows(data, maxFloatSize=1e10):
+def avoidOverflows(data, maxFloatSize=1e8):
   """
   Helper function to avoid overflows in the test data
   by making the floats smaller
   """
-  if np.all(np.abs(item) <= maxFloatSize or np.isnan(item) for item in data):
+  if np.all([np.abs(item) <= maxFloatSize or np.isnan(item) for item in np.array(data).flat]):
     return data
   else:
     fmax = np.finfo(np.float64).max
     # Scale floats between [-fmax,fmax] * maxFloatSize
-    return [(item / fmax) * maxFloatSize if not np.isnan(item) else item for item in data]
-  
+    def transform(x):
+      if np.isnan(x):
+        return x
+      else:
+        return (x / fmax) * maxFloatSize
+    # apply transform to every element in data for a n-dimensional array
+    return np.vectorize(transform)(data)
+
 # Hypothesis tests for fcBin
 @given(dataIn=lists(floats(allow_nan=True, allow_infinity=False), min_size=2),
        scale=floats(allow_infinity=False),
@@ -41,7 +47,6 @@ def test_singleton_bins_1D_data(dataIn, scale, translate, test_engine):
     # If data is very big, scale it down to avoid overflows in the tests
     data1 = avoidOverflows(dataIn)
     data2 = avoidOverflows([scale * item + translate for item in data1])
-
     # Use `fcBin`
     nBins, mx, my  = test_engine.fcBin(test_engine.convert(data1), test_engine.convert(data2),
                                          test_engine.convert([]), 1.0, nargout=3)
@@ -68,30 +73,25 @@ def test_singleton_bins_1D_data(dataIn, scale, translate, test_engine):
     check(mx, data1)
     check(my, data2)
 
-@given(data=lists(floats(allow_nan=True, allow_infinity=False), min_size=2),
+@given(dataIn=lists(floats(allow_nan=True, allow_infinity=False), min_size=2),
        scale=floats(allow_infinity=False,allow_nan=False),
        translate=floats(allow_infinity=False,allow_nan=False),
        row=integers(min_value=1, max_value=4))
 @settings(deadline=1000)
-def test_singleton_bins_2D_data(data, scale, row, translate, test_engine):
+def test_singleton_bins_2D_data(dataIn, scale, row, translate, test_engine):
     """
     Tests the behaviour of `fcBin` for binning based on discrete bins of size 1
     for two-dimesional data"""
 
     # Pad data to be a multiple of `row`
-    data = avoidOverflows(data)
-    data = data + [np.nan] * (row - len(data) % row)
+    data1 = dataIn + [np.nan] * (row - len(dataIn) % row)
     # Turn data into a 2D array with row length given by `row`
-    data = np.array(data).reshape(-1, row)
-    data = avoidOverflows(data)
+    data1 = np.array(data1).reshape(-1, row)
+    data1 = avoidOverflows(data1)
 
     # Use the initial data to generate two vectors worth of data
     # based on some scaling and translation to get data2
-    data1 = data
-    data2 = [[scale * item + translate for item in row] for row in data]
-
-    # If data is very big, scale it down to avoid overflows in the tests
-    data2 = avoidOverflows(data2)
+    data2 = avoidOverflows([[scale * item + translate for item in row] for row in data1])
 
     # Use `fcBin`
     nBins, mx, my  = test_engine.fcBin(test_engine.convert(data1), test_engine.convert(data2),
