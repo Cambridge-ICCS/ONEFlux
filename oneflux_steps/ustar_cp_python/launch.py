@@ -84,7 +84,7 @@ def launch(input_folder: str, output_folder: str) -> int:
                 break
             temp = dataset[i].replace('notes,', '')
             # Prepending in a list context
-            notes = [temp] + notes
+            notes = temp + notes
             i += 1
 
         filename = os.path.basename(d[n])
