@@ -21,7 +21,7 @@ from tests.conftest import test_engine
         ),
 
         # Case 5: Empty Array (Expect float if MATLAB returns scalar)
-        ([], []),
+        ([], [[]]),
 
         # Case 6: Single Element
         ([5], [5]),
