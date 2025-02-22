@@ -319,8 +319,6 @@ def computeStandardizedScores(x):
 
     return np.nanmax(np.abs(x_norm), axis=1, keepdims=True)  # Max absolute standardized score per row
 
-
-
 def fitAnnualSineCurve(mt, Cp, iSelect):
     """
     Fits an annual sine curve to the selected data points and returns
