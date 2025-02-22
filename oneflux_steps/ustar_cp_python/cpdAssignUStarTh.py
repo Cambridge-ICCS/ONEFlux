@@ -366,8 +366,7 @@ def fitAnnualSineCurve(mt, Cp, iSelect):
 
     # Return fitted coefficients plus the R-squared value
     # List containing ndarray to make output format match matlab for comparative testing
-    sSine = np.array([popt[0], popt[1], popt[2], r2], dtype=float)
-
+    sSine = np.array([[popt[0], popt[1], popt[2], r2]], dtype=float)
     return sSine
 
 def aggregateSeasonalAndAnnualValues(
