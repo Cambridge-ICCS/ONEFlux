@@ -116,13 +116,6 @@ class PythonEngine(TestEngine):
             # to a file
             if fromFile:
               return transpose(np.array(x).astype(np.float64))
-            elif len(x) == 1:
-                if isinstance(x, list) and all(isinstance(item, (int, float)) for item in x):
-                    return np.asarray(x)
-                if all(isinstance(i, bool) for i in x[0]):
-                    return np.array(x).astype(bool)
-                elif isinstance(x[0], list):
-                    return np.array(x[0])
             else:
               if (all(isinstance(i, np.bool_) for i in np.array(x).flat)):
                 return np.array(x).astype(bool)
@@ -172,6 +165,10 @@ class PythonEngine(TestEngine):
                     kwargs.pop('jsonencode')
                 if 'jsondecode' in kwargs:
                     kwargs.pop('jsondecode')
+                if 'stdout' in kwargs:
+                    kwargs.pop('stdout')
+                if 'stderr' in kwargs:
+                    kwargs.pop('stderr')
 
                 func = globals().get(name)
                 if callable(func):

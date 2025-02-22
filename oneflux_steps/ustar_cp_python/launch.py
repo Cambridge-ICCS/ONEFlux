@@ -75,7 +75,6 @@ def launch(input_folder: str, output_folder: str) -> int:
             exitcode = 1
             continue
 
-        
         i = 9
         while True:
             if i >= len(dataset):
