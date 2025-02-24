@@ -72,8 +72,8 @@ import numpy as np
 )
 def test_computeStandardizedScores(test_engine, input_data, expected_xNormX):
     """
-    Test the MATLAB function computeStandardizedScores by calling it 
-    via the MATLAB Engine. We verify xNormX row-by-row against 
+    Test the function computeStandardizedScores by calling it 
+    via the 'test engine'. We verify xNormX row-by-row against 
     expected values, including NaNs.
     """
 
