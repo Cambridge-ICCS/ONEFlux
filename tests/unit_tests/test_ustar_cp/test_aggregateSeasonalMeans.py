@@ -75,7 +75,7 @@ def test_aggregateSeasonalMeans(test_engine, mt, Cp, xmt, iSelect,
     nStrata_test = test_engine.convert(nStrata)
     nBoot_test = test_engine.convert(nBoot)
 
-    # Call the MATLAB function
+    # Call the function
     tW_mat, CpW_mat = test_engine.aggregateSeasonalMeans(
         mt_matlab,
         Cp_matlab,
