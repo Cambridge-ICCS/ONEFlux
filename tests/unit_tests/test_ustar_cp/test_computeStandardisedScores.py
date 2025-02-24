@@ -28,20 +28,6 @@ import numpy as np
 
         #
         # Test 2: 3x3 matrix, no NaNs
-        #
-        #   x = [[1,2,3],
-        #        [4,5,6],
-        #        [7,8,9]]
-        #
-        #   column 0 => median=4, iqr=3
-        #   column 1 => median=5, iqr=3
-        #   column 2 => median=6, iqr=3
-        #
-        #   => xNorm => row0 => [-1, -1, -1]
-        #               row1 => [ 0,  0,  0]
-        #               row2 => [ 1,  1,  1]
-        #   => xNormX => [1, 0, 1]
-        #
         (
             [
                 [1, 2, 3],
