@@ -279,7 +279,6 @@ class MatlabEngine:
                   return x
 
           def _equal(x, y):
-              print(x)
               print(y)
               return compare_matlab_arrays(x, y)
 
