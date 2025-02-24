@@ -62,7 +62,6 @@ def test_aggregateSeasonalMeans(test_engine, mt, Cp, xmt, iSelect,
       expect from fcBin.
     """
 
-    # Convert Python lists/arrays to MATLAB data
     mt_matlab = test_engine.convert(mt)
     Cp_matlab = test_engine.convert(Cp)
     xmt_matlab = test_engine.convert(xmt)
