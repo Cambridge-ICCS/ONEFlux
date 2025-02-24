@@ -109,7 +109,6 @@ def test_identify_outliers(test_engine, x_norm_x, threshold, expected_f_out, exp
 def test_aggregate_3d_case(test_engine, xCp, iSelect, nDim, nWindows, nStrata, nBoot, expected_CpA, expected_nA, expected_xCpSelect):
     """Test function for aggregateSeasonalAndAnnualValues 2D and 3D cases."""
 
-    print("DATA for test iSelect: ", iSelect)
 
     CpA, nA, xCpSelect = test_engine.aggregateSeasonalAndAnnualValues(
         test_engine.convert(xCp), test_engine.convert(iSelect), nDim, nWindows, test_engine.convert(nStrata), test_engine.convert(nBoot), nargout=3
