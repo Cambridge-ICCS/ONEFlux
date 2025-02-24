@@ -6,18 +6,6 @@ import numpy as np
     [
         #
         # Test 1: 2x3 matrix, no NaNs
-        #
-        #   x = [[1,2,3],
-        #        [4,5,6]]
-        #
-        #   For each column (with only 2 values):
-        #     median => (value1 + value2)/2
-        #     iqr    => 75th - 25th percentile => typically 1.5 for each col
-        #
-        #   => xNorm => row0 => [-1, -1, -1]
-        #               row1 => [ 1,  1,  1]
-        #   => xNormX => [1, 1]
-        #
         (
             [
                 [1, 2, 3],
