@@ -57,9 +57,6 @@ def test_aggregateSeasonalMeans(test_engine, mt, Cp, xmt, iSelect,
       indexing that caused errors.
     - We ensure length(xmt) == nWindows * nStrata * nBoot so reshape(xmt, ...)
       is valid in MATLAB.
-    - The `expected_tW` and `expected_CpW` here are "mock" placeholders to
-      show the format of the test. Adjust them based on what you actually
-      expect from fcBin.
     """
 
     mt_matlab = test_engine.convert(mt)
