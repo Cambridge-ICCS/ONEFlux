@@ -87,7 +87,7 @@ def test_aggregateSeasonalMeans(test_engine, mt, Cp, xmt, iSelect,
         nargout=2
     )
 
-    # Convert MATLAB outputs to NumPy arrays
+    # Convert outputs to NumPy arrays
     tW = np.array(tW_mat).flatten()
     CpW = np.array(CpW_mat).flatten()
 
