@@ -27,16 +27,6 @@ import numpy as np
 
         #
         # Test 3: 3x3 with a NaN in the middle row
-        #
-        #   x = [[1,   2,   3],
-        #        [4,  NaN,  6],
-        #        [7,   8,   9]]
-        #
-        #   We already reasoned that row0 => xNorm => [-1, -1, -1]
-        #                         row1 => => [0,  NaN, 0] => max => NaN
-        #                         row2 => => [1,  1,   1]
-        #   => xNormX => [1, NaN, 1]
-        #
         (
             [
                 [1,    2,    3],
