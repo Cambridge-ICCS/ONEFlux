@@ -408,7 +408,6 @@ def aggregateSeasonalAndAnnualValues(
     # Index using iSelect which could be a mask or a set of indices
     xCpSelect = index_or_mark_array_update(xCpSelect, iSelect, xCp)
 
-    print(f"nDim = {nDim}")
     # Aggregate values based on dimensions
     if nDim == 2:
         xCpGF = xCpSelect  # naming convention
