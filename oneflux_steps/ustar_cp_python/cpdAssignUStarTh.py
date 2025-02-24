@@ -300,7 +300,7 @@ def identifyOutliers(x_norm_x, threshold):
     Identifies outliers based on standardized scores.
 
     Parameters:
-    x_norm_x (numpy.ndarray): Array of normalized values.
+    x_norm_x (np.ndarray): Array of normalized values.
     threshold (float): Threshold value for outlier detection.
 
     Returns:
