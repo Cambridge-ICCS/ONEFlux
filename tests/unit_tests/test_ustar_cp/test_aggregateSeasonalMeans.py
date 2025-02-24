@@ -37,7 +37,7 @@ import numpy as np
             3,                                  # nStrata
             2,                                  # nBoot
             [20.0, 30.0, 30.0, 40.0],                       # expected_tW
-            [2.0, 4.0, 4.0, 8.0],                         # expected_CpW (mock result)
+            [2.0, 4.0, 4.0, 8.0],                         # expected_CpW
         ),
     ]
 )
