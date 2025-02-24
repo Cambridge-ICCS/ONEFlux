@@ -81,7 +81,7 @@ def test_cpdAssignUStarTh20100901_edge_cases(test_engine, mock_data):
     ]
 )
 def test_identify_outliers(test_engine, x_norm_x, threshold, expected_f_out, expected_i_out):
-    """Test MATLAB's identifyOutliers function from Python using MATLAB Engine."""
+    """Test identifyOutliers function from Python using MATLAB Engine."""
 
 
     f_out, i_out = test_engine.identifyOutliers(test_engine.convert(x_norm_x), test_engine.convert(threshold), nargout=2)
