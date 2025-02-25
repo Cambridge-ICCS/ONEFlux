@@ -45,9 +45,21 @@ Within the top-level directory we have:
 
 We have also added
 
-- `tests/conftest.py` - Test engine
+- `tests/conftest.py` - Test engine, supporting fixtures and functions
 - `tests/unit_tests/test_ustar_cp` - Extensive test suite for `ustar_cp`
 - `tests/test_artefacts` - Test fixtures mostly comprising site data and intermediate input-output data generated from site data
+
+### Running the code
+
+`launch.py` is the Python code entry point. It accepts the input and output data paths as arguments similar to `launch.m`. This function can either be called directly from another Python function, or directly from the terminal using the following command:
+
+```shell
+python3 -m oneflux_steps/ustar_cp_python/launch.py input_folder output_folder
+```
+
+where `input_folder` and `output_folder` are the absolute paths to the input and desired output data locations.
+
+### Running the tests
 
 Tests can be run for the MATLAB code (in `ustar_cp_refactor`) by running at the top-level:
 
