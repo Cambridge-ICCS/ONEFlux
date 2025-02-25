@@ -17,6 +17,7 @@ Contents:
         read_file
         parse_testcase
 """
+x=10
 
 import pytest
 import os
