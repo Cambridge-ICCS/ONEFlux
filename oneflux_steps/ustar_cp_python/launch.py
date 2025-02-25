@@ -160,7 +160,7 @@ def launch(input_folder: str, output_folder: str) -> int:
             cpdAssignUStarTh20100901(Stats2, fPlot, cSiteYr)
 
         # Save result
-        # 'clock' in MATLAB typically returns the current date/time. We'll pass Python's datetime now.
+        # Pass Python's datetime now.
         from datetime import datetime
         current_time = datetime.now()
         error_str, cSiteYr, errorCode = saveResult(
