@@ -8,6 +8,7 @@ from typing import Tuple
 from numpy.typing import NDArray
 from oneflux_steps.ustar_cp_python.fcBin import fcBin
 from oneflux_steps.ustar_cp_python.utilities import index_or_mark_array_update
+import json
 
 def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
     """

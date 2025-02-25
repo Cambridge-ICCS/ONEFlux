@@ -35,6 +35,20 @@ import matlab.engine
 from matlab.engine.matlabengine import MatlabFunc
 # </MATLAB>
 
+# Python version of ustar_cp imported here
+from oneflux_steps.ustar_cp_python import *
+from oneflux_steps.ustar_cp_python.fcNaniqr import *
+from oneflux_steps.ustar_cp_python.cpdFmax2pCore import *
+from oneflux_steps.ustar_cp_python.fcDatenum import *
+from oneflux_steps.ustar_cp_python.cpdFmax2pCp3 import *
+from oneflux_steps.ustar_cp_python.utilities import *
+from oneflux_steps.ustar_cp_python.cpd_evaluate_functions import *
+from oneflux_steps.ustar_cp_python.cpdFindChangePoint_functions import *
+from oneflux_steps.ustar_cp_python.cpdBootstrap import *
+from oneflux_steps.ustar_cp_python.fcEqnAnnualSine import *
+from oneflux_steps.ustar_cp_python.launch import *
+from oneflux_steps.ustar_cp_python.cpdAssignUStarTh import *
+
 # Setup command-line arguments for the tests to allow switching language
 #  --language=matlab runs the tests against the MATLAB implementation (default)
 #  --language=python runs the tests against the Python implementation
@@ -74,21 +88,6 @@ class TestEngine(ABC):
     def equal(self, x, y) -> bool:
         """Compare two values for equality in the representation used by this engine"""
         pass
-
-# Python version of ustar_cp imported here
-from oneflux_steps.ustar_cp_python import *
-from oneflux_steps.ustar_cp_python.fcNaniqr import *
-from oneflux_steps.ustar_cp_python.cpdFmax2pCore import *
-from oneflux_steps.ustar_cp_python.fcDatenum import *
-from oneflux_steps.ustar_cp_python.cpdFmax2pCp3 import *
-from oneflux_steps.ustar_cp_python.utilities import *
-from oneflux_steps.ustar_cp_python.cpd_evaluate_functions import *
-from oneflux_steps.ustar_cp_python.cpdFindChangePoint_functions import *
-from oneflux_steps.ustar_cp_python.cpdBootstrap import *
-from oneflux_steps.ustar_cp_python.fcEqnAnnualSine import *
-from oneflux_steps.ustar_cp_python.launch import *
-from oneflux_steps.ustar_cp_python.cpdAssignUStarTh import *
-
 
 # Python TestEngine
 class PythonEngine(TestEngine):

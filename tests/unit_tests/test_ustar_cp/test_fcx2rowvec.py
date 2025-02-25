@@ -1,6 +1,5 @@
 import pytest
 import numpy as np
-from tests.conftest import test_engine
 
 @pytest.mark.parametrize(
     "input_data, expected",

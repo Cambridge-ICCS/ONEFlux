@@ -1,7 +1,8 @@
 import numpy as np
 from typing import Dict, List
-from typing import List, Dict, Tuple
+from typing import Tuple
 from oneflux_steps.ustar_cp_python.utilities import dot, intersect, round_up
+from oneflux_steps.ustar_cp_python.cpd_evaluate_functions import cpdEvaluateUStarTh4Season20100901
 
 def cpdBootstrapUStarTh4Season20100901(t: np.ndarray, NEE: np.ndarray, uStar: np.ndarray, T: np.ndarray, fNight: np.ndarray, fPlot: int, cSiteYr: str, nBoot: int) -> Tuple[np.ndarray, List[List[List[Dict[str, float]]]], np.ndarray, List[List[List[Dict[str, float]]]]]:
     """
@@ -221,11 +222,11 @@ def get_ntN(t : np.ndarray, nSeasons : int) -> int:
     nStrataN = 4 # Local variable, used to calculate ntN
     nBins = 50   # Local variable, used to calculate ntN
 
-    nPerBin = get_nPerBin(t);
+    nPerBin = get_nPerBin(t)
 
     # Calculate ntN based on nStrataN, nBins, and nPerBin
-    nPerSeason = nStrataN * nBins * nPerBin;
-    ntN = nSeasons * nPerSeason;
+    nPerSeason = nStrataN * nBins * nPerBin
+    ntN = nSeasons * nPerSeason
     return ntN
 
 def update_uStar(uStar : np.ndarray) -> np.ndarray:

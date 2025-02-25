@@ -4,7 +4,6 @@ from oneflux_steps.ustar_cp_python.utilities import prctile
 from oneflux_steps.ustar_cp_python.fcDatenum import datenum
 from oneflux_steps.ustar_cp_python.fcDatevec import fcDatevec
 from oneflux_steps.ustar_cp_python.fcDoy import fcDoy
-from oneflux_steps.ustar_cp_python.cpdBootstrap import generate_statsMT
 from oneflux_steps.ustar_cp_python.cpdFindChangePoint_functions import cpdFindChangePoint20100901
 import numpy as np
 from scipy.stats import pearsonr
@@ -613,6 +612,7 @@ def initializeStatistics(nSeasons: int, nStrataX: int) -> Tuple[Any, Any]:
     """
 
     # Retrieve the base stats object (placeholder function).
+    from oneflux_steps.ustar_cp_python.cpdBootstrap import generate_statsMT
     StatsMT = generate_statsMT()
 
     # Construct Stats2, Stats3 as 2D arrays (lists of lists here)

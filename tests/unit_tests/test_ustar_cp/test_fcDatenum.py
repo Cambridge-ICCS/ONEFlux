@@ -1,5 +1,4 @@
 import pytest
-from tests.conftest import test_engine
 
 @pytest.mark.parametrize("Y, M, D, expected", [
     (2023, 10, 5, 739164),

@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import copy
 from oneflux_steps.ustar_cp_python.cpdBootstrap import cpdBootstrapUStarTh4Season20100901
+from oneflux_steps.ustar_cp_python.cpdAssignUStarTh import cpdAssignUStarTh20100901
 
 def launch(input_folder: str, output_folder: str) -> int:
     """
