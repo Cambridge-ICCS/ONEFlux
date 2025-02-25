@@ -87,6 +87,7 @@ from oneflux_steps.ustar_cp_python.cpdFindChangePoint_functions import *
 from oneflux_steps.ustar_cp_python.cpdBootstrap import *
 from oneflux_steps.ustar_cp_python.fcEqnAnnualSine import *
 from oneflux_steps.ustar_cp_python.launch import *
+from oneflux_steps.ustar_cp_python.cpdAssignUStarTh import *
 
 
 # Python TestEngine
@@ -101,7 +102,6 @@ class PythonEngine(TestEngine):
         if index == 'to_python':
             if isinstance(x, list):
                 x = np.asarray(x)
-        
             if isinstance(x, (int, float)):
                 if x != -1:
                     x = x-1
@@ -117,7 +117,10 @@ class PythonEngine(TestEngine):
             if fromFile:
               return transpose(np.array(x).astype(np.float64))
             else:
-              return np.array(x).astype(np.float64)
+              if (all(isinstance(i, np.bool_) for i in np.array(x).flat)):
+                return np.array(x).astype(bool)
+              else:
+                return np.array(x).astype(np.float64)
 
         elif isinstance(x, tuple):
             return tuple([self.convert(xi) for xi in x])
@@ -160,6 +163,12 @@ class PythonEngine(TestEngine):
                 # if jsonencode is present in kwargs then remove it
                 if 'jsonencode' in kwargs:
                     kwargs.pop('jsonencode')
+                if 'jsondecode' in kwargs:
+                    kwargs.pop('jsondecode')
+                if 'stdout' in kwargs:
+                    kwargs.pop('stdout')
+                if 'stderr' in kwargs:
+                    kwargs.pop('stderr')
 
                 func = globals().get(name)
                 if callable(func):
@@ -337,7 +346,9 @@ def to_matlab_type(data: Any) -> Any:
             return data.tolist()  # Convert non-numeric arrays to lists
     elif isinstance(data, list):
         # Convert Python list to MATLAB double array if all elements are numbers
-        if all(isinstance(elem, (int, float)) for elem in flatten(data)):
+        if all(isinstance(elem, (bool)) for elem in flatten(data)):
+            return matlab.logical(data)
+        elif all(isinstance(elem, (int, float)) for elem in flatten(data)):
             return matlab.double(data)
         else:
             # Create a cell array for lists containing non-numeric data

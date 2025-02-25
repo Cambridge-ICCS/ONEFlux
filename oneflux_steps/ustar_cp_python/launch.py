@@ -75,7 +75,6 @@ def launch(input_folder: str, output_folder: str) -> int:
             exitcode = 1
             continue
 
-        
         i = 9
         while True:
             if i >= len(dataset):
@@ -85,7 +84,7 @@ def launch(input_folder: str, output_folder: str) -> int:
                 break
             temp = dataset[i].replace('notes,', '')
             # Prepending in a list context
-            notes = [temp] + notes
+            notes = temp + notes
             i += 1
 
         filename = os.path.basename(d[n])
@@ -748,8 +747,6 @@ def createTimeArray(uStar: Union[np.ndarray, pd.Series]) -> np.ndarray:
 
 
 
-def cpdAssignUStarTh20100901(*args):
-    return None, None, None, None, None, None, None, None, None, None, None, None
 
 def saveResult(*args):
     return None, None, None

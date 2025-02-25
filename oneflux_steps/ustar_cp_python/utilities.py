@@ -4,6 +4,43 @@ import numpy as np
 import json
 from decimal import Decimal, ROUND_HALF_UP
 
+def index_or_mark_array_update(A : np.ndarray, idx : np.ndarray, B : np.ndarray) -> np.ndarray:
+    """
+    index_or_mark_array_update(A, idx, B) performs something akin to `A[idx] = B`
+    where we update the elements of `A` at indices `idx` according to `B`
+    but where A and B are n-dimensional but idx is either an n-dimensional array
+    of masking booleans, or a 1-dimensional array of indices into the flattened
+    array A.
+
+    Parameters:
+    A : np.ndarray
+        The input array.
+    idx : np.ndarray
+        The indices to use.
+
+    Returns:
+    np.ndarray
+        The elements of the array at the specified indices.
+    """
+
+    if (all(isinstance(i, np.bool_) for i in np.array(idx).flat)):
+      # idx is a boolean mask
+      for i in range(len(A.flat)):
+        if idx.flat[i]:
+            A.flat[i] = B.flat[i]
+    else:
+      # Do column major flattening of A
+      Acopy = A.copy().flatten(order='F')
+      B = B.flatten(order='F')
+      idx = idx.flatten()
+      # Copy across the elements at the right indices
+      for i in idx:
+        Acopy[i] = B[i]
+      # Reshape the data
+      A = Acopy.reshape(A.shape, order='F')
+    return A
+
+
 def prctile(A: np.ndarray, p: float) -> float|np.ndarray:
     """
     Compute the p-th percentile of array A in a way that has
