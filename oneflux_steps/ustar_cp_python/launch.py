@@ -7,6 +7,8 @@ import pandas as pd
 import copy
 from oneflux_steps.ustar_cp_python.cpdBootstrap import cpdBootstrapUStarTh4Season20100901
 from oneflux_steps.ustar_cp_python.cpdAssignUStarTh import cpdAssignUStarTh20100901
+import argparse
+import sys
 
 def launch(input_folder: str, output_folder: str) -> int:
     """
@@ -751,3 +753,25 @@ def createTimeArray(uStar: Union[np.ndarray, pd.Series]) -> np.ndarray:
 
 def saveResult(*args):
     return None, None, None
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Perform U* threshold computation by Alan Barr."
+    )
+    parser.add_argument(
+        "input_folder",
+        help="Path to the folder containing input files"
+    )
+    parser.add_argument(
+        "output_folder",
+        help="Path to the folder where output files will be saved"
+    )
+    
+    args = parser.parse_args()
+    
+    exit_code = launch(args.input_folder, args.output_folder)
+
+    sys.exit(exit_code)
+
+if __name__ == "__main__":
+    main()
