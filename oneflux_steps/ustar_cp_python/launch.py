@@ -744,9 +744,100 @@ def createTimeArray(uStar: Union[np.ndarray, pd.Series]) -> np.ndarray:
 
     return t
 
+def saveResult(
+    cFailure: str,
+    cSiteYr: str,
+    output_folder: str,
+    site: str,
+    year: str,
+    Cp: Union[np.ndarray, list],
+    clock_str: str,
+    notes: List[str]
+) -> Tuple[str, str, int]:
+    """
+    Save results to a text file.
 
+    Parameters
+    ----------
+    cFailure : str
+        Failure message. If non-empty, indicates an error occurred and prevents saving.
+    cSiteYr : str
+        The site-year string (possibly with ".csv" extension to be stripped).
+    output_folder : str
+        Directory path where the output file should be saved.
+    site : str
+        Site identifier (e.g., "US-Ne1").
+    year : str
+        Year used to name the output file.
+    Cp : np.ndarray or list
+        Numeric array to be written to the output file.
+    clock_str : str
+        A time stamp string (e.g., from datetime) to record when the file is processed.
+    notes : list of str
+        Extra lines to append to the file, typically lines of metadata or commentary.
 
+    Returns
+    -------
+    error_str : str
+        Populated with an error message if cFailure is non-empty; otherwise empty.
+    cSiteYr : str
+        Possibly modified cSiteYr (e.g., stripped of ".csv").
+    errorCode : int
+        0 if the file is saved successfully, 1 if cFailure is non-empty.
+    
+    Notes
+    -----
+    - If cFailure is empty, writes Cp to a text file named "<output_folder><site>_uscp_<year>.txt".
+    - Appends a time stamp, then reversed lines from notes to the same file.
+    - If cFailure is non-empty, prints the failure message and returns without saving.
+    """
+    error_str = ""
+    errorCode = 0
 
+    # If there's no failure, proceed with saving
+    if not cFailure:
+        # Remove .csv from cSiteYr if present
+        cSiteYr = cSiteYr.replace(".csv", "")
 
-def saveResult(*args):
-    return None, None, None
+        # Construct filename and write numeric array Cp with 8-digit precision
+        filename = f"{output_folder}{site}_uscp_{year}.txt"
+        np.savetxt(filename, Cp, fmt="%.8f")
+
+        # Append processing info and notes
+        with open(filename, "a") as fid:
+            fid.write(f"\n;processed with ustar_mp 1.0 on {clock_str}\n")
+            # Write notes in reverse order
+            for note in reversed(notes):
+                fid.write(f";{note}\n")
+
+        print("ok")
+    else:
+        # If cFailure is non-empty, record an error
+        error_str = f"{site}_uscp_{year} {cFailure}"
+        print(cFailure)
+        errorCode = 1
+
+    return error_str, cSiteYr, errorCode
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Perform U* threshold computation by Alan Barr."
+    )
+    parser.add_argument(
+        "input_folder",
+        help="Path to the folder containing input files"
+    )
+    parser.add_argument(
+        "output_folder",
+        help="Path to the folder where output files will be saved"
+    )
+    
+    args = parser.parse_args()
+    
+    exit_code = launch(args.input_folder, args.output_folder)
+
+    sys.exit(exit_code)
+
+if __name__ == "__main__":
+    main()
+>>>>>>> Stashed changes

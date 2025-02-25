@@ -84,6 +84,9 @@ def test_ustar_cp(testcase, expected_values, setup_folders, test_engine, find_te
 
     # Step 3: Retrieve the expected output from the reference text file and extract the relevant section
     ref_text = find_text_file(ref_outputs)
+    # write ref_text to log.txt for checking
+    with open('log.txt', 'w') as f:
+        f.write(str(ref_text))
     expected_output_lines = extract_section_between_keywords(ref_text, 'processing')
     expected_output = ''.join(expected_output_lines).strip()
 
