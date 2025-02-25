@@ -15,6 +15,7 @@ testcases_cpdFmax2pCp3 = [
     (10.3567400792636, 54, 0.0657053181314848, "Case 10: Nominal scenario 2"),
 ]
 
+
 @pytest.mark.parametrize("fmax, n, expected_p3, description", testcases_cpdFmax2pCp3)
 def test_cpdFmax2pCp3(test_engine, fmax, n, expected_p3, description):
     # Convert input
@@ -27,12 +28,37 @@ def test_cpdFmax2pCp3(test_engine, fmax, n, expected_p3, description):
     # Assertion
     assert test_engine.equal(test_engine.convert(output_p3), expected_p3), description
 
+
 # 2. test_calculate_p_high
 testcases_calculate_p_high = [
-    (20, 15, 50, 0.0018068999227986993, "Case 1: Fmax > FmaxCritical_high, typical scenario"),
-    (15, 15, 50, 0.010000000000000009, "Case 2: Fmax = FmaxCritical_high, boundary condition"),
-    (15.1, 15, 50, 0.00965419741276663, "Case 3: Fmax slightly above FmaxCritical_high"),
-    (30, 15, 100, 4.4960217949308046e-05, "Case 4: Larger difference, Fmax >> FmaxCritical_high"),
+    (
+        20,
+        15,
+        50,
+        0.0018068999227986993,
+        "Case 1: Fmax > FmaxCritical_high, typical scenario",
+    ),
+    (
+        15,
+        15,
+        50,
+        0.010000000000000009,
+        "Case 2: Fmax = FmaxCritical_high, boundary condition",
+    ),
+    (
+        15.1,
+        15,
+        50,
+        0.00965419741276663,
+        "Case 3: Fmax slightly above FmaxCritical_high",
+    ),
+    (
+        30,
+        15,
+        100,
+        4.4960217949308046e-05,
+        "Case 4: Larger difference, Fmax >> FmaxCritical_high",
+    ),
     (np.nan, 15, 50, 0, "Case 5: Fmax is NaN, expect p=0"),
     (20, np.nan, 50, 0, "Case 6: FmaxCritical_high is NaN, expect p=0"),
     (20, 15, np.nan, 0, "Case 7: n is NaN, expect p=0"),
@@ -42,8 +68,13 @@ testcases_calculate_p_high = [
     (20, 15, -50, 0, "Case 11: Negative n, expect p=0"),
 ]
 
-@pytest.mark.parametrize("Fmax, FmaxCritical_high, n, expected_p, description", testcases_calculate_p_high)
-def test_calculate_p_high(test_engine, Fmax, FmaxCritical_high, n, expected_p, description):
+
+@pytest.mark.parametrize(
+    "Fmax, FmaxCritical_high, n, expected_p, description", testcases_calculate_p_high
+)
+def test_calculate_p_high(
+    test_engine, Fmax, FmaxCritical_high, n, expected_p, description
+):
     Fmax = test_engine.convert(Fmax)
     FmaxCritical_high = test_engine.convert(FmaxCritical_high)
     n = test_engine.convert(n)
@@ -55,22 +86,52 @@ def test_calculate_p_high(test_engine, Fmax, FmaxCritical_high, n, expected_p, d
 
 # 3. test_calculate_p_interpolate
 testcases_calculate_p_interpolate = [
-    (10, [5, 15], [0.1, 0.05], 0.925, 
-     "Case 1: Fmax between FmaxCritical[0] & FmaxCritical[1], expect interpolated p"),
-    (15, [10, 15, 20], [0.1, 0.05, 0.01], 0.95, 
-     "Case 2: Fmax = FmaxCritical[1], direct match"),
-    (17, [15, 20], [0.05, 0.01], 0.966, 
-     "Case 3: Fmax between FmaxCritical[0] & FmaxCritical[1], expect interpolation"),
-    (4, [5, 10, 15], [0.1, 0.05, 0.01], 0.8888266666666668, 
-     "Case 4: Fmax < min(FmaxCritical), special behavior"),
-    (16, [5, 10, 15], [0.1, 0.05, 0.01], 0.9967733333333333, 
-     "Case 5: Fmax > max(FmaxCritical), special behavior"),
-    (np.nan, [5, 10, 15], [0.1, 0.05, 0.01], np.nan, 
-     "Case 6: Fmax is NaN, expect NaN"),
+    (
+        10,
+        [5, 15],
+        [0.1, 0.05],
+        0.925,
+        "Case 1: Fmax between FmaxCritical[0] & FmaxCritical[1], expect interpolated p",
+    ),
+    (
+        15,
+        [10, 15, 20],
+        [0.1, 0.05, 0.01],
+        0.95,
+        "Case 2: Fmax = FmaxCritical[1], direct match",
+    ),
+    (
+        17,
+        [15, 20],
+        [0.05, 0.01],
+        0.966,
+        "Case 3: Fmax between FmaxCritical[0] & FmaxCritical[1], expect interpolation",
+    ),
+    (
+        4,
+        [5, 10, 15],
+        [0.1, 0.05, 0.01],
+        0.8888266666666668,
+        "Case 4: Fmax < min(FmaxCritical), special behavior",
+    ),
+    (
+        16,
+        [5, 10, 15],
+        [0.1, 0.05, 0.01],
+        0.9967733333333333,
+        "Case 5: Fmax > max(FmaxCritical), special behavior",
+    ),
+    (np.nan, [5, 10, 15], [0.1, 0.05, 0.01], np.nan, "Case 6: Fmax is NaN, expect NaN"),
 ]
 
-@pytest.mark.parametrize("Fmax, FmaxCritical, pTable, expected_p, description", testcases_calculate_p_interpolate)
-def test_calculate_p_interpolate(test_engine, Fmax, FmaxCritical, pTable, expected_p, description):
+
+@pytest.mark.parametrize(
+    "Fmax, FmaxCritical, pTable, expected_p, description",
+    testcases_calculate_p_interpolate,
+)
+def test_calculate_p_interpolate(
+    test_engine, Fmax, FmaxCritical, pTable, expected_p, description
+):
     Fmax = test_engine.convert(Fmax)
     FmaxCritical = test_engine.convert(FmaxCritical)
     pTable = test_engine.convert(pTable)
@@ -82,7 +143,13 @@ def test_calculate_p_interpolate(test_engine, Fmax, FmaxCritical, pTable, expect
 
 # 4. test_calculate_p_low
 testcases_calculate_p_low = [
-    (5.0, 10.0, 30, 0.4898436922743534, "Case 1: Basic test with Fmax < FmaxCritical_low"),
+    (
+        5.0,
+        10.0,
+        30,
+        0.4898436922743534,
+        "Case 1: Basic test with Fmax < FmaxCritical_low",
+    ),
     (0.0, 10.0, 30, 1.0, "Case 2: Fmax = 0"),
     (5.0, 10.0, 3, 0.239649936459168, "Case 3: Small sample size n=3"),
     (10.0, 10.0, 30, 0.09999999999999987, "Case 4: Fmax = FmaxCritical_low"),
@@ -92,8 +159,13 @@ testcases_calculate_p_low = [
     (5.0, 0.0, 30, 0.0, "Case 8: FmaxCritical_low=0.0, invalid, expect p=0.0"),
 ]
 
-@pytest.mark.parametrize("Fmax, FmaxCritical_low, n, expected_p, description", testcases_calculate_p_low)
-def test_calculate_p_low(test_engine, Fmax, FmaxCritical_low, n, expected_p, description):
+
+@pytest.mark.parametrize(
+    "Fmax, FmaxCritical_low, n, expected_p, description", testcases_calculate_p_low
+)
+def test_calculate_p_low(
+    test_engine, Fmax, FmaxCritical_low, n, expected_p, description
+):
     Fmax = test_engine.convert(Fmax)
     FmaxCritical_low = test_engine.convert(FmaxCritical_low)
     n = test_engine.convert(n)
@@ -108,44 +180,49 @@ def test_calculate_p_low(test_engine, Fmax, FmaxCritical_low, n, expected_p, des
 # 5. test_interpolate_FmaxCritical
 testcases_interpolate_FmaxCritical = [
     (
-        15, 
+        15,
         [10, 20, 30],
         [[5, 10, 15], [6, 12, 18], [7, 14, 21]],
         [5.5, 11, 16.5],
-        "Case 1: Interpolation within range of nTable"
+        "Case 1: Interpolation within range of nTable",
     ),
     (
-        10, 
+        10,
         [10, 20, 30],
         [[5, 10, 15], [6, 12, 18], [7, 14, 21]],
         [5, 10, 15],
-        "Case 2: Exact match in nTable, no interpolation needed"
+        "Case 2: Exact match in nTable, no interpolation needed",
     ),
     (
-        5, 
+        5,
         [10, 20, 30],
         [[5, 10, 15], [6, 12, 18], [7, 14, 21]],
         [4.5, 9.0, 13.5],
-        "Case 3: n below nTable range, custom behavior"
+        "Case 3: n below nTable range, custom behavior",
     ),
     (
-        35, 
+        35,
         [10, 20, 30],
         [[5, 10, 15], [6, 12, 18], [7, 14, 21]],
         [7.5, 15.0, 22.5],
-        "Case 4: n above nTable range, custom behavior"
+        "Case 4: n above nTable range, custom behavior",
     ),
 ]
 
+
 @pytest.mark.parametrize(
-    "n, nTable, FmaxTable, expected_FmaxCritical, description", 
-    testcases_interpolate_FmaxCritical
+    "n, nTable, FmaxTable, expected_FmaxCritical, description",
+    testcases_interpolate_FmaxCritical,
 )
-def test_interpolate_FmaxCritical(n, nTable, FmaxTable, expected_FmaxCritical, description, test_engine):
+def test_interpolate_FmaxCritical(
+    n, nTable, FmaxTable, expected_FmaxCritical, description, test_engine
+):
     n = test_engine.convert(n)
     nTable = test_engine.convert(nTable)
     FmaxTable = test_engine.convert(FmaxTable)
 
     result = test_engine.interpolate_FmaxCritical(n, 3, nTable, FmaxTable)
 
-    assert test_engine.equal(test_engine.convert(expected_FmaxCritical), result), description
+    assert test_engine.equal(
+        test_engine.convert(expected_FmaxCritical), result
+    ), description

@@ -1,17 +1,18 @@
 import pytest
 import numpy as np
 
+
 @pytest.mark.parametrize(
     (
-        "xCp",         # 2D or 3D matrix to pass into MATLAB
-        "iSelect",     # numeric (1-based) indices into xCp
-        "nDim", 
-        "nWindows", 
-        "nStrata", 
-        "nBoot", 
-        "expected_CpA", 
+        "xCp",  # 2D or 3D matrix to pass into MATLAB
+        "iSelect",  # numeric (1-based) indices into xCp
+        "nDim",
+        "nWindows",
+        "nStrata",
+        "nBoot",
+        "expected_CpA",
         "expected_nA",
-        "expected_xCpSelect"
+        "expected_xCpSelect",
     ),
     [
         #
@@ -29,20 +30,16 @@ import numpy as np
         #
         (
             # xCp as a nested list to form 2D [2,3]
-            [[1, 2, 3],
-             [4, 5, 6]],
-
-            [2, 4, 6],   # 1-based indices => picks xCp(2)=4, xCp(4)=5, xCp(6)=6
-            2,           # nDim
-            2,           # nWindows
-            1,           # nStrata
-            3,           # nBoot
-            [4.0, 5.0, 6.0],    # expected_CpA
-            [1, 1, 1],          # expected_nA
-            [[np.nan, np.nan, np.nan],
-             [4.0,    5.0,    6.0]]
+            [[1, 2, 3], [4, 5, 6]],
+            [2, 4, 6],  # 1-based indices => picks xCp(2)=4, xCp(4)=5, xCp(6)=6
+            2,  # nDim
+            2,  # nWindows
+            1,  # nStrata
+            3,  # nBoot
+            [4.0, 5.0, 6.0],  # expected_CpA
+            [1, 1, 1],  # expected_nA
+            [[np.nan, np.nan, np.nan], [4.0, 5.0, 6.0]],
         ),
-
         #
         # Test Case 2: 3D, shape(2,2,2).
         #   In MATLAB (column-major), xCp(1,1,1)=1, xCp(2,1,1)=2, xCp(1,2,1)=3, xCp(2,2,1)=4,
@@ -63,24 +60,19 @@ import numpy as np
             # xCp as nested lists for shape(2,2,2). The dimension order in Python is [row, col, "page"].
             # We'll pass it as we want MATLAB to interpret it with column-major flattening.
             [
-              [ [1, 5], [3, 7] ],   # "row 1"
-              [ [2, 6], [4, 8] ]    # "row 2"
+                [[1, 5], [3, 7]],  # "row 1"
+                [[2, 6], [4, 8]],  # "row 2"
             ],
-            [1, 8],   # picks xCp(1)=1, xCp(8)=8 in MATLAB
-            3,        # nDim
-            2,        # nWindows
-            2,        # nStrata
-            2,        # nBoot
-            [1.0, 8.0],    # expected_CpA (1x2 row vector)
-            [1, 1],        # expected_nA
-            [
-              [[1.0,    np.nan],
-               [np.nan, np.nan]],
-              [[np.nan, np.nan],
-               [np.nan, 8.0   ]]
-            ]
+            [1, 8],  # picks xCp(1)=1, xCp(8)=8 in MATLAB
+            3,  # nDim
+            2,  # nWindows
+            2,  # nStrata
+            2,  # nBoot
+            [1.0, 8.0],  # expected_CpA (1x2 row vector)
+            [1, 1],  # expected_nA
+            [[[1.0, np.nan], [np.nan, np.nan]], [[np.nan, np.nan], [np.nan, 8.0]]],
         ),
-    ]
+    ],
 )
 def test_aggregateSeasonalAndAnnualValues(
     test_engine,
@@ -92,7 +84,7 @@ def test_aggregateSeasonalAndAnnualValues(
     nBoot,
     expected_CpA,
     expected_nA,
-    expected_xCpSelect
+    expected_xCpSelect,
 ):
     """
     Test the function aggregateSeasonalAndAnnualValues
@@ -112,12 +104,12 @@ def test_aggregateSeasonalAndAnnualValues(
 
     CpA, nA, xCpSelect = test_engine.aggregateSeasonalAndAnnualValues(
         test_engine.convert(xCp),
-        test_engine.convert(iSelect, index = "to_python"),
+        test_engine.convert(iSelect, index="to_python"),
         test_engine.convert(nDim),
         test_engine.convert(nWindows),
         test_engine.convert(nStrata),
         test_engine.convert(nBoot),
-        nargout=3
+        nargout=3,
     )
 
     assert test_engine.equal(CpA, test_engine.convert(expected_CpA))
