@@ -54,7 +54,7 @@ def test_singleton_bins_1D_data(data, scale, translate, test_engine):
     # Helper routine to check results
     def check(ys, data):
       # If the result was a singleton float, it should be in the original data
-      if type(ys) == float:
+      if type(ys) is float:
         assert np.any([np.isclose(ys, item, equal_nan=True) for item in data])
       else:
         for bin in ys:
@@ -105,7 +105,7 @@ def test_singleton_bins_2D_data(data, scale, row, translate, test_engine):
     # Helper routine to check results
     def check(ys, data):
       # If the result was a singleton float, it should be in the original data
-      if type(ys) == float:
+      if type(ys) is float:
         assert np.any([np.isclose(ys, item, equal_nan=True) for item in data]), f"ys = {ys}, data = {data}"
       else:
         for bin in ys:

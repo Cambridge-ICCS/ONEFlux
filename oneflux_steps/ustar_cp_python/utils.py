@@ -638,11 +638,11 @@ def nanmedian(a, axis=0):
     """
     Compute the median of an array while ignoring NaNs.
     """
-    return np.nanmedian(squeeze(np.asarray(a)), axis=axis)
+    return np.nanmedian(np.squeeze(np.asarray(a)), axis=axis)
 
 
 def diff(a, n=1, axis=0):
-    x = squeeze(np.asarray(a))
+    x = np.squeeze(np.asarray(a))
     return np.diff(x, n=n, axis=axis)
 
 
@@ -677,7 +677,7 @@ def mean(a, axis=0):
     """
     Compute the mean of the elements along the specified axis.
     """
-    return np.mean(squeeze(np.asarray(a)), axis=axis)
+    return np.mean(np.squeeze(np.asarray(a)), axis=axis)
 
 
 @function
@@ -685,7 +685,7 @@ def std(a, axis=0):
     """
     Compute the standard deviation of the elements along the specified axis.
     """
-    return np.std(squeeze(np.asarray(a)), axis=axis)
+    return np.std(np.squeeze(np.asarray(a)), axis=axis)
 
 
 @function
@@ -693,7 +693,7 @@ def var(a, axis=0):
     """
     Compute the variance of the elements along the specified axis.
     """
-    return np.var(squeeze(np.asarray(a)), axis=axis)
+    return np.var(np.squeeze(np.asarray(a)), axis=axis)
 
 
 @function
@@ -711,7 +711,7 @@ def max(a, b=[], axis=0, nargout=1):
         axis = None
     if axis:
         axis -= 1
-    a = squeeze(np.asarray(a))
+    a = np.squeeze(np.asarray(a))
     m = np.max(a, axis=axis)
     if nargout == 1:
         return m
@@ -734,7 +734,7 @@ def min(a, b=[], axis=0, nargout=1):
         axis = None
     if axis:
         axis -= 1
-    a = squeeze(np.asarray(a))
+    a = np.squeeze(np.asarray(a))
     m = np.min(a, axis=axis)
     if nargout == 1:
         return m
@@ -789,7 +789,7 @@ def datenum(a, *args):
         return d.astype("timedelta64[D]") + 719529
     from datetime import datetime, timedelta
 
-    y, m, d = [np.squeeze(a).item() for a in (a, *args)]
+    y, m, d = [np.np.squeeze(a).item() for a in (a, *args)]
     t = datetime(int(y) + 2000, int(m), 1) + timedelta(days=d + 1)
     return matlabarray(t - datetime(2000, 1, 1)).astype("timedelta64[D]")
 
@@ -814,7 +814,7 @@ def median(a, axis=0):
     """
     Compute the median of an array.
     """
-    return np.median(squeeze(np.asarray(a)), axis=axis)
+    return np.median(np.squeeze(np.asarray(a)), axis=axis)
 
 
 @function
@@ -822,7 +822,7 @@ def nanmean(a, axis=0):
     """
     Compute the mean of an array while ignoring NaNs.
     """
-    return np.nanmean(squeeze(np.asarray(a)), axis=axis)
+    return np.nanmean(np.squeeze(np.asarray(a)), axis=axis)
 
 
 @function

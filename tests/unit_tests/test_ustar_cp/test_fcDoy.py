@@ -1,7 +1,6 @@
 # Tests for fcDoy
 
 import pytest
-from tests.conftest import test_engine
 
 # Specific state vectors
 # via a parameterized test fixture

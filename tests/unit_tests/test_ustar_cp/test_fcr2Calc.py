@@ -2,8 +2,6 @@
 # which computes an r^2 value for two datasets
 
 import pytest
-from tests.conftest import test_engine
-
 from hypothesis import given, settings
 from hypothesis.strategies import floats, lists, composite
 

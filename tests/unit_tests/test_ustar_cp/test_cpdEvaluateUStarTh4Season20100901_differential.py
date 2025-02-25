@@ -116,7 +116,7 @@ def test_computeSeasonIndices_differential(test_engine, iSeasons, nSeasons, nPer
     assert test_engine.equal(test_engine.convert(list(python_jtSeasons), 'to_matlab'), test_engine.convert(list(jtSeasons)))
     
 
-tetcases = [
+testcases = [
     (rng.uniform(-20,20,1000), np.array(rng.choice(1000, size=500, replace=False)), [-14.601,-5.22904,-2.095605,1.836835,5.136015,14.2835], 0), # Nominal case
     (np.array([-20, -19, -15, 1, 4 ,14, 8, 7, 8 ,4], dtype=float), np.array([0, 1, 2]), [-14.601,-5.22904,-2.095605,1.836835,5.136015,14.2835], 1), # # No matching indices
     (np.array([-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], dtype=float), np.array([4, 7, 9]), [1, 1, 1, 1, 1, 1], 4), # Non increasing threshold TTH 
@@ -159,12 +159,10 @@ def test_addStatisticsFields_differential(test_engine):
     # 'to_matlab' optional argument to account for 1-based indexing in MATLAB
     xs = test_engine.addStatisticsFields(xs, test_engine.convert(t), test_engine.convert(r), \
                                           test_engine.convert(p), test_engine.convert(T), test_engine.convert(itStrata, 'to_matlab'), nargout=1)
-    print("test_engine output: ",xs)
+    
     expected_xs = {}
     expected_xs = addStatisticsFields(expected_xs, t, r, p, T, itStrata)
 
-    output_xs = np.array([xs['mt'], xs['ti'], xs['tf'], xs['ruStarVsT'], xs['puStarVsT'], xs['mT'], xs['ciT']])
-    print(output_xs)
-    print(expected_xs)    
+    output_xs = np.array([xs['mt'], xs['ti'], xs['tf'], xs['ruStarVsT'], xs['puStarVsT'], xs['mT'], xs['ciT']])   
     assert test_engine.equal(test_engine.convert(list(expected_xs.values())), output_xs)
 

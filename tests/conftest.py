@@ -29,6 +29,19 @@ import atexit
 import numpy as np
 from matlab.engine.matlabengine import MatlabFunc
 from typing import Any
+from abc import ABC, abstractmethod
+import warnings
+
+# Python version imported here
+from oneflux_steps.ustar_cp_python import *
+from oneflux_steps.ustar_cp_python.fcNaniqr import *
+from oneflux_steps.ustar_cp_python.cpdFmax2pCore import *
+from oneflux_steps.ustar_cp_python.fcDatenum import *
+from oneflux_steps.ustar_cp_python.cpdFmax2pCp3 import *
+from oneflux_steps.ustar_cp_python.utilities import *
+from oneflux_steps.ustar_cp_python.cpd_evaluate_functions import *
+from oneflux_steps.ustar_cp_python.cpdFindChangePoint_functions import *
+from oneflux_steps.ustar_cp_python.cpdBootstrap import *
 
 class MFWrapper:
     def __init__(self, func):
@@ -79,21 +92,6 @@ def mf_factory(cls, *args, **kwargs):
     f.__init__(*args, **kwargs)
     return MFWrapper(f)
 MatlabFunc.__new__ = mf_factory
-
-# from oneflux_steps.ustar_cp_py.libsmop import matlabarray, struct
-from abc import ABC, abstractmethod
-import warnings
-
-# Python version imported here
-from oneflux_steps.ustar_cp_python import *
-from oneflux_steps.ustar_cp_python.fcNaniqr import *
-from oneflux_steps.ustar_cp_python.cpdFmax2pCore import *
-from oneflux_steps.ustar_cp_python.fcDatenum import *
-from oneflux_steps.ustar_cp_python.cpdFmax2pCp3 import *
-from oneflux_steps.ustar_cp_python.utilities import *
-from oneflux_steps.ustar_cp_python.cpd_evaluate_functions import *
-from oneflux_steps.ustar_cp_python.cpdFindChangePoint_functions import *
-from oneflux_steps.ustar_cp_python.cpdBootstrap import *
 
 def pytest_addoption(parser):
     parser.addoption("--language", action="store", default="matlab")

@@ -167,8 +167,8 @@ def test_initializeStatistics(test_engine):
 
                 temp_s2 = np.array(list(s2[i].values()), dtype=float) # Convert to numpy array
                 temp_s3 = np.array(list(s3[i].values()), dtype=float)
-                assert np.isnan(temp_s2).any() == True # Checks all values are NaN
-                assert np.isnan(temp_s3).any() == True
+                assert np.isnan(temp_s2).any() # Checks all values are NaN
+                assert np.isnan(temp_s3).any()
 
 
 def test_reorderAndPreprocessData_logged_data(test_engine):
@@ -248,7 +248,7 @@ def test_computeTemperatureThresholds_logged_data(test_engine):
     TTh = test_engine.computeTemperatureThresholds(test_engine.convert(input_data['T']), test_engine.convert(input_data['itSeason'], 'to_python'), nStrata, nargout=1)
     python_TTh = computeTemperatureThresholds(np.array(input_data['T']), input_data['itSeason']-1, nStrata) # -1 to account for 0-based indexing in python
 
-    expected_TTh = artifacts_dir + f'/CA-Cbo_qca_ustar_2007_0/output_TTh.csv'
+    expected_TTh = artifacts_dir + '/CA-Cbo_qca_ustar_2007_0/output_TTh.csv'
     expected_TTh = pd.read_csv(expected_TTh, header=None).iloc[0,:].to_numpy()
 
     assert test_engine.equal(test_engine.convert(TTh), test_engine.convert(expected_TTh))
