@@ -22,7 +22,7 @@ def launch(input_folder: str, output_folder: str) -> int:
       key columns aren't empty, then computes time array and calls further 
       bootstrapping/assigning routines (cpdBootstrapUStarTh4Season20100901, 
       cpdAssignUStarTh20100901, etc.).
-    - Saves results and updates an error code if any step fails. TODO: Implement saveResult.
+    - Saves results and updates an error code if any step fails.
     
     Parameters
     ----------
@@ -162,7 +162,6 @@ def launch(input_folder: str, output_folder: str) -> int:
         # 'clock' in MATLAB typically returns the current date/time. We'll pass Python's datetime now.
         from datetime import datetime
         current_time = datetime.now()
-        # TODO: Implement saveResult
         error_str, cSiteYr, errorCode = saveResult(
             cFailure, cSiteYr, output_folder, site, year, Cp, current_time, notes
         )
