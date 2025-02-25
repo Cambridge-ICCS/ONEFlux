@@ -3,4 +3,4 @@ repos:
     rev: v0.0.262  # Use the latest version of ruff-pre-commit or pin to a specific version
     hooks:
       - id: ruff
-        args: ["oneflux_steps/ustar_cp_python/", "tests/", "--fix"]
+        args: ["tests/", "--fix"]
