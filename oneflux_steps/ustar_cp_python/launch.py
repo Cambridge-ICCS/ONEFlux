@@ -818,26 +818,3 @@ def saveResult(
         errorCode = 1
 
     return error_str, cSiteYr, errorCode
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="Perform U* threshold computation by Alan Barr."
-    )
-    parser.add_argument(
-        "input_folder",
-        help="Path to the folder containing input files"
-    )
-    parser.add_argument(
-        "output_folder",
-        help="Path to the folder where output files will be saved"
-    )
-    
-    args = parser.parse_args()
-    
-    exit_code = launch(args.input_folder, args.output_folder)
-
-    sys.exit(exit_code)
-
-if __name__ == "__main__":
-    main()
->>>>>>> Stashed changes
