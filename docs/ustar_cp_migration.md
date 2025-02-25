@@ -59,6 +59,18 @@ python3 -m oneflux_steps/ustar_cp_python/launch.py input_folder output_folder
 
 where `input_folder` and `output_folder` are the absolute paths to the input and desired output data locations.
 
+### Developing the code
+
+This work has included ruff as a `pre-commit` hook. This means that any commits will fail unless they pass `Ruffs` rules. For this systems to work, git `pre-commit` should be installed follwoing the instructions [here](https://pre-commit.com). The hook is defined in the `pre-commit-config.yaml` in the repository root. `Ruff` settings are captured in the `pyproject.toml`.
+
+The hook needs to be installed locally after cloning the repo using the following command:
+
+```shell
+pre-commit install
+```
+
+Further details are available on the `pre-commit` site given in the link above.
+
 ### Running the tests
 
 Tests can be run for the MATLAB code (in `ustar_cp_refactor`) by running at the top-level:
