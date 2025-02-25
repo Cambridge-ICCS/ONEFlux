@@ -18,25 +18,11 @@ Contents:
         parse_testcase
 """
 
-x = 10
-
-import pytest
-import os
-import shutil
-import glob
-import json
-import io
-import atexit
-import numpy as np
-from typing import Any
-from abc import ABC, abstractmethod
-import warnings
-
 # <MATLAB>
 import matlab.engine
 from matlab.engine.matlabengine import MatlabFunc
-# </MATLAB>
 
+# </MATLAB>
 # Python version of ustar_cp imported here
 from oneflux_steps.ustar_cp_python import *
 from oneflux_steps.ustar_cp_python.fcNaniqr import *
@@ -50,6 +36,17 @@ from oneflux_steps.ustar_cp_python.cpdBootstrap import *
 from oneflux_steps.ustar_cp_python.fcEqnAnnualSine import *
 from oneflux_steps.ustar_cp_python.launch import *
 from oneflux_steps.ustar_cp_python.cpdAssignUStarTh import *
+import pytest
+import os
+import shutil
+import glob
+import json
+import io
+import atexit
+import numpy as np
+from typing import Any
+from abc import ABC, abstractmethod
+import warnings
 
 # Setup command-line arguments for the tests to allow switching language
 #  --language=matlab runs the tests against the MATLAB implementation (default)
@@ -774,9 +771,3 @@ def parse_testcase(test_case: dict, path_to_artifacts: str):
                     outputs[key] = value
 
     return inputs, outputs
-
-
-x=1
-
-
-from oneflux_steps.ustar_cp_python.cpdAssignUStarTh import *
