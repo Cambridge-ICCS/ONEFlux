@@ -312,7 +312,19 @@ def identifyOutliers(x_norm_x, threshold):
     return f_out, i_out
 
 def computeStandardizedScores(x):
-    """Standardizes the matrix x by its median and interquartile range."""
+    """
+    Compute standardized scores based on the median and interquartile range.
+
+    Standardizes each column in the input matrix by subtracting the column median 
+    (ignoring NaNs) and dividing by the interquartile range (IQR). After standardizing, 
+    returns the maximum absolute standardized score for each row.
+
+    Args:
+        x (np.ndarray): Input data matrix of shape (n, m).
+
+    Returns:
+        numpy.ndarray: A (n, 1) column vector containing the maximum absolute 
+        standardised score for each row."""
     mx = np.nanmedian(x, axis=0)  # Compute median ignoring NaNs
     iqr = fcNaniqr(x)
     x_norm = (x - mx) / iqr  # Standardize
