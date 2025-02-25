@@ -47,7 +47,6 @@ def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
     - Excluding outliers, aggregating results.
     - Fitting annual sine curve.
     """
-    x = 1
 
     # -------------------------------------------------------------------------
     # 1) Initialize Output Variables
