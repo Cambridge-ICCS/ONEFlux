@@ -59,9 +59,9 @@ def test_aggregateSeasonalMeans(test_engine, mt, Cp, xmt, iSelect,
       is valid in MATLAB.
     """
 
-    mt_matlab = test_engine.convert(mt)
-    Cp_matlab = test_engine.convert(Cp)
-    xmt_matlab = test_engine.convert(xmt)
+    mt_test = test_engine.convert(mt)
+    Cp_test = test_engine.convert(Cp)
+    xmt_test = test_engine.convert(xmt)
 
     # Important: iSelect is now numeric. For MATLAB, it's 1-based indexing.
     # This means if iSelect=[2,3], we are selecting the 2nd, 3rd elements of mt/Cp.
@@ -73,13 +73,13 @@ def test_aggregateSeasonalMeans(test_engine, mt, Cp, xmt, iSelect,
 
     # Call the function
     tW_mat, CpW_mat = test_engine.aggregateSeasonalMeans(
-        mt_matlab,
-        Cp_matlab,
-        xmt_matlab,
-        iSelect_matlab,
-        nWindows_matlab,
-        nStrata_matlab,
-        nBoot_matlab,
+        mt_test,
+        Cp_test,
+        xmt_test,
+        iSelect_test,
+        nWindows_test,
+        nStrata_test,
+        nBoot_test,
         nargout=2
     )
 
