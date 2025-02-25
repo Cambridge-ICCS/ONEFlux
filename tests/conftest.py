@@ -713,3 +713,5 @@ def parse_testcase(test_case: dict, path_to_artifacts: str):
                     outputs[key] = value
 
     return inputs, outputs
+
+from oneflux_steps.ustar_cp_python.cpdAssignUStarTh import *
