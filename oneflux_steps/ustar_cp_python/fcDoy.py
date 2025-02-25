@@ -33,7 +33,9 @@ def fcDoy(t=None):
     array([0])
     """
 
-    t = np.ceil(t)
+    # TODO: Remove this once settled, but leaving
+    # as a comment for now that we previously had
+    # t = np.ceil(t)
     y, m, d, h, mi, s = fcDatevec(t)
 
     # apply the following to every element of y, m, d pointwise
