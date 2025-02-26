@@ -11,7 +11,6 @@ from oneflux_steps.ustar_cp_python.cpdAssignUStarTh import cpdAssignUStarTh20100
 import argparse
 import sys
 
-
 def launch(input_folder: str, output_folder: str) -> int:
     """
     Main function to perform U* threshold computation by Alan Barr.
