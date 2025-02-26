@@ -49,6 +49,27 @@ We have also added
 - `tests/unit_tests/test_ustar_cp` - Extensive test suite for `ustar_cp`
 - `tests/test_artefacts` - Test fixtures mostly comprising site data and intermediate input-output data generated from site data
 
+### Dependencies and setting up the environment
+
+Running the Python ustar_cp code, and testing it, requires some the Python packages in
+`requirements.txt`. We recommend installing these in a virtual environment, e.g.
+
+```
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+i.e., first, create a virtual environment (above called `venv` due to the second occurrence of `venv` in the command); second, activate that virtual environment; and third, install all
+the dependencies via pip.
+
+Running the MATLAB engine requires Python 3.11 (at the time of writing) for the MATLAB engine
+R2024a. Thus, in the above you may need to use `python3.11` and last command above thus may
+need to be explicitly with python3.11:
+```
+python3.11 -m pip install -r requirements.txt
+```
+
 ### Running the code
 
 `launch.py` is the Python code entry point. It accepts the input and output data paths as arguments similar to `launch.m`. This function can either be called directly from another Python function, or directly from the terminal using the following command:
