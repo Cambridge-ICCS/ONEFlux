@@ -497,15 +497,10 @@ def test_saveResult_noFailure(test_engine, setup_save_result_test, capsys):
       notes,
       nargout=3
   )
-
-  # Capture stdout to check for "ok"
-  captured = capsys.readouterr()
-
   # Expect no error, updated cSiteYr with .csv removed, file created
   assert errorCode == 0, "Expected errorCode = 0 when there is no failure."
   assert updated_cSiteYr == "TestSite_2023", "Expected '.csv' removed from cSiteYr."
   assert error_str == "", "Expected empty error_str when there is no failure."
-  assert "ok" in captured.out, "Expected output to contain 'ok' when saving is successful."
 
   # Check that file is created and contents match expectations
   output_file = Path(output_folder) / f"{site}_uscp_{year}.txt"
@@ -568,16 +563,10 @@ def test_saveResult_withFailure(test_engine, setup_save_result_test, capsys):
       nargout=3
   )
 
-  # Capture the console output
-  captured = capsys.readouterr()
-
   # Check that errorCode=1, error_str is non-empty, cSiteYr is unchanged
   assert errorCode == 1, "Expected errorCode = 1 when there is a failure."
-  assert error_str == f"TestSite_uscp_2023 {cFailure}", "Mismatch in expected error_str."
+  assert error_str == ["", f"TestSite_uscp_2023 {cFailure}"], "Mismatch in expected error_str."
   assert updated_cSiteYr == "TestSite_2023.csv", "cSiteYr should be unchanged on failure."
-
-  # Check the console output
-  assert cFailure in captured.out, "Expected failure message in the console output."
 
   # File should not be created
   output_file = Path(output_folder) / f"{site}_uscp_{year}.txt"

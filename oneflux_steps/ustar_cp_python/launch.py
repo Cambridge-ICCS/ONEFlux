@@ -816,7 +816,7 @@ def saveResult(
         print("ok")
     else:
         # If cFailure is non-empty, record an error
-        error_str = f"{site}_uscp_{year} {cFailure}"
+        error_str = [error_str, f"{site}_uscp_{year} {cFailure}"]
         print(cFailure)
         errorCode = 1
 
