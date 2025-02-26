@@ -114,6 +114,11 @@ def launch(input_folder: str, output_folder: str) -> int:
         Ta = data.iloc[:, columns_index[TA_INDEX]]
         Rg = data.iloc[:, columns_index[RG_INDEX]]
 
+        uStar = uStar.to_numpy()
+        NEE = NEE.to_numpy()
+        Ta = Ta.to_numpy()
+        Rg = Rg.to_numpy()
+
         # Check if all PPFD values are invalid
         PPFD, ppfd_from_rg = areAllPpfdValuesInvalid(ppfd_from_rg, columns_index, PPFD_INDEX, data)
 
