@@ -160,7 +160,7 @@ def launch(input_folder: str, output_folder: str) -> int:
             cpdAssignUStarTh20100901(Stats2, fPlot, cSiteYr)
 
         # Save result
-        # Pass Python's datetime now.
+        # Pass Python's current time now using `datetime`
         from datetime import datetime
         current_time = datetime.now()
         error_str, cSiteYr, errorCode = saveResult(

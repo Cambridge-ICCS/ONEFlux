@@ -459,3 +459,126 @@ def test_createTimeArray(test_engine, year):
 
     assert np.allclose(output_t, expected_t), "output_t and expected_t do not match"
 
+@pytest.fixture
+def setup_save_result_test(tmp_path):
+  """ Creates a temporary directory for testing saveResult and returns (input_folder, output_folder). """
+  input_folder = tmp_path / "input"
+  output_folder = tmp_path / "output"
+  input_folder.mkdir()
+  output_folder.mkdir()
+  return str(input_folder), str(output_folder)
+
+def test_saveResult_noFailure(test_engine, setup_save_result_test, capsys):
+  """ Test saveResult with no failure message (cFailure == '').This test ensures:
+  - The function does not set an error code.
+  - The file is created and written with 8-digit precision.
+  - The appended lines (timestamp and reversed notes) appear.
+  - The console output contains "ok".
+  """
+  _, output_folder = setup_save_result_test
+
+  # Prepare test inputs
+  cFailure = ""  # No failure
+  cSiteYr = "TestSite_2023.csv"
+  site = "TestSite"
+  year = "2023"
+  Cp = np.array([1.23456789, 2.34567890])  # Two rows to save
+  clock_str = "2023-09-01 12:34"
+  notes = ["Note A", "Note B", "Note C"]
+
+  error_str, updated_cSiteYr, errorCode = test_engine.saveResult(
+      cFailure,
+      cSiteYr,
+      output_folder + os.sep,  # ensure separator
+      site,
+      year,
+      Cp,
+      clock_str,
+      notes,
+      nargout=3
+  )
+
+  # Capture stdout to check for "ok"
+  captured = capsys.readouterr()
+
+  # Expect no error, updated cSiteYr with .csv removed, file created
+  assert errorCode == 0, "Expected errorCode = 0 when there is no failure."
+  assert updated_cSiteYr == "TestSite_2023", "Expected '.csv' removed from cSiteYr."
+  assert error_str == "", "Expected empty error_str when there is no failure."
+  assert "ok" in captured.out, "Expected output to contain 'ok' when saving is successful."
+
+  # Check that file is created and contents match expectations
+  output_file = Path(output_folder) / f"{site}_uscp_{year}.txt"
+  assert output_file.exists(), f"Expected output file not found: {output_file}"
+
+  # Verify file contents
+  with open(output_file, "r") as f:
+      lines = [line.strip() for line in f.readlines()]
+
+  # Lines for the data
+  #  -> The numeric rows with 8-digit precision
+  #  -> The message ";processed with ustar_mp ..."
+  #  -> The reversed notes
+  assert len(lines) >= 1, "Expected at least one line in output file."
+  # The first lines should be the numeric values
+  # e.g. "1.23456789" and "2.34567890" (with 8 digits after decimal)
+  assert lines[0] == "1.23456789", "First data line does not match expected precision."
+  assert lines[1] == "2.34567890", "Second data line does not match expected precision."
+
+  # Next line is something like ";processed with ustar_mp 1.0 on 2023-09-01 12:34"
+  assert any("processed with ustar_mp 1.0 on 2023-09-01 12:34" in line for line in lines), \
+      "Timestamp line not found in output file."
+
+  # Notes should appear in reverse order
+  # lines[-3]: ";Note C"
+  # lines[-2]: ";Note B"
+  # lines[-1]: ";Note A"
+  assert ";Note C" in lines[-3], "Expected Note C in reverse order."
+  assert ";Note B" in lines[-2], "Expected Note B in reverse order."
+  assert ";Note A" in lines[-1], "Expected Note A in reverse order."
+
+def test_saveResult_withFailure(test_engine, setup_save_result_test, capsys):
+  """
+   Test saveResult when cFailure is non-empty.
+   This test ensures:
+  - The function sets errorCode = 1.
+  - No file is created.
+  - The console output contains the failure message.
+  """
+  _, output_folder = setup_save_result_test
+
+  # Prepare test inputs
+  cFailure = "Some error occurred"
+  cSiteYr = "TestSite_2023.csv"
+  site = "TestSite"
+  year = "2023"
+  Cp = np.array([1.23456789, 2.34567890])  # Would be saved if no failure
+  clock_str = "2023-09-01 12:34"
+  notes = ["Should not appear in file"]
+
+  error_str, updated_cSiteYr, errorCode = test_engine.saveResult(
+      cFailure,
+      cSiteYr,
+      output_folder + os.sep,
+      site,
+      year,
+      Cp,
+      clock_str,
+      notes,
+      nargout=3
+  )
+
+  # Capture the console output
+  captured = capsys.readouterr()
+
+  # Check that errorCode=1, error_str is non-empty, cSiteYr is unchanged
+  assert errorCode == 1, "Expected errorCode = 1 when there is a failure."
+  assert error_str == f"TestSite_uscp_2023 {cFailure}", "Mismatch in expected error_str."
+  assert updated_cSiteYr == "TestSite_2023.csv", "cSiteYr should be unchanged on failure."
+
+  # Check the console output
+  assert cFailure in captured.out, "Expected failure message in the console output."
+
+  # File should not be created
+  output_file = Path(output_folder) / f"{site}_uscp_{year}.txt"
+  assert not output_file.exists(), f"Expected no file creation when cFailure='{cFailure}'"
