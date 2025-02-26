@@ -5,6 +5,7 @@ from typing import Tuple, List, Union, Any
 import numpy as np
 import pandas as pd
 import copy
+from oneflux_steps.ustar_cp_python.utilities import transpose
 from oneflux_steps.ustar_cp_python.cpdBootstrap import cpdBootstrapUStarTh4Season20100901
 from oneflux_steps.ustar_cp_python.cpdAssignUStarTh import cpdAssignUStarTh20100901
 import argparse
@@ -804,11 +805,15 @@ def saveResult(
 
         # Construct filename and write numeric array Cp with 8-digit precision
         filename = f"{output_folder}{site}_uscp_{year}.txt"
-        np.savetxt(filename, Cp, fmt="%.8f")
+        np.savetxt(filename, transpose(Cp), fmt="%1.7f")
 
         # Append processing info and notes
         with open(filename, "a") as fid:
-            fid.write(f"\n;processed with ustar_mp 1.0 on {clock_str}\n")
+            # Write clock_str string as a datetime that is then
+            # formatted in the form format 01-Sep-2023 12:34:00
+            clock_str_f = pd.to_datetime(clock_str).strftime("%d-%b-%Y %H:%M:%S")
+
+            fid.write(f"\n;processed with ustar_mp 1.0 on {clock_str_f}\n")
             # Write notes in reverse order
             for note in reversed(notes):
                 fid.write(f";{note}\n")

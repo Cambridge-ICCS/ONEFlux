@@ -510,6 +510,10 @@ def test_saveResult_noFailure(test_engine, setup_save_result_test, capsys):
   with open(output_file, "r") as f:
       lines = [line.strip() for line in f.readlines()]
 
+  # separate by comma the lines
+  import itertools
+  lines = list(itertools.chain.from_iterable([line.split(',') for line in lines]))
+
   # Lines for the data
   #  -> The numeric rows with 8-digit precision
   #  -> The message ";processed with ustar_mp ..."
@@ -517,11 +521,11 @@ def test_saveResult_noFailure(test_engine, setup_save_result_test, capsys):
   assert len(lines) >= 1, "Expected at least one line in output file."
   # The first lines should be the numeric values
   # e.g. "1.23456789" and "2.34567890" (with 8 digits after decimal)
-  assert lines[0] == "1.23456789", "First data line does not match expected precision."
-  assert lines[1] == "2.34567890", "Second data line does not match expected precision."
+  assert lines[0] == "1.2345679", "First data line does not match expected precision."
+  assert lines[1] == "2.3456789", "Second data line does not match expected precision."
 
   # Next line is something like ";processed with ustar_mp 1.0 on 2023-09-01 12:34"
-  assert any("processed with ustar_mp 1.0 on 2023-09-01 12:34" in line for line in lines), \
+  assert any("processed with ustar_mp 1.0 on 01-Sep-2023 12:34:00" in line for line in lines), \
       "Timestamp line not found in output file."
 
   # Notes should appear in reverse order
