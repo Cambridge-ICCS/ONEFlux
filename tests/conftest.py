@@ -47,6 +47,7 @@ import numpy as np
 from typing import Any
 from abc import ABC, abstractmethod
 import warnings
+from contextlib import redirect_stderr, redirect_stdout
 
 # Setup command-line arguments for the tests to allow switching language
 #  --language=matlab runs the tests against the MATLAB implementation (default)
@@ -166,18 +167,28 @@ class PythonEngine(TestEngine):
                 if "nargout" in kwargs:
                     kwargs.pop("nargout")
                 # if jsonencode is present in kwargs then remove it
-                if "jsonencode" in kwargs:
-                    kwargs.pop("jsonencode")
-                if "jsondecode" in kwargs:
-                    kwargs.pop("jsondecode")
-                if "stdout" in kwargs:
-                    kwargs.pop("stdout")
-                if "stderr" in kwargs:
-                    kwargs.pop("stderr")
+                if 'jsonencode' in kwargs:
+                    kwargs.pop('jsonencode')
+                if 'jsondecode' in kwargs:
+                    kwargs.pop('jsondecode')
 
                 func = globals().get(name)
                 if callable(func):
-                    return func(*args, **kwargs)
+                    # Capture stdout if required
+                    if ('stdout' in kwargs):
+                      out = kwargs.pop('stdout')
+                      # Capture stderr as well
+                      with redirect_stdout(out):
+                        if ('stderr' in kwargs):
+                          err = kwargs.pop('stderr')
+                          with redirect_stderr(err):
+                              return func(*args, **kwargs)
+                        # Just stdout
+                        else:
+                          return func(*args, **kwargs)
+                    else:
+                      # No stdout or stderr capture
+                      return func(*args, **kwargs)
                 else:
                     warnings.warn(f"'function {name}' cannot be found", UserWarning)
             except ImportError:
