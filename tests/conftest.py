@@ -29,6 +29,7 @@ import numpy as np
 from typing import Any
 from abc import ABC, abstractmethod
 import warnings
+from contextlib import redirect_stderr, redirect_stdout
 
 # <MATLAB>
 import matlab.engine
@@ -165,14 +166,24 @@ class PythonEngine(TestEngine):
                     kwargs.pop('jsonencode')
                 if 'jsondecode' in kwargs:
                     kwargs.pop('jsondecode')
-                if 'stdout' in kwargs:
-                    kwargs.pop('stdout')
-                if 'stderr' in kwargs:
-                    kwargs.pop('stderr')
 
                 func = globals().get(name)
                 if callable(func):
-                    return func(*args, **kwargs)
+                    # Capture stdout if required
+                    if ('stdout' in kwargs):
+                      out = kwargs.pop('stdout')
+                      # Capture stderr as well
+                      with redirect_stdout(out):
+                        if ('stderr' in kwargs):
+                          err = kwargs.pop('stderr')
+                          with redirect_stderr(err):
+                              return func(*args, **kwargs)
+                        # Just stdout
+                        else:
+                          return func(*args, **kwargs)
+                    else:
+                      # No stdout or stderr capture
+                      return func(*args, **kwargs)
                 else:
                     warnings.warn(f"'function {name}' cannot be found", UserWarning)
             except ImportError:
@@ -191,7 +202,7 @@ class MFWrapper:
         # make matlab stdout and stderr printed at the end of pytest
         atexit.register(lambda: (s := self.out.getvalue()) and print(f"{name} stdout:\n{s}"))
         atexit.register(lambda: (s := self.err.getvalue()) and print(f"{name} stderr:\n{s}"))
-        
+
     def __call__(self, *args, jsonencode=(), jsondecode=(), **kwargs):
         """
         Call the wrapped function with optional JSON encoding/decoding to handle the issue that non-scalar structs (arrays of structs) cannot be returned from MATLAB functions to Python.
