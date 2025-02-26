@@ -5,6 +5,7 @@ from typing import Tuple, List, Union, Any
 import numpy as np
 import pandas as pd
 import copy
+from oneflux_steps.ustar_cp_python.utilities import transpose
 from oneflux_steps.ustar_cp_python.cpdBootstrap import cpdBootstrapUStarTh4Season20100901
 from oneflux_steps.ustar_cp_python.cpdAssignUStarTh import cpdAssignUStarTh20100901
 import argparse
@@ -22,7 +23,7 @@ def launch(input_folder: str, output_folder: str) -> int:
       key columns aren't empty, then computes time array and calls further 
       bootstrapping/assigning routines (cpdBootstrapUStarTh4Season20100901, 
       cpdAssignUStarTh20100901, etc.).
-    - Saves results and updates an error code if any step fails. TODO: Implement saveResult.
+    - Saves results and updates an error code if any step fails.
     
     Parameters
     ----------
@@ -159,10 +160,9 @@ def launch(input_folder: str, output_folder: str) -> int:
             cpdAssignUStarTh20100901(Stats2, fPlot, cSiteYr)
 
         # Save result
-        # 'clock' in MATLAB typically returns the current date/time. We'll pass Python's datetime now.
+        # Pass Python's current time now using `datetime`
         from datetime import datetime
         current_time = datetime.now()
-        # TODO: Implement saveResult
         error_str, cSiteYr, errorCode = saveResult(
             cFailure, cSiteYr, output_folder, site, year, Cp, current_time, notes
         )
@@ -747,12 +747,84 @@ def createTimeArray(uStar: Union[np.ndarray, pd.Series]) -> np.ndarray:
 
     return t
 
+def saveResult(
+    cFailure: str,
+    cSiteYr: str,
+    output_folder: str,
+    site: str,
+    year: str,
+    Cp: Union[np.ndarray, list],
+    clock_str: str,
+    notes: List[str]
+) -> Tuple[str, str, int]:
+    """
+    Save results to a text file.
 
+    Parameters
+    ----------
+    cFailure : str
+        Failure message. If non-empty, indicates an error occurred and prevents saving.
+    cSiteYr : str
+        The site-year string (possibly with ".csv" extension to be stripped).
+    output_folder : str
+        Directory path where the output file should be saved.
+    site : str
+        Site identifier (e.g., "US-Ne1").
+    year : str
+        Year used to name the output file.
+    Cp : np.ndarray or list
+        Numeric array to be written to the output file.
+    clock_str : str
+        A time stamp string (e.g., from datetime) to record when the file is processed.
+    notes : list of str
+        Extra lines to append to the file, typically lines of metadata or commentary.
 
+    Returns
+    -------
+    error_str : str
+        Populated with an error message if cFailure is non-empty; otherwise empty.
+    cSiteYr : str
+        Possibly modified cSiteYr (e.g., stripped of ".csv").
+    errorCode : int
+        0 if the file is saved successfully, 1 if cFailure is non-empty.
+    
+    Notes
+    -----
+    - If cFailure is empty, writes Cp to a text file named "<output_folder><site>_uscp_<year>.txt".
+    - Appends a time stamp, then reversed lines from notes to the same file.
+    - If cFailure is non-empty, prints the failure message and returns without saving.
+    """
+    error_str = ""
+    errorCode = 0
 
+    # If there's no failure, proceed with saving
+    if not cFailure:
+        # Remove .csv from cSiteYr if present
+        cSiteYr = cSiteYr.replace(".csv", "")
 
-def saveResult(*args):
-    return None, None, None
+        # Construct filename and write numeric array Cp with 8-digit precision
+        filename = f"{output_folder}{site}_uscp_{year}.txt"
+        np.savetxt(filename, transpose(Cp), fmt="%1.7f")
+
+        # Append processing info and notes
+        with open(filename, "a") as fid:
+            # Write clock_str string as a datetime that is then
+            # formatted in the form format 01-Sep-2023 12:34:00
+            clock_str_f = pd.to_datetime(clock_str).strftime("%d-%b-%Y %H:%M:%S")
+
+            fid.write(f"\n;processed with ustar_mp 1.0 on {clock_str_f}\n")
+            # Write notes in reverse order
+            for note in reversed(notes):
+                fid.write(f";{note}\n")
+
+        print("ok")
+    else:
+        # If cFailure is non-empty, record an error
+        error_str = [error_str, f"{site}_uscp_{year} {cFailure}"]
+        print(cFailure)
+        errorCode = 1
+
+    return error_str, cSiteYr, errorCode
 
 def main():
     parser = argparse.ArgumentParser(
