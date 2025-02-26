@@ -85,12 +85,7 @@ def test_launch_missing_file(setup_test_environment, test_engine, setup_folders)
 
     # Run the function
     output = io.StringIO()
-    if isinstance(test_engine, PythonEngine):
-        import contextlib
-        with contextlib.redirect_stdout(output):
-            exitcode = test_engine.launch(empty_output, empty_output)
-    else:
-        exitcode = test_engine.launch(empty_output, empty_output, stdout=output)
+    exitcode = test_engine.launch(empty_output, empty_output, stdout=output)
 
     # Retrieve the captured output
     output.seek(0)
@@ -203,13 +198,7 @@ def test_missing_keywords(test_engine, setup_test_environment):
 
         # Run the function
         output = io.StringIO("")
-        if isinstance(test_engine, PythonEngine):
-            import contextlib
-            with contextlib.redirect_stdout(output):
-                test_engine.launch(input_folder, output_folder)
-        else:
-            test_engine.launch(input_folder, output_folder, stdout=output)
-        # test_engine.launch(input_folder, output_folder, stdout=output)
+        test_engine.launch(input_folder, output_folder, stdout=output)
 
         # Read standard out and get last line
         output.seek(0)
@@ -260,7 +249,7 @@ def test_loadData(test_engine, year, setup_folders):
         assert_csv_files_equal(f"tests/test_artifacts/launch_artifacts/loadData_output_header_US-ARc_qca_ustar_{year}_python.csv", header, input_columns_names)
         assert_csv_files_equal(f"tests/test_artifacts/launch_artifacts/loadData_output_data_US-ARc_qca_ustar_{year}.csv", data, input_columns_names)
         test_engine.equal(np.full(len(input_columns_names), -1), columns_index)
-    else:    
+    else:
         assert_csv_files_equal(f"tests/test_artifacts/launch_artifacts/loadData_output_header_US-ARc_qca_ustar_{year}.csv", output_folder + "header.csv", input_columns_names)
         assert_csv_files_equal(f"tests/test_artifacts/launch_artifacts/loadData_output_data_US-ARc_qca_ustar_{year}.csv", output_folder + "data.csv", input_columns_names)
         assert_csv_files_equal(f"tests/test_artifacts/launch_artifacts/loadData_output_columns_index_US-ARc_qca_ustar_{year}.csv", output_folder + "columns_index.csv", input_columns_names)
