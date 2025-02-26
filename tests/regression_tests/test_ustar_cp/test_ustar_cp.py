@@ -11,6 +11,7 @@ output and the exit code returned by the MATLAB function.
 import pytest
 import io
 import filecmp
+from contextlib import redirect_stdout
 
 """
   Chosen test cases (identified by their site code; first 5 characters) to give adequate coverage (with data files in `tests/test_artifacts`)
@@ -41,7 +42,7 @@ test_cases = [
 ]
 
 @pytest.mark.parametrize("testcase, expected_values", test_cases)
-def test_ustar_cp(testcase, expected_values, setup_folders, test_engine, find_text_file, extract_section_between_keywords):
+def test_ustar_cp(testcase, expected_values, setup_folders, test_engine, find_text_file, extract_section_between_keywords, language):
     """
     Validate MATLAB's uStar CP processing function output against expected results.
 
@@ -78,9 +79,20 @@ def test_ustar_cp(testcase, expected_values, setup_folders, test_engine, find_te
     inputs, ref_outputs, test_outputs = setup_folders
 
     # Step 2: Capture stdout and stderr from the MATLAB engine during the function execution
-    out = io.StringIO()
-    err = io.StringIO()
-    exitcode = test_engine.launch(inputs, test_outputs, stdout=out, stderr=err)
+
+    if language == "python":
+      # Capture stdout during test_engine.launch(...)
+      capture_buffer = io.StringIO()
+      with redirect_stdout(capture_buffer):
+        exitcode = test_engine.launch(inputs, test_outputs)
+      # Now store the final string
+      out_value = capture_buffer.getvalue()
+      err_value = ""  # Or None, if you want to unify usage
+    else:
+      out = io.StringIO()
+      err = io.StringIO()
+      exitcode = test_engine.launch(inputs, test_outputs, stdout=out, stderr=err)
+      out_value = out.getvalue()
 
     # Step 3: Retrieve the expected output from the reference text file and extract the relevant section
     ref_text = find_text_file(ref_outputs)
@@ -88,7 +100,6 @@ def test_ustar_cp(testcase, expected_values, setup_folders, test_engine, find_te
     expected_output = ''.join(expected_output_lines).strip()
 
     # Step 4: Ensure captured output is flushed to the buffer and convert it into a list of lines
-    out_value = out.getvalue()
     out_value_lines = out_value.splitlines()
 
     # Extract and process the relevant processing section from the captured output

@@ -5,6 +5,7 @@ from typing import Tuple, List, Union, Any
 import numpy as np
 import pandas as pd
 import copy
+from oneflux_steps.ustar_cp_python.cpdAssignUStarTh import cpdAssignUStarTh20100901
 from oneflux_steps.ustar_cp_python.cpdBootstrap import cpdBootstrapUStarTh4Season20100901
 import argparse
 import sys
@@ -529,8 +530,8 @@ def ppfdColExists(
 
     for i in range(len(columns_index_copy)):
 
-        if columns_index_copy[i] == -1:
-            if i == PPFD_INDEX:
+        if i == PPFD_INDEX:
+            if columns_index_copy[i] == -1:
                 ppfd_from_rg = 1
             else:
                 print(f"column {input_columns_names[i]} not found!")
