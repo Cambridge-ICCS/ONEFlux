@@ -80,6 +80,7 @@ def launch(input_folder: str, output_folder: str) -> int:
             continue
 
         i = 9
+        notes = [notes]
         while True:
             if i >= len(dataset):
                 break
@@ -88,7 +89,8 @@ def launch(input_folder: str, output_folder: str) -> int:
                 break
             temp = dataset[i].replace('notes,', '')
             # Prepending in a list context
-            notes = temp + notes
+            # notes = temp + notes # TODO: Remove this line
+            notes.append(temp)
             i += 1
 
         filename = os.path.basename(d[n])
@@ -113,7 +115,7 @@ def launch(input_folder: str, output_folder: str) -> int:
         NEE = data.iloc[:, columns_index[NEE_INDEX]]
         Ta = data.iloc[:, columns_index[TA_INDEX]]
         Rg = data.iloc[:, columns_index[RG_INDEX]]
-
+        # print(uStar) # TODO: Remove this line
         uStar = uStar.to_numpy()
         NEE = NEE.to_numpy()
         Ta = Ta.to_numpy()
@@ -137,10 +139,12 @@ def launch(input_folder: str, output_folder: str) -> int:
         if errorCode == 1:
             exitcode = 1
             continue
-
+        # print(uStar) # TODO: Remove this line
+        # print(len(uStar)) # TODO: Remove this line
         # Create time array
         t = createTimeArray(uStar)
-
+        # print(t) # TODO: Remove this line
+        # print(len(t)) # TODO: Remove this line
         # Flag nighttime periods
         fNight = Rg < 5
 
@@ -410,6 +414,7 @@ def loadData(
     """
 
     # Calculate how many lines to skip
+
     header_rows = 9 + len(notes)
     data_path = os.path.join(input_folder, filename)
 
