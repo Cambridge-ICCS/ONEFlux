@@ -539,9 +539,8 @@ def ppfdColExists(
     ppfd_from_rg = 0
 
     for i in range(len(columns_index_copy)):
-
-        if i == PPFD_INDEX:
-            if columns_index_copy[i] == -1:
+        if columns_index_copy[i] == -1:
+            if i == PPFD_INDEX:
                 ppfd_from_rg = 1
             else:
                 print(f"column {input_columns_names[i]} not found!")
