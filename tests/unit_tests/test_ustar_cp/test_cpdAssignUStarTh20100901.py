@@ -1,8 +1,16 @@
 import pytest
 import numpy as np
 
+
 @pytest.fixture(scope="module")
-def mock_data(test_engine, nt=300, tspan=(0, 1), uStar_pars=(0.1, 3.5), T_pars=(-10, 30), fNight=None):
+def mock_data(
+    test_engine,
+    nt=300,
+    tspan=(0, 1),
+    uStar_pars=(0.1, 3.5),
+    T_pars=(-10, 30),
+    fNight=None,
+):
     """
     Fixture to generate mock time series data for testing purposes. This fixture
     creates a set of synthetic data typically used in environmental studies,
@@ -42,7 +50,7 @@ def mock_data(test_engine, nt=300, tspan=(0, 1), uStar_pars=(0.1, 3.5), T_pars=(
         fNight = np.resize(fNight, nt)
 
     Cp2, Stats2, Cp3, Stats3 = test_engine.cpdBootstrapUStarTh4Season20100901(
-        t,NEE,uStar,T,fNight,fPlot,cSiteYr,nBoot,jsonencode=[1,3],nargout=4
+        t, NEE, uStar, T, fNight, fPlot, cSiteYr, nBoot, jsonencode=[1, 3], nargout=4
     )
     return Stats2, fPlot, cSiteYr
 
@@ -56,62 +64,117 @@ def test_cpdAssignUStarTh20100901_edge_cases(test_engine, mock_data):
 
     # Case 1: All significant change points
     set_attr(edge_stats, "p", 0)
-    assert edge_stats[0][0][0]['p'] == 0
+    assert edge_stats[0][0][0]["p"] == 0
 
-    results_all_sig = test_engine.cpdAssignUStarTh20100901(edge_stats, 0, "AllSig_2024", jsondecode=[0], nargout=11)
+    results_all_sig = test_engine.cpdAssignUStarTh20100901(
+        edge_stats, 0, "AllSig_2024", jsondecode=[0], nargout=11
+    )
 
     # Case 2: No significant change points
     set_attr(edge_stats, "p", 1)
-    assert edge_stats[0][0][0]['p'] == 1
+    assert edge_stats[0][0][0]["p"] == 1
 
-    results_no_sig = test_engine.cpdAssignUStarTh20100901(edge_stats, 0, "NoSig_2024", jsondecode=[0], nargout=11)
+    results_no_sig = test_engine.cpdAssignUStarTh20100901(
+        edge_stats, 0, "NoSig_2024", jsondecode=[0], nargout=11
+    )
 
     # Assertions for edge cases
-    assert len(results_all_sig[0]) > 0, "Should produce results for all significant change points"
-    assert len(results_no_sig[5]) > 0, "Should produce a failure message for no significant change points"
+    assert (
+        len(results_all_sig[0]) > 0
+    ), "Should produce results for all significant change points"
+    assert (
+        len(results_no_sig[5]) > 0
+    ), "Should produce a failure message for no significant change points"
+
 
 @pytest.mark.parametrize(
     "x_norm_x, threshold, expected_f_out, expected_i_out",
     [
-        ([0.5, 1.2, 3.5, 0.1, 2.8], 2.0, [[False, False, True, False, True]], [[3.0, 5.0]]),  # Basic test
+        (
+            [0.5, 1.2, 3.5, 0.1, 2.8],
+            2.0,
+            [[False, False, True, False, True]],
+            [[3.0, 5.0]],
+        ),  # Basic test
         ([0.1, 0.2, 0.3], 1.0, [[False, False, False]], [[]]),  # No outliers
         ([3.1, 2.9, 3.5], 2.0, [[True, True, True]], [[1, 2, 3]]),  # All outliers
         ([], 2.0, [], []),  # Empty input case
-        ([-3, -2, -1, 0, 1, 2, 3], -1.0, [[False, False, False, True, True, True, True]], [[4.0, 5.0, 6.0, 7.0]]),  # Negative threshold
-    ]
+        (
+            [-3, -2, -1, 0, 1, 2, 3],
+            -1.0,
+            [[False, False, False, True, True, True, True]],
+            [[4.0, 5.0, 6.0, 7.0]],
+        ),  # Negative threshold
+    ],
 )
-def test_identify_outliers(test_engine, x_norm_x, threshold, expected_f_out, expected_i_out):
+def test_identify_outliers(
+    test_engine, x_norm_x, threshold, expected_f_out, expected_i_out
+):
     """Test identifyOutliers function from Python using MATLAB Engine."""
 
+    f_out, i_out = test_engine.identifyOutliers(
+        test_engine.convert(x_norm_x), test_engine.convert(threshold), nargout=2
+    )
 
-    f_out, i_out = test_engine.identifyOutliers(test_engine.convert(x_norm_x), test_engine.convert(threshold), nargout=2)
+    assert test_engine.equal(
+        f_out, test_engine.convert(expected_f_out)
+    ), "Boolean outlier array does not match expected"
+    assert test_engine.equal(
+        i_out, test_engine.convert(expected_i_out, index="to_python")
+    ), "Index output does not match expected"
 
-    assert test_engine.equal(f_out, test_engine.convert(expected_f_out)), "Boolean outlier array does not match expected"
-    assert test_engine.equal(i_out, test_engine.convert(expected_i_out, index="to_python")), "Index output does not match expected"
 
 @pytest.mark.parametrize(
     "xCp, iSelect, nDim, nWindows, nStrata, nBoot, expected_CpA, expected_nA, expected_xCpSelect",
     [
-        ([1.0, 2.0, np.nan, 3.0, np.nan, 4.0]
-          , [True, True, False, True, False, True]
-          , 2, 0, 0, 0
-           # expected
-          , 2.5, 4.0, [1.0,2.0,np.nan,3.0,np.nan,4.0]
-         )
-        , ([[1.0, np.nan, 3.0],[4.0, 5.0, np.nan]]
-          , ([[True, False, True],[False, True, False]])
-          , 3, 2, 1, 3
-          # expected
-          , [1.0, 5.0, 3.0], [1.0, 1.0, 1.0], [[1, np.nan, 3.0], [np.nan, 5.0, np.nan]])
-        ]
+        (
+            [1.0, 2.0, np.nan, 3.0, np.nan, 4.0],
+            [True, True, False, True, False, True],
+            2,
+            0,
+            0,
+            0,
+            # expected
+            2.5,
+            4.0,
+            [1.0, 2.0, np.nan, 3.0, np.nan, 4.0],
+        ),
+        (
+            [[1.0, np.nan, 3.0], [4.0, 5.0, np.nan]],
+            ([[True, False, True], [False, True, False]]),
+            3,
+            2,
+            1,
+            3,
+            # expected
+            [1.0, 5.0, 3.0],
+            [1.0, 1.0, 1.0],
+            [[1, np.nan, 3.0], [np.nan, 5.0, np.nan]],
+        ),
+    ],
 )
-
-def test_aggregate_3d_case(test_engine, xCp, iSelect, nDim, nWindows, nStrata, nBoot, expected_CpA, expected_nA, expected_xCpSelect):
+def test_aggregate_3d_case(
+    test_engine,
+    xCp,
+    iSelect,
+    nDim,
+    nWindows,
+    nStrata,
+    nBoot,
+    expected_CpA,
+    expected_nA,
+    expected_xCpSelect,
+):
     """Test function for aggregateSeasonalAndAnnualValues 2D and 3D cases."""
 
-
     CpA, nA, xCpSelect = test_engine.aggregateSeasonalAndAnnualValues(
-        test_engine.convert(xCp), test_engine.convert(iSelect), nDim, nWindows, test_engine.convert(nStrata), test_engine.convert(nBoot), nargout=3
+        test_engine.convert(xCp),
+        test_engine.convert(iSelect),
+        nDim,
+        nWindows,
+        test_engine.convert(nStrata),
+        test_engine.convert(nBoot),
+        nargout=3,
     )
 
     assert test_engine.equal(CpA, test_engine.convert(expected_CpA))

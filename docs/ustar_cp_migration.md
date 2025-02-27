@@ -49,6 +49,27 @@ We have also added
 - `tests/unit_tests/test_ustar_cp` - Extensive test suite for `ustar_cp`
 - `tests/test_artefacts` - Test fixtures mostly comprising site data and intermediate input-output data generated from site data
 
+### Dependencies and setting up the environment
+
+Running the Python ustar_cp code, and testing it, requires some the Python packages in
+`requirements.txt`. We recommend installing these in a virtual environment, e.g.
+
+```
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+i.e., first, create a virtual environment (above called `venv` due to the second occurrence of `venv` in the command); second, activate that virtual environment; and third, install all
+the dependencies via pip.
+
+Running the MATLAB engine requires Python 3.11 (at the time of writing) for the MATLAB engine
+R2024a. Thus, in the above you may need to use `python3.11` and last command above thus may
+need to be explicitly with python3.11:
+```
+python3.11 -m pip install -r requirements.txt
+```
+
 ### Running the code
 
 `launch.py` is the Python code entry point. It accepts the input and output data paths as arguments similar to `launch.m`. This function can either be called directly from another Python function, or directly from the terminal using the following command:
@@ -58,6 +79,18 @@ python3 -m oneflux_steps/ustar_cp_python/launch.py input_folder output_folder
 ```
 
 where `input_folder` and `output_folder` are the absolute paths to the input and desired output data locations.
+
+### Developing the code
+
+This work has included ruff as a `pre-commit` hook. This means that any commits will fail unless they pass `Ruffs` rules. For this systems to work, git `pre-commit` should be installed follwoing the instructions [here](https://pre-commit.com). The hook is defined in the `pre-commit-config.yaml` in the repository root. `Ruff` settings are captured in the `pyproject.toml`.
+
+The hook needs to be installed locally after cloning the repo using the following command:
+
+```shell
+pre-commit install
+```
+
+Further details are available on the `pre-commit` site given in the link above.
 
 ### Running the tests
 
@@ -69,7 +102,8 @@ and for the Python translation by running:
 
         pytest tests/unit_tests/test_ustar_cp --language=python
 
-## Multi-language test suite
+
+## Multi-language test suite
 
 We provide a language-agnostic test suite that can switch between MATLAB (using the [matlab.engine FFI](https://uk.mathworks.com/help/matlab/matlab-engine-for-python.html) for connecting Python to MATLAB) and Python code. This approach allows the same set of tests to be run against both MATLAB and Python implementations, ensuring consistency and correctness across different languages. The original Matlab code was written and then compiled using Matlab 2018a. 
 

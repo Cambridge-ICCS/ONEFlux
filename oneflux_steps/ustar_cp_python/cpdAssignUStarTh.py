@@ -10,6 +10,7 @@ from numpy.typing import NDArray
 from oneflux_steps.ustar_cp_python.fcBin import fcBin
 from oneflux_steps.ustar_cp_python.utilities import index_or_mark_array_update
 
+
 def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
     """
     Parameters:
@@ -55,8 +56,8 @@ def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
     seasonalTimeWindow = []
     seasonalChangePoint = []
     selectedPointsFlag = []
-    dominantMode = ''
-    failureMessage = ''
+    dominantMode = ""
+    failureMessage = ""
     sineCurve = []
     fractionSignificant = []
     fractionModeD = []
@@ -70,7 +71,7 @@ def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
     # In Python, we check if `args` includes something like ['jsondecode', 1].
     for arg in args:
         # Example check: if arg is a list, arg[0] might be 'jsondecode'
-        if isinstance(arg, list) and len(arg) > 0 and arg[0] == 'jsondecode':
+        if isinstance(arg, list) and len(arg) > 0 and arg[0] == "jsondecode":
             # Then check subsequent entries for numeric IDs
             for j in arg[1:]:
                 # If j == 1, decode Stats from JSON
@@ -100,11 +101,20 @@ def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
         temperatureStrataFactor = 1
 
     else:
-        failureMessage = 'Stats must be 2D or 3D.'
-        return (annualChangePoint, numAnnualSelected, seasonalTimeWindow,
-                seasonalChangePoint, dominantMode, failureMessage,
-                selectedPointsFlag, sineCurve, fractionSignificant,
-                fractionModeD, fractionSelected)
+        failureMessage = "Stats must be 2D or 3D."
+        return (
+            annualChangePoint,
+            numAnnualSelected,
+            seasonalTimeWindow,
+            seasonalChangePoint,
+            dominantMode,
+            failureMessage,
+            selectedPointsFlag,
+            sineCurve,
+            fractionSignificant,
+            fractionModeD,
+            fractionSelected,
+        )
 
     # -------------------------------------------------------------------------
     # 4) Set Reference Values
@@ -126,23 +136,23 @@ def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
     # Here, we assume Python equivalents: readFields(Stats, varName) and x2colvec().
     # In an actual implementation, these must be defined or replaced by direct indexing.
 
-    variableNames = ['mt', 'Cp', 'b1', 'c2', 'cib1', 'cic2', 'p']
+    variableNames = ["mt", "Cp", "b1", "c2", "cib1", "cic2", "p"]
     # We'll store them in a dictionary by field name.
-    b1 = fcReadFields(Stats, 'b1')
-    c2 = fcReadFields(Stats, 'c2')
-    cib1 = fcReadFields(Stats, 'cib1')
-    cic2 = fcReadFields(Stats, 'cic2')
-    p = fcReadFields(Stats, 'p')
+    b1 = fcReadFields(Stats, "b1")
+    c2 = fcReadFields(Stats, "c2")
+    cib1 = fcReadFields(Stats, "cib1")
+    cic2 = fcReadFields(Stats, "cic2")
+    p = fcReadFields(Stats, "p")
 
-    measurementTime = fcReadFields(Stats, 'mt')
-    changePoint = fcReadFields(Stats, 'Cp')
+    measurementTime = fcReadFields(Stats, "mt")
+    changePoint = fcReadFields(Stats, "Cp")
 
     # -------------------------------------------------------------------------
     # 7) Identify Significant Change Points
 
     significanceThreshold = 0.05
     # p <= threshold is True/False mask
-    significantFlag = (p <= significanceThreshold)
+    significantFlag = p <= significanceThreshold
 
     # -------------------------------------------------------------------------
     # 8) Identify Model Type (2-parameter vs 3-parameter)
@@ -183,10 +193,10 @@ def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
     # Decide dominant mode
     if numModeD >= numModeE:
         selectedIndices = modeDIndices
-        dominantMode = 'D'
+        dominantMode = "D"
     else:
         selectedIndices = modeEIndices
-        dominantMode = 'E'
+        dominantMode = "E"
 
     numSelected = len(selectedIndices)
 
@@ -214,11 +224,20 @@ def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
     if numSelected == 0 and numValidMeasurements == 0:
         pass
     elif fractionSelected < 0.10:
-        failureMessage = 'Less than 10% successful detections.'
-        return (annualChangePoint, numAnnualSelected, seasonalTimeWindow,
-                seasonalChangePoint, dominantMode, failureMessage,
-                selectedPointsFlag, np.array([]), fractionSignificant,
-                fractionModeD, fractionSelected)
+        failureMessage = "Less than 10% successful detections."
+        return (
+            annualChangePoint,
+            numAnnualSelected,
+            seasonalTimeWindow,
+            seasonalChangePoint,
+            dominantMode,
+            failureMessage,
+            selectedPointsFlag,
+            np.array([]),
+            fractionSignificant,
+            fractionModeD,
+            fractionSelected,
+        )
 
     # -------------------------------------------------------------------------
     # 11) Configure Regression Matrix
@@ -232,14 +251,16 @@ def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
     # 12) Exclude Outliers Based on Standardized Scores
 
     standardizedScores = computeStandardizedScores(regressionMatrix)  # user-defined
-    outlierFlag, outlierIndices = identifyOutliers(standardizedScores, 5)  # user-defined
+    outlierFlag, outlierIndices = identifyOutliers(
+        standardizedScores, 5
+    )  # user-defined
 
     selectedIndices, numSelected, selectedPointsFlag = updateSelectedIndices(
         selectedIndices, outlierIndices, selectedPointsFlag, outlierFlag
     )
 
-    modeDIndices, numModeD = updateModes(modeDFlag, outlierIndices)   # user-defined
-    modeEIndices, _         = updateModes(modeEFlag, outlierIndices)  # user-defined
+    modeDIndices, numModeD = updateModes(modeDFlag, outlierIndices)  # user-defined
+    modeEIndices, _ = updateModes(modeEFlag, outlierIndices)  # user-defined
 
     # Recompute significantIndices, etc.
     significantIndices = np.union1d(modeDIndices, modeEIndices)
@@ -254,49 +275,70 @@ def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
     # 13) Check If Enough Change Points Remain
 
     if numSelected < requiredSelectionCount:
-        failureMessage = f'Too few selected change points: {numSelected}/{requiredSelectionCount}'
-        return (annualChangePoint, numAnnualSelected, seasonalTimeWindow,
-                seasonalChangePoint, dominantMode, failureMessage,
-                selectedPointsFlag, np.array([]), fractionSignificant,
-                fractionModeD, fractionSelected)
-
-    # -------------------------------------------------------------------------
-    # 14) Aggregate Seasonal and Annual Values
-
-    annualChangePoint, numAnnualSelected, _ = aggregateSeasonalAndAnnualValues(
-        changePoint, selectedIndices, numDimensions, numWindows,
-        numTemperatureStrata, numBootstraps
-    )
-
-    # -------------------------------------------------------------------------
-    # 15) Aggregate Seasonal Means
-
-    seasonalTimeWindow, seasonalChangePoint = aggregateSeasonalMeans(
-        measurementTime, changePoint, measurementTime, selectedIndices,
-        numWindows, numTemperatureStrata, numBootstraps
-    )
-
-    # -------------------------------------------------------------------------
-    # 16) Fit Annual Sine Curve
-
-    sineCurve = fitAnnualSineCurve(
-        measurementTime, changePoint, selectedIndices
-    )
-
-    # -------------------------------------------------------------------------
-    # Return All Outputs in the Same Order as the MATLAB Code
-
-    return (annualChangePoint,
+        failureMessage = (
+            f"Too few selected change points: {numSelected}/{requiredSelectionCount}"
+        )
+        return (
+            annualChangePoint,
             numAnnualSelected,
             seasonalTimeWindow,
             seasonalChangePoint,
             dominantMode,
             failureMessage,
             selectedPointsFlag,
-            sineCurve,
+            np.array([]),
             fractionSignificant,
             fractionModeD,
-            fractionSelected)
+            fractionSelected,
+        )
+
+    # -------------------------------------------------------------------------
+    # 14) Aggregate Seasonal and Annual Values
+
+    annualChangePoint, numAnnualSelected, _ = aggregateSeasonalAndAnnualValues(
+        changePoint,
+        selectedIndices,
+        numDimensions,
+        numWindows,
+        numTemperatureStrata,
+        numBootstraps,
+    )
+
+    # -------------------------------------------------------------------------
+    # 15) Aggregate Seasonal Means
+
+    seasonalTimeWindow, seasonalChangePoint = aggregateSeasonalMeans(
+        measurementTime,
+        changePoint,
+        measurementTime,
+        selectedIndices,
+        numWindows,
+        numTemperatureStrata,
+        numBootstraps,
+    )
+
+    # -------------------------------------------------------------------------
+    # 16) Fit Annual Sine Curve
+
+    sineCurve = fitAnnualSineCurve(measurementTime, changePoint, selectedIndices)
+
+    # -------------------------------------------------------------------------
+    # Return All Outputs in the Same Order as the MATLAB Code
+
+    return (
+        annualChangePoint,
+        numAnnualSelected,
+        seasonalTimeWindow,
+        seasonalChangePoint,
+        dominantMode,
+        failureMessage,
+        selectedPointsFlag,
+        sineCurve,
+        fractionSignificant,
+        fractionModeD,
+        fractionSelected,
+    )
+
 
 def identifyOutliers(x_norm_x, threshold):
     """
@@ -309,30 +351,34 @@ def identifyOutliers(x_norm_x, threshold):
     Returns:
     tuple: A boolean array (f_out) indicating outliers and an array (i_out) of outlier indices.
     """
-    f_out = (x_norm_x > threshold)
+    f_out = x_norm_x > threshold
     i_out = np.where(f_out)[0]  # Indices of outliers
 
     return f_out, i_out
+
 
 def computeStandardizedScores(x):
     """
     Compute standardized scores based on the median and interquartile range.
 
-    Standardizes each column in the input matrix by subtracting the column median 
-    (ignoring NaNs) and dividing by the interquartile range (IQR). After standardizing, 
+    Standardizes each column in the input matrix by subtracting the column median
+    (ignoring NaNs) and dividing by the interquartile range (IQR). After standardizing,
     returns the maximum absolute standardized score for each row.
 
     Args:
         x (np.ndarray): Input data matrix of shape (n, m).
 
     Returns:
-        numpy.ndarray: A (n, 1) column vector containing the maximum absolute 
+        numpy.ndarray: A (n, 1) column vector containing the maximum absolute
         standardised score for each row."""
     mx = np.nanmedian(x, axis=0)  # Compute median ignoring NaNs
     iqr = fcNaniqr(x)
     x_norm = (x - mx) / iqr  # Standardize
 
-    return np.nanmax(np.abs(x_norm), axis=1, keepdims=True)  # Max absolute standardized score per row
+    return np.nanmax(
+        np.abs(x_norm), axis=1, keepdims=True
+    )  # Max absolute standardized score per row
+
 
 def fitAnnualSineCurve(mt, Cp, iSelect):
     """
@@ -384,14 +430,8 @@ def fitAnnualSineCurve(mt, Cp, iSelect):
     sSine = np.array([[popt[0], popt[1], popt[2], r2]], dtype=float)
     return sSine
 
-def aggregateSeasonalAndAnnualValues(
-    xCp,
-    iSelect,
-    nDim,
-    nWindows,
-    nStrata,
-    nBoot
-):
+
+def aggregateSeasonalAndAnnualValues(xCp, iSelect, nDim, nWindows, nStrata, nBoot):
     """
     Python equivalent of the MATLAB function aggregateSeasonalAndAnnualValues.
 
@@ -428,21 +468,29 @@ def aggregateSeasonalAndAnnualValues(
         xCpGF = xCpSelect  # naming convention
         # xCp shape = [nWindows, nBoot]
         CpA = np.nanmean(xCpGF, axis=0)
-        nA  = np.sum(~np.isnan(xCpSelect), axis = 0)
+        nA = np.sum(~np.isnan(xCpSelect), axis=0)
     elif nDim == 3:
         xCpGF = xCpSelect  # Naming convention
         # xCp shape = [nWindows, nStrata, nBoot]
         # reshape => (nWindows*nStrata, nBoot) in column-major
-        xCpGF_reshaped = np.reshape(xCpGF, (nWindows * nStrata, nBoot), order='F')
+        xCpGF_reshaped = np.reshape(xCpGF, (nWindows * nStrata, nBoot), order="F")
         CpA = np.nanmean(xCpGF_reshaped, axis=0)
-        nA  = np.sum(~np.isnan(xCpGF_reshaped), axis=0)
+        nA = np.sum(~np.isnan(xCpGF_reshaped), axis=0)
     else:
         raise ValueError("Invalid number of dimensions: Expected 2D or 3D Stats.")
 
     return CpA, nA, xCpSelect
 
 
-def aggregateSeasonalMeans(mt: NDArray, Cp: NDArray, xmt: NDArray, iSelect: NDArray, nWindows: int, nStrata: int, nBoot: int)-> Tuple[NDArray, NDArray]:
+def aggregateSeasonalMeans(
+    mt: NDArray,
+    Cp: NDArray,
+    xmt: NDArray,
+    iSelect: NDArray,
+    nWindows: int,
+    nStrata: int,
+    nBoot: int,
+) -> Tuple[NDArray, NDArray]:
     """
     Python equivalent of the MATLAB function aggregateSeasonalMeans.
     Aggregates seasonal means for time and change points.
@@ -482,7 +530,7 @@ def aggregateSeasonalMeans(mt: NDArray, Cp: NDArray, xmt: NDArray, iSelect: NDAr
     except ValueError:
         raise ValueError(
             f"Cannot reshape xmt of length {xmt.size} "
-            f"to shape ({nWindows}, {nStrata*nBoot})."
+            f"to shape ({nWindows}, {nStrata * nBoot})."
         )
 
     # sum(~isnan(...)) in MATLAB => np.sum(~np.isnan(...)) in NumPy
@@ -541,13 +589,15 @@ def aggregateSeasonalMeans(mt: NDArray, Cp: NDArray, xmt: NDArray, iSelect: NDAr
     # 4) fcBin equivalent in Python
     #    [~, tW, CpW] = fcBin(mtSelect, CpSelect, xBins, 0);
 
-
     # Run fcBin
     nCount, tW, CpW = fcBin(mtSelect, CpSelect, xBins, 0)
 
     return tW, CpW
 
-def updateSelectedIndices(iSelect : np.ndarray, iOut : np.ndarray, fSelect : np.ndarray, fOut : np.ndarray) -> (np.ndarray, int, np.ndarray):
+
+def updateSelectedIndices(
+    iSelect: np.ndarray, iOut: np.ndarray, fSelect: np.ndarray, fOut: np.ndarray
+) -> (np.ndarray, int, np.ndarray):
     """
     Parameters
     ----------
@@ -579,6 +629,7 @@ def updateSelectedIndices(iSelect : np.ndarray, iOut : np.ndarray, fSelect : np.
     fSelect = fSelect & np.logical_not(fOut)
 
     return iSelect, nSelect, fSelect
+
 
 def updateModes(fModeX: np.ndarray, iOut: np.ndarray):
     """

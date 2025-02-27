@@ -18,6 +18,24 @@ Contents:
         parse_testcase
 """
 
+# <MATLAB>
+import matlab.engine
+from matlab.engine.matlabengine import MatlabFunc
+
+# </MATLAB>
+# Python version of ustar_cp imported here
+from oneflux_steps.ustar_cp_python import *
+from oneflux_steps.ustar_cp_python.fcNaniqr import *
+from oneflux_steps.ustar_cp_python.cpdFmax2pCore import *
+from oneflux_steps.ustar_cp_python.fcDatenum import *
+from oneflux_steps.ustar_cp_python.cpdFmax2pCp3 import *
+from oneflux_steps.ustar_cp_python.utilities import *
+from oneflux_steps.ustar_cp_python.cpd_evaluate_functions import *
+from oneflux_steps.ustar_cp_python.cpdFindChangePoint_functions import *
+from oneflux_steps.ustar_cp_python.cpdBootstrap import *
+from oneflux_steps.ustar_cp_python.fcEqnAnnualSine import *
+from oneflux_steps.ustar_cp_python.launch import *
+from oneflux_steps.ustar_cp_python.cpdAssignUStarTh import *
 import pytest
 import os
 import shutil
@@ -29,28 +47,29 @@ import numpy as np
 from typing import Any
 from abc import ABC, abstractmethod
 import warnings
-
-# <MATLAB>
-import matlab.engine
-from matlab.engine.matlabengine import MatlabFunc
-# </MATLAB>
+from contextlib import redirect_stderr, redirect_stdout
 
 # Setup command-line arguments for the tests to allow switching language
 #  --language=matlab runs the tests against the MATLAB implementation (default)
 #  --language=python runs the tests against the Python implementation
 
+
 def pytest_addoption(parser):
     parser.addoption("--language", action="store", default="python")
+
 
 @pytest.fixture(scope="session")
 def language(pytestconfig):
     return pytestconfig.getoption("language")
 
-@pytest.fixture(scope = "session")
+
+@pytest.fixture(scope="session")
 def get_languages():
     return ["python", "matlab"]
 
+
 # Specification of a `TestEngine` which enables language-agnostic tests
+
 
 class TestEngine(ABC):
     @abstractmethod
@@ -75,52 +94,38 @@ class TestEngine(ABC):
         """Compare two values for equality in the representation used by this engine"""
         pass
 
-# Python version of ustar_cp imported here
-from oneflux_steps.ustar_cp_python import *
-from oneflux_steps.ustar_cp_python.fcNaniqr import *
-from oneflux_steps.ustar_cp_python.cpdFmax2pCore import *
-from oneflux_steps.ustar_cp_python.fcDatenum import *
-from oneflux_steps.ustar_cp_python.cpdFmax2pCp3 import *
-from oneflux_steps.ustar_cp_python.utilities import *
-from oneflux_steps.ustar_cp_python.cpd_evaluate_functions import *
-from oneflux_steps.ustar_cp_python.cpdFindChangePoint_functions import *
-from oneflux_steps.ustar_cp_python.cpdBootstrap import *
-from oneflux_steps.ustar_cp_python.fcEqnAnnualSine import *
-from oneflux_steps.ustar_cp_python.launch import *
-from oneflux_steps.ustar_cp_python.cpdAssignUStarTh import *
-
 
 # Python TestEngine
 class PythonEngine(TestEngine):
     def _repr_pretty_(self, *args):
         return "Python Test Engine"
 
-    def convert(self, x, index='to_matlab', fromFile=False):
+    def convert(self, x, index="to_matlab", fromFile=False):
         """Convert input to a compatible type."""
         if x is None:
             raise ValueError("Input cannot be None")
-        if index == 'to_python':
+        if index == "to_python":
             if isinstance(x, list):
                 x = np.asarray(x)
             if isinstance(x, (int, float)):
                 if x != -1:
-                    x = x-1
+                    x = x - 1
             elif isinstance(x, np.ndarray):
                 print("Before conversion: ", x)
                 x = np.asarray(x)
-                x = np.where(x!=-1, x-1, x)
+                x = np.where(x != -1, x - 1, x)
                 print("After conversion: ", x)
         if isinstance(x, list):
             # Transpose to capture MATLAB data layout
             # when the data has been serialised from MATLAB
             # to a file
             if fromFile:
-              return transpose(np.array(x).astype(np.float64))
+                return transpose(np.array(x).astype(np.float64))
             else:
-              if (all(isinstance(i, np.bool_) for i in np.array(x).flat)):
-                return np.array(x).astype(bool)
-              else:
-                return np.array(x).astype(np.float64)
+                if all(isinstance(i, np.bool_) for i in np.array(x).flat):
+                    return np.array(x).astype(bool)
+                else:
+                    return np.array(x).astype(np.float64)
 
         elif isinstance(x, tuple):
             return tuple([self.convert(xi) for xi in x])
@@ -139,10 +144,11 @@ class PythonEngine(TestEngine):
             return np.isclose(x, y, equal_nan=True)
         elif isinstance(x, np.ndarray) and isinstance(y, np.ndarray):
             return np.allclose(x, y, equal_nan=True)
-        elif ((isinstance(x, list) and isinstance(y, list))
-            or (isinstance(x, tuple) and isinstance(y, tuple))):
+        elif (isinstance(x, list) and isinstance(y, list)) or (
+            isinstance(x, tuple) and isinstance(y, tuple)
+        ):
             return all(self.equal(xi, yi) for xi, yi in zip(x, y))
-        elif ((isinstance(x, dict) and isinstance(y, dict))):
+        elif isinstance(x, dict) and isinstance(y, dict):
             return all(self.equal(xi, yi) for xi, yi in zip(x, y))
         else:
             return x == y
@@ -158,30 +164,42 @@ class PythonEngine(TestEngine):
                 # mod = __import__(mod_path, fromlist=[name])
                 # func = getattr(mod, name, None)
                 # if nargout is present in kwargs then remove it
-                if 'nargout' in kwargs:
-                    kwargs.pop('nargout')
+                if "nargout" in kwargs:
+                    kwargs.pop("nargout")
                 # if jsonencode is present in kwargs then remove it
                 if 'jsonencode' in kwargs:
                     kwargs.pop('jsonencode')
                 if 'jsondecode' in kwargs:
                     kwargs.pop('jsondecode')
-                if 'stdout' in kwargs:
-                    kwargs.pop('stdout')
-                if 'stderr' in kwargs:
-                    kwargs.pop('stderr')
 
                 func = globals().get(name)
                 if callable(func):
-                    return func(*args, **kwargs)
+                    # Capture stdout if required
+                    if ('stdout' in kwargs):
+                      out = kwargs.pop('stdout')
+                      # Capture stderr as well
+                      with redirect_stdout(out):
+                        if ('stderr' in kwargs):
+                          err = kwargs.pop('stderr')
+                          with redirect_stderr(err):
+                              return func(*args, **kwargs)
+                        # Just stdout
+                        else:
+                          return func(*args, **kwargs)
+                    else:
+                      # No stdout or stderr capture
+                      return func(*args, **kwargs)
                 else:
                     warnings.warn(f"'function {name}' cannot be found", UserWarning)
             except ImportError:
                 pass
             warnings.warn(f"'{name}' is not callable", UserWarning)
+
         return newfunc if globals().get(name) else None
 
+
 # <MATLAB>
-# MATLAB wrapper that is then used by the MATLAB TestEngine
+# MATLAB wrapper that is then used by the MATLAB TestEngine
 class MFWrapper:
     def __init__(self, func):
         self.func = func
@@ -189,9 +207,13 @@ class MFWrapper:
         self.err = io.StringIO()
         name = func._name
         # make matlab stdout and stderr printed at the end of pytest
-        atexit.register(lambda: (s := self.out.getvalue()) and print(f"{name} stdout:\n{s}"))
-        atexit.register(lambda: (s := self.err.getvalue()) and print(f"{name} stderr:\n{s}"))
-        
+        atexit.register(
+            lambda: (s := self.out.getvalue()) and print(f"{name} stdout:\n{s}")
+        )
+        atexit.register(
+            lambda: (s := self.err.getvalue()) and print(f"{name} stderr:\n{s}")
+        )
+
     def __call__(self, *args, jsonencode=(), jsondecode=(), **kwargs):
         """
         Call the wrapped function with optional JSON encoding/decoding to handle the issue that non-scalar structs (arrays of structs) cannot be returned from MATLAB functions to Python.
@@ -205,16 +227,16 @@ class MFWrapper:
         """
         args = list(args)
         if jsonencode:
-            args.append(['jsonencode'] + [i+1 for i in jsonencode])
+            args.append(["jsonencode"] + [i + 1 for i in jsonencode])
         if jsondecode:
             for i in jsondecode:
                 args[i] = json.dumps(args[i])
-            args.append(['jsondecode'] + [i+1 for i in jsondecode])
-        out = kwargs.pop('stdout', self.out)
-        err = kwargs.pop('stderr', self.err)
+            args.append(["jsondecode"] + [i + 1 for i in jsondecode])
+        out = kwargs.pop("stdout", self.out)
+        err = kwargs.pop("stderr", self.err)
         ret = self.func(*args, **kwargs, stdout=out, stderr=err)
         if jsonencode:
-            nargout = kwargs.get('nargout', 1)
+            nargout = kwargs.get("nargout", 1)
             if nargout <= 1:
                 ret = [ret]
             else:
@@ -225,7 +247,8 @@ class MFWrapper:
                 ret = ret[0]
         return ret
 
-# MATLAB TestEngine
+
+# MATLAB TestEngine
 class MatlabEngine:
     def __init__(self, func):
         self.func = func
@@ -233,8 +256,12 @@ class MatlabEngine:
         self.err = io.StringIO()
         name = func._name
         # make matlab stdout and stderr printed at the end of pytest
-        atexit.register(lambda: (s := self.out.getvalue()) and print(f"{name} stdout:\n{s}"))
-        atexit.register(lambda: (s := self.err.getvalue()) and print(f"{name} stderr:\n{s}"))
+        atexit.register(
+            lambda: (s := self.out.getvalue()) and print(f"{name} stdout:\n{s}")
+        )
+        atexit.register(
+            lambda: (s := self.err.getvalue()) and print(f"{name} stderr:\n{s}")
+        )
 
     def _repr_pretty_(self, *args):
         return "MATLAB"
@@ -251,74 +278,83 @@ class MatlabEngine:
             The result of the wrapped function, with specified outputs JSON decoded if necessary.
         """
 
-        if self.func._name == '_repr_pretty_':
+        if self.func._name == "_repr_pretty_":
             # Overload attempts to pretty print matlab engines (e.g., by hypothesis)
-            return 'MATLAB'
+            return "MATLAB"
 
         # For `convert` and `equal` we need to handle these directly here since
         # we have overriden `call`.
-        if (self.func._name == "convert") | (self.func._name == "unconvert") | (self.func._name == "equal"):
-
-          # Locally scoped definitions
-          def _convert(x, index='to_python', fromFile=False):
-                if index == 'to_matlab': # Add 1 for index conversion to MATLAB, types: int, ndarray, list
+        if (
+            (self.func._name == "convert")
+            | (self.func._name == "unconvert")
+            | (self.func._name == "equal")
+        ):
+            # Locally scoped definitions
+            def _convert(x, index="to_python", fromFile=False):
+                if (
+                    index == "to_matlab"
+                ):  # Add 1 for index conversion to MATLAB, types: int, ndarray, list
                     print("Before conversion: ", x)
                     if isinstance(x, (int, float, np.ndarray)):
-                        x = x+1
+                        x = x + 1
                     elif isinstance(x, list):
-                        x = np.asarray(x)+1
+                        x = np.asarray(x) + 1
                     print("After conversion: ", x)
                 return to_matlab_type(x)
 
-          def _unconvert(x):
-              if isinstance(x, matlab.double):
-                x = np.array(x)
-              if len(x) == 1:
-                  return np.array(x[0])
-              else:
-                  return x
+            def _unconvert(x):
+                if isinstance(x, matlab.double):
+                    x = np.array(x)
+                if len(x) == 1:
+                    return np.array(x[0])
+                else:
+                    return x
 
-          def _equal(x, y):
-              return compare_matlab_arrays(x, y)
+            def _equal(x, y):
+                return compare_matlab_arrays(x, y)
 
-          # Choose which function to call
-          if self.func._name == "convert":
-              return _convert(*args, **kwargs)
-          elif self.func._name == "equal":
-              return _equal(*args, **kwargs)
-          elif self.func._name == "unconvert":
-              return _unconvert(*args, **kwargs)
+            # Choose which function to call
+            if self.func._name == "convert":
+                return _convert(*args, **kwargs)
+            elif self.func._name == "equal":
+                return _equal(*args, **kwargs)
+            elif self.func._name == "unconvert":
+                return _unconvert(*args, **kwargs)
 
         else:
-          # Calls mostly going through to the MATLAB engine
-          args = list(args)
-          if jsonencode:
-              args.append(['jsonencode'] + [i+1 for i in jsonencode])
-          if jsondecode:
-              for i in jsondecode:
-                  args[i] = json.dumps(args[i])
-              args.append(['jsondecode'] + [i+1 for i in jsondecode])
-          out = kwargs.pop('stdout', self.out)
-          err = kwargs.pop('stderr', self.err)
-          ret = self.func(*args, **kwargs, stdout=out, stderr=err)
-          if jsonencode:
-              nargout = kwargs.get('nargout', 1)
-              if nargout <= 1:
-                  ret = [ret]
-              else:
-                  ret = list(ret)
-              for j in jsonencode:
-                  ret[j] = json.loads(ret[j], object_hook=none2nan)
+            # Calls mostly going through to the MATLAB engine
+            args = list(args)
+            if jsonencode:
+                args.append(["jsonencode"] + [i + 1 for i in jsonencode])
+            if jsondecode:
+                for i in jsondecode:
+                    args[i] = json.dumps(args[i])
+                args.append(["jsondecode"] + [i + 1 for i in jsondecode])
+            out = kwargs.pop("stdout", self.out)
+            err = kwargs.pop("stderr", self.err)
+            ret = self.func(*args, **kwargs, stdout=out, stderr=err)
+            if jsonencode:
+                nargout = kwargs.get("nargout", 1)
+                if nargout <= 1:
+                    ret = [ret]
+                else:
+                    ret = list(ret)
+                for j in jsonencode:
+                    ret[j] = json.loads(ret[j], object_hook=none2nan)
 
-              if nargout <= 1:
-                  ret = ret[0]
-          return ret
+                if nargout <= 1:
+                    ret = ret[0]
+            return ret
+
 
 def mf_factory(cls, *args, **kwargs):
     f = object.__new__(MatlabFunc)
     f.__init__(*args, **kwargs)
     return MatlabEngine(f)
+
+
 MatlabFunc.__new__ = mf_factory
+
 
 def to_matlab_type(data: Any) -> Any:
     """
@@ -332,10 +368,12 @@ def to_matlab_type(data: Any) -> Any:
     """
     if isinstance(data, dict):
         # Convert a Python dictionary to a MATLAB struct
-        # TODO: the following doesn't actually work but is not yet used
+        # TODO: the following doesn't actually work but is not yet used
         matlab_struct = matlab.struct()
         for key, value in data.items():
-            matlab_struct[key] = to_matlab_type(value)  # Recursively handle nested structures
+            matlab_struct[key] = to_matlab_type(
+                value
+            )  # Recursively handle nested structures
         return matlab_struct
     elif isinstance(data, np.ndarray):
         if data.dtype == bool:
@@ -356,15 +394,16 @@ def to_matlab_type(data: Any) -> Any:
     elif isinstance(data, (int, float)):
         return matlab.double([data])  # Convert single numbers
     else:
-      return data  # If the data type is already MATLAB-compatible
+        return data  # If the data type is already MATLAB-compatible
+
 
 # Helper function to compare MATLAB double arrays element-wise, handling NaN comparisons
 def compare_matlab_arrays(result, expected):
     if isinstance(result, float):
-      # Floating point equality using numpy
-      return np.isclose(result, expected, equal_nan=True)
+        # Floating point equality using numpy
+        return np.isclose(result, expected, equal_nan=True)
 
-    if not hasattr(result, '__len__') or not hasattr(expected, '__len__'):
+    if not hasattr(result, "__len__") or not hasattr(expected, "__len__"):
         return np.allclose(result, expected, equal_nan=True)
 
     if isinstance(result, dict):
@@ -387,16 +426,19 @@ def compare_matlab_arrays(result, expected):
 
     # Recursive case
     return all(compare_matlab_arrays(r, e) for r, e in zip(result, expected))
+
+
 # </MATLAB>
 
-# Test engine fixture
+
+# Test engine fixture
 @pytest.fixture(scope="session")
 def test_engine(language, refactored=True):
     """
     Pytest fixture to start a 'running engine' which allows multiple languages
     to be targetted
     """
-    if language == 'python':
+    if language == "python":
         yield PythonEngine()  # Assuming a defined PythonEngine class elsewhere
     # <MATLAB>
     else:
@@ -424,7 +466,11 @@ def test_engine(language, refactored=True):
         eng = matlab.engine.start_matlab()
 
         current_dir = os.getcwd()
-        code_path = 'oneflux_steps/ustar_cp_refactor_wip/' if refactored else 'oneflux_steps/ustar_cp'
+        code_path = (
+            "oneflux_steps/ustar_cp_refactor_wip/"
+            if refactored
+            else "oneflux_steps/ustar_cp"
+        )
 
         # Add the directory containing your MATLAB functions to the MATLAB path
         matlab_function_path = os.path.join(current_dir, code_path)
@@ -447,6 +493,7 @@ def test_engine(language, refactored=True):
         eng.quit()
         # </MATLAB>
 
+
 # Other fixtures
 @pytest.fixture
 def setup_folders(tmp_path, request, testcase: str = "US_ARc"):
@@ -466,8 +513,8 @@ def setup_folders(tmp_path, request, testcase: str = "US_ARc"):
     """
 
     # If 'testcase' is provided by the test function, use its value
-    if 'testcase' in request.fixturenames:
-        testcase = request.getfixturevalue('testcase')
+    if "testcase" in request.fixturenames:
+        testcase = request.getfixturevalue("testcase")
 
     # Define paths for the temporary directories
     input_folder = tmp_path / "input"
@@ -483,7 +530,7 @@ def setup_folders(tmp_path, request, testcase: str = "US_ARc"):
     output_folder.mkdir()
 
     # Pattern to match directories starting with the `testcase` name
-    pattern = os.path.join('tests/test_artifacts', f'{testcase}*')
+    pattern = os.path.join("tests/test_artifacts", f"{testcase}*")
 
     # Use glob to find directories that match the pattern
     matching_dirs = glob.glob(pattern)
@@ -497,26 +544,31 @@ def setup_folders(tmp_path, request, testcase: str = "US_ARc"):
     else:
         raise FileNotFoundError(f"No matching directory found for pattern: {pattern}")
 
-    data_path= os.path.join(testcase_path, '05_ustar_cp')
+    data_path = os.path.join(testcase_path, "05_ustar_cp")
 
     # Copy all files and directories from the testcase input dir to the temporary input folder
-    inputs = os.path.join(data_path, 'input')
+    inputs = os.path.join(data_path, "input")
     if os.path.exists(inputs):
         try:
             shutil.copytree(inputs, str(input_folder), dirs_exist_ok=True)
         except Exception as e:
             print(f"Error during copy: {e}")
     else:
-        raise FileNotFoundError(f"Input directory {inputs} does not exist in testcase {testcase}")
+        raise FileNotFoundError(
+            f"Input directory {inputs} does not exist in testcase {testcase}"
+        )
 
     # Copy all files from the testcase ref_output dir to the temporary reference output folder
     ref_outputs = data_path
     if os.path.exists(ref_outputs):
         shutil.copytree(ref_outputs, str(reference_output_folder), dirs_exist_ok=True)
     else:
-        raise FileNotFoundError(f"Reference output directory {ref_outputs} does not exist in testcase {testcase}")
+        raise FileNotFoundError(
+            f"Reference output directory {ref_outputs} does not exist in testcase {testcase}"
+        )
 
     return str(input_folder), str(reference_output_folder), str(output_folder)
+
 
 @pytest.fixture
 def find_text_file():
@@ -528,15 +580,16 @@ def find_text_file():
         function: A function that takes a folder path and returns the contents
                   of the first `.txt` file found in that folder as a list of lines.
     """
+
     def _find_text_file_in_folder(folder):
         # Search for a .txt file in the given folder
         for filename in os.listdir(folder):
-            if filename.startswith('report'):
+            if filename.startswith("report"):
                 # Construct the full file path
                 file_path = os.path.join(folder, filename)
 
                 # Open the file and read its contents as lines
-                with open(file_path, 'r', encoding='utf-8') as file:
+                with open(file_path, "r", encoding="utf-8") as file:
                     contents = file.readlines()  # Read the file as a list of lines
                 return contents
 
@@ -544,6 +597,7 @@ def find_text_file():
         raise FileNotFoundError(f"No .txt file found in folder: {folder}")
 
     return _find_text_file_in_folder
+
 
 @pytest.fixture
 def extract_section_between_keywords():
@@ -561,6 +615,7 @@ def extract_section_between_keywords():
                   and end_keyword (str, optional), and returns the lines between the
                   start keyword and the end keyword, exclusive of the end keyword.
     """
+
     def _extract(data, start_keyword, end_keyword=None):
         # Find the index of the first occurrence of the start keyword
         start_idx = -1
@@ -570,22 +625,27 @@ def extract_section_between_keywords():
                 break  # Stop after finding the first occurrence
 
         if start_idx == -1:
-            raise ValueError(f"No section starting with '{start_keyword}' found in the file")
+            raise ValueError(
+                f"No section starting with '{start_keyword}' found in the file"
+            )
 
         # If end_keyword is provided, find its index
         end_idx = len(data)  # Default to end of file if end_keyword is None
         if end_keyword:
-            for i, line in enumerate(data[start_idx + 1:], start=start_idx + 1):
+            for i, line in enumerate(data[start_idx + 1 :], start=start_idx + 1):
                 if line.strip().startswith(end_keyword):
                     end_idx = i
                     break  # Stop after finding the first occurrence
 
         # Extract the section between the start and end keywords
-        section = data[start_idx + 1:end_idx]  # Exclusive of both start and end keywords
+        section = data[
+            start_idx + 1 : end_idx
+        ]  # Exclusive of both start and end keywords
 
         return section
 
     return _extract
+
 
 def process_std_out(std_out):
     """
@@ -613,18 +673,20 @@ def compare_text_blocks(text1, text2):
     Returns:
         bool: True if the stripped text blocks are identical, False otherwise.
     """
-    return text1.replace('\n', '').strip() == text2.replace('\n', '').strip()
+    return text1.replace("\n", "").strip() == text2.replace("\n", "").strip()
+
 
 def flatten(container):
     """
     Flatten a nested container into a single list.
     """
     for i in container:
-        if isinstance(i, (list,tuple)):
+        if isinstance(i, (list, tuple)):
             for j in flatten(i):
                 yield j
         else:
             yield i
+
 
 def read_csv_with_csv_module(file_path):
     """
@@ -636,7 +698,8 @@ def read_csv_with_csv_module(file_path):
     Returns:
         numpy.ndarray: The contents of the CSV file as a NumPy array.
     """
-    return np.loadtxt(file_path, delimiter=',')
+    return np.loadtxt(file_path, delimiter=",")
+
 
 def read_file(file_path):
     """
@@ -653,18 +716,19 @@ def read_file(file_path):
         ValueError: If the file extension is not supported.
     """
     # Check the file extension to differentiate between CSV and JSON
-    if file_path.endswith('.csv'):
+    if file_path.endswith(".csv"):
         return read_csv_with_csv_module(file_path)
-    elif file_path.endswith('.json'):
-        with open(file_path, 'r') as f:
+    elif file_path.endswith(".json"):
+        with open(file_path, "r") as f:
             return none2nan(json.load(f))  # Load JSON file
     else:
         raise ValueError(f"Unsupported file type: {file_path}")
 
+
 def none2nan(obj):
     if isinstance(obj, dict):
         return {k: none2nan(v) for k, v in obj.items()}
-    elif hasattr(obj, 'size'):
+    elif hasattr(obj, "size"):
         return np.where(obj is None, np.nan, obj).tolist()
     elif isinstance(obj, list):
         return [none2nan(v) for v in obj]
@@ -672,6 +736,7 @@ def none2nan(obj):
         return np.nan
     else:
         return obj
+
 
 def parse_testcase(test_case: dict, path_to_artifacts: str):
     """
@@ -689,25 +754,29 @@ def parse_testcase(test_case: dict, path_to_artifacts: str):
     inputs: dict = {}
     outputs: dict = {}
 
-    for io_type in ['input', 'expected_output']:
+    for io_type in ["input", "expected_output"]:
         for key, value in test_case[io_type].items():  # Use test_case here
-            if isinstance(value, str):  # Check if the value is a string (likely a file path)
-                path = os.path.join(path_to_artifacts, test_case["id"], value)  # Use test_case here
+            if isinstance(
+                value, str
+            ):  # Check if the value is a string (likely a file path)
+                path = os.path.join(
+                    path_to_artifacts, test_case["id"], value
+                )  # Use test_case here
                 if os.path.exists(path):  # Check if the file exists
                     # Read the file using the fixture function and store the data
                     file_data = read_file(path)
-                    if io_type == 'input':
+                    if io_type == "input":
                         inputs[key] = file_data
                     else:
                         outputs[key] = file_data
                 else:
-                    if io_type == 'input':
+                    if io_type == "input":
                         inputs[key] = value
                     else:
                         outputs[key] = value
             else:
                 # If it's not a string, directly store the value in the inputs or outputs dictionary
-                if io_type == 'input':
+                if io_type == "input":
                     inputs[key] = value
                 else:
                     outputs[key] = value

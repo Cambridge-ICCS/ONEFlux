@@ -17,7 +17,7 @@ tests
     Dept. of Energy nor the names of its contributors may be used to endorse or
     promote products derived from this software without specific prior written
     permission.
-    
+
     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
     AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
     IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -29,7 +29,7 @@ tests
     CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
     ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
-    
+
     You are under no obligation whatsoever to provide any bug fixes, patches,
     or upgrades to the features, functionality or performance of the source
     code ("Enhancements") to anyone; however, if you choose to make your
