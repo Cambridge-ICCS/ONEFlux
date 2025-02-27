@@ -482,9 +482,10 @@ def loadData(
     num_columns = len(columns.tolist())
 
     # Read the header
+    # Read the header
     header = pd.read_csv(
-        data_path, names=range(num_columns), nrows=header_rows, header=None
-    )
+        data_path, names=range(num_columns + 100), nrows=header_rows, header=None
+    ).iloc[:, :num_columns]
 
     # Initialize columns_index to -1
     columns_index = np.full(len(input_columns_names), -1)
