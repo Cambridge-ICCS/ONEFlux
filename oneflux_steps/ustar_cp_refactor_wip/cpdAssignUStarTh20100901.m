@@ -111,8 +111,7 @@ modeEFlag(modeEIndices) = 1;
 
 fractionSignificant = numSignificant / numValidMeasurements; 
 fractionModeD = numModeD / numSignificant; 
-fractionSelected = numSelected / numValidMeasurements; 
-
+fractionSelected = numSelected / numValidMeasurements;
 % Abort if Too Few Selections
 if fractionSelected < 0.10
     failureMessage = 'Less than 10% successful detections.';

@@ -167,7 +167,6 @@ def launch(input_folder: str, output_folder: str) -> int:
 
         Cp, n_val, tW, CpW, cMode, cFailure, fSelect, sSine, FracSig, FracModeD, FracSelect = \
             cpdAssignUStarTh20100901(Stats2, fPlot, cSiteYr)
-
         # Save result
         # 'clock' in MATLAB typically returns the current date/time. We'll pass Python's datetime now.
         from datetime import datetime
@@ -184,8 +183,6 @@ def launch(input_folder: str, output_folder: str) -> int:
         del (uStar, cFailure, cMode, cSiteYr, fNight, fPlot, fSelect, n_val,
              nBoot, sSine, t, tW, Cp3, CpW, FracModeD, FracSelect, FracSig,
              NEE, PPFD, Rg, Stats2, Stats3, T, Ta, Cp, Cp2)
-
-        print("done.")
 
     # End of for loop
     return exitcode

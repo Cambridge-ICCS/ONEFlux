@@ -5,6 +5,7 @@ from oneflux_steps.ustar_cp_python.fcNaniqr import fcNaniqr
 from oneflux_steps.ustar_cp_python.fcEqnAnnualSine import fcEqnAnnualSine
 from oneflux_steps.ustar_cp_python.fcr2Calc import fcr2Calc
 from typing import Tuple
+import json
 from numpy.typing import NDArray
 from oneflux_steps.ustar_cp_python.fcBin import fcBin
 from oneflux_steps.ustar_cp_python.utilities import index_or_mark_array_update
@@ -209,8 +210,10 @@ def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
 
     # -------------------------------------------------------------------------
     # 10) Abort if Too Few Selections
-
-    if fractionSelected < 0.10:
+    # This first if clause is to replciate the case where 0 divided by zero evaluates to Nan and farctionSlected is never evaluatedfractionSelected
+    if numSelected == 0 and numValidMeasurements == 0:
+        pass
+    elif fractionSelected < 0.10:
         failureMessage = 'Less than 10% successful detections.'
         return (annualChangePoint, numAnnualSelected, seasonalTimeWindow,
                 seasonalChangePoint, dominantMode, failureMessage,
