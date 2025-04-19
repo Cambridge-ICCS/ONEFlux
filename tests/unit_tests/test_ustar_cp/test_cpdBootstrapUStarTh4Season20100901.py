@@ -83,9 +83,6 @@ def test_cpdBootstrapUStarTh4Season20100901_basic(test_engine, mock_data):
         jsonencode=[1, 3],
         nargout=4,
     )
-    # Assertions for output types
-    assert isinstance(Stats2, list), "Stats2 should be a list of structs."
-    assert isinstance(Stats3, list), "Stats3 should be a list of structs."
 
     # Validate dimensions of the output arrays
     assert len(Cp2) == 4, "Cp2 should have 4 seasons."
@@ -152,12 +149,12 @@ def test_cpdBootstrapUStarTh4Season20100901_edge_case_high_bootstrap(
     )
 
     # Validate dimensions with a high bootstrap count
-    assert (
-        len(Cp2[0][0]) == nBoot
-    ), "Each Cp2 season entry should have `nBoot` bootstraps."
-    assert (
-        len(Cp3[0][0]) == nBoot
-    ), "Each Cp3 season entry should have `nBoot` bootstraps."
+    assert len(Cp2[0][0]) == nBoot, (
+        "Each Cp2 season entry should have `nBoot` bootstraps."
+    )
+    assert len(Cp3[0][0]) == nBoot, (
+        "Each Cp3 season entry should have `nBoot` bootstraps."
+    )
     assert len(Stats2[0][0]) == nBoot, "Stats2 should match the number of bootstraps."
     assert len(Stats3[0][0]) == nBoot, "Stats3 should match the number of bootstraps."
 
@@ -193,9 +190,9 @@ def test_cpdBootstrap_against_testcases(test_engine):
 
         # Assertions to compare results to expected outputs
         assert test_engine.equal(Cp2, test_engine.convert(outputs_list[0]))
-        assert test_engine.equal(Stats2, outputs_list[1])
+        assert test_engine.equal(Stats2, np.array(outputs_list[1]))
         assert test_engine.equal(Cp3, test_engine.convert(outputs_list[2]))
-        assert test_engine.equal(Stats3, outputs_list[3])
+        assert test_engine.equal(Stats3, np.array(outputs_list[3]))
 
 
 # Parameterized test for the get_nPerDay function
@@ -212,9 +209,9 @@ def test_cpdBootstrap_against_testcases(test_engine):
 def test_get_nPerDay(test_engine, input_data, expected_result):
     input_data = test_engine.convert(input_data)
     result = test_engine.get_nPerDay(input_data)
-    assert (
-        result == expected_result
-    ), f"Expected {expected_result}, but got {result} for input {input_data}"
+    assert result == expected_result, (
+        f"Expected {expected_result}, but got {result} for input {input_data}"
+    )
 
 
 # Parameterized test for the get_nPerBin function
@@ -255,9 +252,9 @@ def test_get_iNight(test_engine, input_data, expected_result):
     input_data = test_engine.convert(input_data)
     result = test_engine.get_iNight(input_data)
     expected_result = test_engine.convert(expected_result, index="to_matlab")
-    assert test_engine.equal(
-        result, expected_result
-    ), f"Expected {expected_result}, but got {result}"
+    assert test_engine.equal(result, expected_result), (
+        f"Expected {expected_result}, but got {result}"
+    )
 
 
 # Parameterized test for the update_ustar function
@@ -274,9 +271,9 @@ def test_get_iNight(test_engine, input_data, expected_result):
 def test_update_uStar(test_engine, input_data, expected_result):
     input_data = test_engine.convert(input_data)
     result = test_engine.update_uStar(input_data)
-    assert test_engine.equal(
-        result, test_engine.convert(expected_result)
-    ), f"Expected {expected_result}, but got {result}"
+    assert test_engine.equal(result, test_engine.convert(expected_result)), (
+        f"Expected {expected_result}, but got {result}"
+    )
 
 
 # Parameterized test for the get_ntN function
@@ -360,9 +357,9 @@ def test_setup_Cp(test_engine, nSeasons, nStrataX, nBoot, expected_shape):
     Cp_array = np.array(Cp)
 
     # Check the shape of Cp2 and Cp3
-    assert test_engine.equal(
-        Cp_array.shape, test_engine.convert(expected_shape)
-    ), f"Expected shape {test_engine.convert(expected_shape)} for Cp, but got {Cp_array.shape}"
+    assert test_engine.equal(Cp_array.shape, test_engine.convert(expected_shape)), (
+        f"Expected shape {test_engine.convert(expected_shape)} for Cp, but got {Cp_array.shape}"
+    )
 
     # Ensure all elements are NaN
     assert np.isnan(Cp_array).all(), "Not all elements in Cp2 are NaN"

@@ -143,7 +143,15 @@ class PythonEngine(TestEngine):
         if isinstance(x, float) or isinstance(y, float):
             return np.isclose(x, y, equal_nan=True)
         elif isinstance(x, np.ndarray) and isinstance(y, np.ndarray):
-            return np.allclose(x, y, equal_nan=True)
+            # if the elements are dicts
+            if x.dtype == np.object_ and y.dtype == np.object_:
+                return all(
+                    self.equal(xi, yi) for xi, yi in zip(x.flatten(), y.flatten())
+                )
+            # otherwise
+            else:
+                # Handle NaN comparisons
+                return np.allclose(x, y, equal_nan=True)
         elif (isinstance(x, list) and isinstance(y, list)) or (
             isinstance(x, tuple) and isinstance(y, tuple)
         ):
@@ -167,28 +175,28 @@ class PythonEngine(TestEngine):
                 if "nargout" in kwargs:
                     kwargs.pop("nargout")
                 # if jsonencode is present in kwargs then remove it
-                if 'jsonencode' in kwargs:
-                    kwargs.pop('jsonencode')
-                if 'jsondecode' in kwargs:
-                    kwargs.pop('jsondecode')
+                if "jsonencode" in kwargs:
+                    kwargs.pop("jsonencode")
+                if "jsondecode" in kwargs:
+                    kwargs.pop("jsondecode")
 
                 func = globals().get(name)
                 if callable(func):
                     # Capture stdout if required
-                    if ('stdout' in kwargs):
-                      out = kwargs.pop('stdout')
-                      # Capture stderr as well
-                      with redirect_stdout(out):
-                        if ('stderr' in kwargs):
-                          err = kwargs.pop('stderr')
-                          with redirect_stderr(err):
-                              return func(*args, **kwargs)
-                        # Just stdout
-                        else:
-                          return func(*args, **kwargs)
+                    if "stdout" in kwargs:
+                        out = kwargs.pop("stdout")
+                        # Capture stderr as well
+                        with redirect_stdout(out):
+                            if "stderr" in kwargs:
+                                err = kwargs.pop("stderr")
+                                with redirect_stderr(err):
+                                    return func(*args, **kwargs)
+                            # Just stdout
+                            else:
+                                return func(*args, **kwargs)
                     else:
-                      # No stdout or stderr capture
-                      return func(*args, **kwargs)
+                        # No stdout or stderr capture
+                        return func(*args, **kwargs)
                 else:
                     warnings.warn(f"'function {name}' cannot be found", UserWarning)
             except ImportError:

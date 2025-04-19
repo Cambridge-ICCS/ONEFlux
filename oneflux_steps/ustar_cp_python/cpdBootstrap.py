@@ -182,7 +182,7 @@ def generate_rand_int_array(n: int) -> np.ndarray:
 
 def setup_Stats(
     n_boot: int, n_seasons: int, n_strata_x: int
-) -> List[List[List[Dict[str, float]]]] | dict[str, float]:
+) -> np.ndarray | dict[str, float]:
     """
     Initialize the Stats structure based on input dimensions.
 
@@ -194,7 +194,8 @@ def setup_Stats(
         n_strata_x (int): Number of strata in X direction.
 
     Returns:
-        List[List[List[Dict[str, float]]]]: Preallocated stats structure.
+        An ndarray of the form equivalent to a
+         List[List[List[Dict[str, float]]]]: Preallocated stats structure.
     """
     args_list = [n_boot, n_seasons, n_strata_x]
     for n in args_list:
@@ -205,10 +206,12 @@ def setup_Stats(
             )
 
     # Preallocate stats array
-    stats = [
-        [[generate_statsMT() for _ in range(n_boot)] for _ in range(n_strata_x)]
-        for _ in range(n_seasons)
-    ]
+    stats = np.array(
+        [
+            [[generate_statsMT() for _ in range(n_boot)] for _ in range(n_strata_x)]
+            for _ in range(n_seasons)
+        ]
+    )
 
     return stats
 
