@@ -721,7 +721,7 @@ def setMissingDataNan(
     # Loop over each array, copy it, and replace -9999 with np.nan
     for arr in arrays:
         # Create a copy of the array to avoid modifying the original
-        arr_copy = arr.copy()
+        arr_copy = np.array(arr.copy(), dtype=float)
         # Replace all occurrences of -9999 with np.nan
         arr_copy[arr_copy == -9999] = np.nan
         modified_arrays.append(arr_copy)
