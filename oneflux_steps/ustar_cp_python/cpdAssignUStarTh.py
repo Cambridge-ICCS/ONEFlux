@@ -4,6 +4,7 @@ from oneflux_steps.ustar_cp_python.fcReadFields import fcReadFields
 from oneflux_steps.ustar_cp_python.fcNaniqr import fcNaniqr
 from oneflux_steps.ustar_cp_python.fcEqnAnnualSine import fcEqnAnnualSine
 from oneflux_steps.ustar_cp_python.fcr2Calc import fcr2Calc
+from oneflux_steps.ustar_cp_python.fcx2colvec import fcx2colvec
 from typing import Tuple
 import json
 from numpy.typing import NDArray
@@ -138,14 +139,16 @@ def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
 
     variableNames = ["mt", "Cp", "b1", "c2", "cib1", "cic2", "p"]
     # We'll store them in a dictionary by field name.
-    b1 = fcReadFields(Stats, "b1")
-    c2 = fcReadFields(Stats, "c2")
-    cib1 = fcReadFields(Stats, "cib1")
-    cic2 = fcReadFields(Stats, "cic2")
-    p = fcReadFields(Stats, "p")
+    b1 = fcx2colvec(fcReadFields(Stats, "b1"))
+    c2 = fcx2colvec(fcReadFields(Stats, "c2"))
+    cib1 = fcx2colvec(fcReadFields(Stats, "cib1"))
+    cic2 = fcx2colvec(fcReadFields(Stats, "cic2"))
+    p = fcx2colvec(fcReadFields(Stats, "p"))
 
     measurementTime = fcReadFields(Stats, "mt")
+    mt = fcx2colvec(measurementTime)
     changePoint = fcReadFields(Stats, "Cp")
+    Cp = fcx2colvec(changePoint)
 
     # -------------------------------------------------------------------------
     # 7) Identify Significant Change Points
@@ -170,8 +173,8 @@ def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
     # 9) Classify Significant Change Points:
 
     # Indices that are valid (not NaN in b1+c2+Cp):
-    validMask = ~np.isnan(b1 + c2 + changePoint)
-    validIndices = np.where(~np.isnan(measurementTime))[0]
+    validMask = ~np.isnan(b1 + c2 + Cp)
+    validIndices = np.where(~np.isnan(mt))[0]
     numValidMeasurements = len(validIndices)
 
     # Non-significant
@@ -243,9 +246,9 @@ def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
     # 11) Configure Regression Matrix
 
     if numParameters == 2:
-        regressionMatrix = np.column_stack([changePoint, b1, cib1])
+        regressionMatrix = np.column_stack([Cp, b1, cib1])
     else:
-        regressionMatrix = np.column_stack([changePoint, b1, c2, cib1, cic2])
+        regressionMatrix = np.column_stack([Cp, b1, c2, cib1, cic2])
 
     # -------------------------------------------------------------------------
     # 12) Exclude Outliers Based on Standardized Scores
@@ -308,8 +311,8 @@ def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
     # 15) Aggregate Seasonal Means
 
     seasonalTimeWindow, seasonalChangePoint = aggregateSeasonalMeans(
-        measurementTime,
-        changePoint,
+        mt,
+        Cp,
         measurementTime,
         selectedIndices,
         numWindows,
@@ -320,7 +323,7 @@ def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
     # -------------------------------------------------------------------------
     # 16) Fit Annual Sine Curve
 
-    sineCurve = fitAnnualSineCurve(measurementTime, changePoint, selectedIndices)
+    sineCurve = fitAnnualSineCurve(mt, Cp, selectedIndices)
 
     # -------------------------------------------------------------------------
     # Return All Outputs in the Same Order as the MATLAB Code
