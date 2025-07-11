@@ -54,3 +54,41 @@ def test_fit_annual_sine_curve_partial_selection(test_engine, sample_data):
     assert 9.5 < sine_amp < 10.5
     assert sine_phase < 1 or sine_phase > 363
     assert r2_value > 0.96
+
+
+def test_fit_real_data(test_engine):
+    # Load test_fitAnnualSinceCurve_mt.txt as mt array
+    mt = test_engine.convert(
+        np.loadtxt(
+            "tests/unit_tests/test_ustar_cp/data/test_fitAnnualSineCurve_mt.txt",
+            delimiter=",",
+            dtype=float,
+        )
+    )
+    # Load test_fitAnnualSinceCurve_Cp.txt as Cp array
+    Cp = test_engine.convert(
+        np.loadtxt(
+            "tests/unit_tests/test_ustar_cp/data/test_fitAnnualSineCurve_Cp.txt",
+            delimiter=",",
+            dtype=float,
+        )
+    )
+    # iselect
+    iSelect = test_engine.convert(
+        np.loadtxt(
+            "tests/unit_tests/test_ustar_cp/data/test_fitAnnualSineCurve_iSelect.txt",
+            delimiter=",",
+            dtype=int,
+        )
+    )
+
+    # Expected output from MATLAB function
+    expected = test_engine.convert(
+        np.array(
+            [0.503045421562493, 0.104641030396898, 306.949166307728, 0.101698924828049]
+        )
+    )
+
+    result = test_engine.fitAnnualSineCurve(mt, Cp, iSelect, nargout=1)
+
+    assert test_engine.equal(result, expected), f"Expected {expected} but got {result}"
