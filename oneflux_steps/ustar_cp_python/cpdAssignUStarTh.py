@@ -417,7 +417,14 @@ def fitAnnualSineCurve(mt, Cp, iSelect):
     initial_guess = [1.0, 1.0, 1.0]
 
     # Perform the fit via non-linear regression
-    popt, _ = curve_fit(_annual_sine_for_curve_fit, xdata, ydata, p0=initial_guess)
+    popt, _ = curve_fit(
+        _annual_sine_for_curve_fit,
+        xdata,
+        ydata,
+        p0=initial_guess,
+        nan_policy="omit",
+        method="lm",
+    )
 
     # Compute predicted values for the fitted parameters
     predictedCp = fcEqnAnnualSine(np.asarray(popt), xdata)
