@@ -1,6 +1,7 @@
 import numpy as np
 from datetime import date
 
+
 def fcEqnAnnualSine(b: np.ndarray, t: np.ndarray) -> np.ndarray:
     """
     Computes the annual sine wave equation.
@@ -21,20 +22,20 @@ def fcEqnAnnualSine(b: np.ndarray, t: np.ndarray) -> np.ndarray:
     Example:
         >>> b = np.array([1, 2, 3])
         >>> t = np.array([0, 1, 2, 3, 4])
-        >>> fc_eqn_annual_sine(b, t)
-        array([0.748, 2.656, 3.712, 3.867, 2.997])
+        >>> fcEqnAnnualSine(b, t)
+        array([0.89682915, 0.93120247, 0.96559614, 1.0, 1.03440386]
     """
     if b.shape != (3,):
         raise ValueError("Coefficient array `b` must have exactly three elements.")
 
     # Compute the number of days per year based on year 2000
 
-    n_days_per_year = 365.2425 # Evaluation of Matlab datenum(2000-1,12,31)/2000;
+    n_days_per_year = 365.2425  # Evaluation of Matlab datenum(2000-1,12,31)/2000;
 
     # Calculate the angular frequency
     omega = 2 * np.pi / n_days_per_year
 
     # Compute the sine wave
     y = b[0] + b[1] * np.sin(omega * (t - b[2]))
-    
+
     return y
