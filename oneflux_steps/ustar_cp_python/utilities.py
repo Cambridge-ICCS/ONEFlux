@@ -4,7 +4,10 @@ import numpy as np
 import json
 from decimal import Decimal, ROUND_HALF_UP
 
-def index_or_mark_array_update(A : np.ndarray, idx : np.ndarray, B : np.ndarray) -> np.ndarray:
+
+def index_or_mark_array_update(
+    A: np.ndarray, idx: np.ndarray, B: np.ndarray
+) -> np.ndarray:
     """
     index_or_mark_array_update(A, idx, B) performs something akin to `A[idx] = B`
     where we update the elements of `A` at indices `idx` according to `B`
@@ -23,25 +26,25 @@ def index_or_mark_array_update(A : np.ndarray, idx : np.ndarray, B : np.ndarray)
         The elements of the array at the specified indices.
     """
 
-    if (all(isinstance(i, np.bool_) for i in np.array(idx).flat)):
-      # idx is a boolean mask
-      for i in range(len(A.flat)):
-        if idx.flat[i]:
-            A.flat[i] = B.flat[i]
+    if all(isinstance(i, np.bool_) for i in np.array(idx).flat):
+        # idx is a boolean mask
+        for i in range(len(A.flat)):
+            if idx.flat[i]:
+                A.flat[i] = B.flat[i]
     else:
-      # Do column major flattening of A
-      Acopy = A.copy().flatten(order='F')
-      B = B.flatten(order='F')
-      idx = idx.flatten()
-      # Copy across the elements at the right indices
-      for i in idx:
-        Acopy[i] = B[i]
-      # Reshape the data
-      A = Acopy.reshape(A.shape, order='F')
+        # Do column major flattening of A
+        Acopy = A.copy().flatten(order="F")
+        B = B.flatten(order="F")
+        idx = idx.flatten()
+        # Copy across the elements at the right indices
+        for i in idx:
+            Acopy[i] = B[i]
+        # Reshape the data
+        A = Acopy.reshape(A.shape, order="F")
     return A
 
 
-def prctile(A: np.ndarray, p: float) -> float|np.ndarray:
+def prctile(A: np.ndarray, p: float) -> float | np.ndarray:
     """
     Compute the p-th percentile of array A in a way that has
     (as far as we can tell) the same semantics MATLAB's percentile algorithm.
@@ -64,13 +67,14 @@ def prctile(A: np.ndarray, p: float) -> float|np.ndarray:
     percentiles = 100 * (np.arange(0.5, n) / n)
 
     # Handle bounds explicitly
-    #if p <= percentiles[0]:
-        #return A_sorted[0]
-    #elif p >= percentiles[-1]:
-        #return A_sorted[-1]
+    # if p <= percentiles[0]:
+    # return A_sorted[0]
+    # elif p >= percentiles[-1]:
+    # return A_sorted[-1]
 
     # Linear interpolation
     return np.interp(p, percentiles, A_sorted)
+
 
 def prctile_hazen(a, q):
     """
@@ -82,7 +86,8 @@ def prctile_hazen(a, q):
     a = np.percentile(np.asarray(a), q, method="hazen")
     return a
 
-def dot(a : np.ndarray, b : np.ndarray) -> np.ndarray:
+
+def dot(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """
     Compute the dot product of two arrays.
     """
@@ -92,13 +97,14 @@ def dot(a : np.ndarray, b : np.ndarray) -> np.ndarray:
         return sum([x * y for x, y in zip(a, b)])
 
 
-def floor(a : np.ndarray) -> np.ndarray:
+def floor(a: np.ndarray) -> np.ndarray:
     """
     Return the floor of the input, element-wise.
     """
     return np.asanyarray(a // 1).astype(int)
 
-def intersect(a : np.ndarray, b : np.ndarray) -> np.ndarray:
+
+def intersect(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """
     Return the intersection of two arrays.
 
@@ -125,24 +131,27 @@ def intersect(a : np.ndarray, b : np.ndarray) -> np.ndarray:
         return c
     else:
         if (len(a.shape) > 1) and (a.shape[1] > 1):
-          return transpose(np.array(c))
+            return transpose(np.array(c))
         else:
-          if len(c) == 1:
-            # If the result is a singleton, return it as a scalar
-            return c[0]
-          else:
-            return np.array(c)
+            if len(c) == 1:
+                # If the result is a singleton, return it as a scalar
+                return c[0]
+            else:
+                return np.array(c)
         # FIXME: the result is a column vector if
         # both args are column vectors; otherwise row vector
-        #return np.array(c).reshape((1, -1) if a.shape[1] > 1 else (-1, 1))
+        # return np.array(c).reshape((1, -1) if a.shape[1] > 1 else (-1, 1))
+
 
 def jsonencode(a):
     return a if isinstance(a, cellarray) else json.dumps(a)
 
+
 def jsondecode(a):
     return a if isinstance(a, cellarray) else json.loads(a)
 
-def ndims(a : int | float | np.ndarray) -> int:
+
+def ndims(a: int | float | np.ndarray) -> int:
     """
     Compute the number of dimensions on a piece of data
 
@@ -173,6 +182,7 @@ def ndims(a : int | float | np.ndarray) -> int:
         else:
             return ndim
 
+
 def arange(start, stop, step=1, **kwargs):
     """
     >>> a=arange(1,10) # 1:10
@@ -182,7 +192,8 @@ def arange(start, stop, step=1, **kwargs):
     expand_value = 1 if step > 0 else -1
     return np.arange(start, stop + expand_value, step, **kwargs)
 
-def round_up(value : float) -> int:
+
+def round_up(value: float) -> int:
     """
     Round a number to the nearest integer, with ties rounding away from zero.
 
@@ -192,9 +203,10 @@ def round_up(value : float) -> int:
     Returns:
     int: The rounded integer.
     """
-    return int(Decimal(value).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+    return int(Decimal(value).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
-def size(a : np.ndarray, b=0, nargout=1) -> np.ndarray:
+
+def size(a: np.ndarray, b=0, nargout=1) -> np.ndarray:
     """
     Return the size of an array.
     >>> size(np.array([[1,2],[3,4]]))
@@ -215,7 +227,8 @@ def size(a : np.ndarray, b=0, nargout=1) -> np.ndarray:
     except IndexError:
         return 1
 
-def squeeze(a : np.ndarray, axis=None) -> np.ndarray:
+
+def squeeze(a: np.ndarray, axis=None) -> np.ndarray:
     """
     Remove single-dimensional entries from the shape of an array.
     """
@@ -226,7 +239,7 @@ def squeeze(a : np.ndarray, axis=None) -> np.ndarray:
     return np.squeeze(a, axis=axis)
 
 
-def transpose(a : np.ndarray | list | float | int) -> np.ndarray:
+def transpose(a: np.ndarray | list | float | int) -> np.ndarray:
     """
     A multi-purpose transpose function that
     - on 2-dimensions, does the usual matrix transpotision
@@ -260,7 +273,10 @@ def transpose(a : np.ndarray | list | float | int) -> np.ndarray:
     elif np.ndim(a) == 0:
         return a
     else:
-        raise ("Transpose is not defined for arrays of dimension greater than 2, but given data of dimension " + str(np.ndim(a)))
+        raise (
+            "Transpose is not defined for arrays of dimension greater than 2, but given data of dimension "
+            + str(np.ndim(a))
+        )
 
 
 def unique(a):
@@ -269,7 +285,9 @@ def unique(a):
     """
     return np.unique(np.asarray(a))
 
+
 # Plotting relates
+
 
 def xlim(left=None, right=None):
     """
@@ -279,7 +297,9 @@ def xlim(left=None, right=None):
 
     plt.xlim(left, right)
 
+
 # Used by JSON encoding/decoding
+
 
 class cellarray(np.ndarray):
     """
@@ -301,3 +321,37 @@ class cellarray(np.ndarray):
         hello
         """
         return super().__new__(cls, a, dtype=object)
+
+
+def nlinfit(xdata, ydata, f, initial_guess=None):
+    """
+    Perform a non-linear fit to the data using the provided initial guess.
+
+    Parameters:
+    xdata (np.ndarray): The independent variable data.
+    ydata (np.ndarray): The dependent variable data.
+    initial_guess (list, optional): Initial guess for the parameters. Defaults to None.
+    Returns:
+    np.ndarray: The fitted parameters.
+    """
+    from scipy.optimize import curve_fit
+
+    # Define a local function for curve_fit: curve_fit expects
+    # a callable f(t, b0, b1, b2) with first arg = x, subsequent = params
+    def _fun_to_fit(xdataUpd, b0, b1, b2):
+        return f(np.asarray([b0, b1, b2]), xdataUpd)
+
+    if initial_guess is None:
+        initial_guess = [1.0, 1.0, 1.0]
+
+    # Perform the fit via non-linear regression
+    popt, _ = curve_fit(
+        _fun_to_fit,
+        xdata,
+        ydata,
+        p0=initial_guess,
+        nan_policy="omit",
+        method="trf",
+    )
+
+    return popt
