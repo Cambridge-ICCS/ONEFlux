@@ -9,7 +9,7 @@ from typing import Tuple
 import json
 from numpy.typing import NDArray
 from oneflux_steps.ustar_cp_python.fcBin import fcBin
-from oneflux_steps.ustar_cp_python.utilities import index_or_mark_array_update
+from oneflux_steps.ustar_cp_python.utilities import index_or_mark_array_update, nlinfit
 
 
 def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
@@ -374,6 +374,7 @@ def computeStandardizedScores(x):
     Returns:
         numpy.ndarray: A (n, 1) column vector containing the maximum absolute
         standardised score for each row."""
+
     mx = np.nanmedian(x, axis=0)  # Compute median ignoring NaNs
     iqr = fcNaniqr(x)
     x_norm = (x - mx) / iqr  # Standardize
@@ -404,27 +405,16 @@ def fitAnnualSineCurve(mt, Cp, iSelect):
         A 1D array of length 4:
           [offset, amplitude, phase, rSquared]
     """
+
     # Prepare the data
     xdata = np.array(mt)[iSelect]
     ydata = np.array(Cp)[iSelect]
-
-    # Define a local function for curve_fit: curve_fit expects
-    # a callable f(t, b0, b1, b2) with first arg = x, subsequent = params
-    def _annual_sine_for_curve_fit(t, b0, b1, b2):
-        return fcEqnAnnualSine(np.asarray([b0, b1, b2]), t)
 
     # Initial guess for [offset, amplitude, phase]
     initial_guess = [1.0, 1.0, 1.0]
 
     # Perform the fit via non-linear regression
-    popt, _ = curve_fit(
-        _annual_sine_for_curve_fit,
-        xdata,
-        ydata,
-        p0=initial_guess,
-        nan_policy="omit",
-        method="lm",
-    )
+    popt = nlinfit(xdata, ydata, fcEqnAnnualSine, initial_guess)
 
     # Compute predicted values for the fitted parameters
     predictedCp = fcEqnAnnualSine(np.asarray(popt), xdata)
