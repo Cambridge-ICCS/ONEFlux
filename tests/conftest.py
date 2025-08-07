@@ -94,6 +94,11 @@ class TestEngine(ABC):
         """Compare two values for equality in the representation used by this engine"""
         pass
 
+    @abstractmethod
+    def language(self) -> str:
+        """Return the language of this test engine."""
+        pass
+
 
 # Python TestEngine
 class PythonEngine(TestEngine):
@@ -161,8 +166,12 @@ class PythonEngine(TestEngine):
         else:
             return x == y
 
+    def language(self) -> str:
+        """Return the language of this test engine."""
+        return "python"
+
     def __getattribute__(self, name):
-        if name in ["convert", "unconvert", "equal", "_repr_pretty_"]:
+        if name in ["convert", "unconvert", "equal", "_repr_pretty_", "language"]:
             return object.__getattribute__(self, name)
 
         def newfunc(*args, **kwargs):
@@ -296,6 +305,7 @@ class MatlabEngine:
             (self.func._name == "convert")
             | (self.func._name == "unconvert")
             | (self.func._name == "equal")
+            | (self.func._name == "language")
         ):
             # Locally scoped definitions
             def _convert(x, index="to_python", fromFile=False):
@@ -321,6 +331,9 @@ class MatlabEngine:
             def _equal(x, y):
                 return compare_matlab_arrays(x, y)
 
+            def _language():
+                return "matlab"
+
             # Choose which function to call
             if self.func._name == "convert":
                 return _convert(*args, **kwargs)
@@ -328,6 +341,8 @@ class MatlabEngine:
                 return _equal(*args, **kwargs)
             elif self.func._name == "unconvert":
                 return _unconvert(*args, **kwargs)
+            elif self.func._name == "language":
+                return _language(*args, **kwargs)
 
         else:
             # Calls mostly going through to the MATLAB engine
