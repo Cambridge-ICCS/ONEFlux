@@ -29,7 +29,6 @@ def fcEqnAnnualSine(b: np.ndarray, t: np.ndarray) -> np.ndarray:
         raise ValueError("Coefficient array `b` must have exactly three elements.")
 
     # Compute the number of days per year based on year 2000
-
     n_days_per_year = 365.2425  # Evaluation of Matlab datenum(2000-1,12,31)/2000;
 
     # Calculate the angular frequency

@@ -10,7 +10,15 @@ function xNormX = computeStandardizedScores(x)
     %
     % By default, if a row has a NaN in one of its columns, that
     % can lead to xNormX(row)=NaN, since max(abs(...)) sees NaN.
-    %
+    
+    % if x is all nans write to a file called log.txt the number of nans
+    % and the number of rows in x
+    if all(isnan(x))
+         fid = fopen('mlog.txt', 'a');
+         fprintf(fid, 'All NaNs in x: %d rows\n', size(x));
+         fclose(fid);
+    end
+
     
     mx = nanmedian(x); 
     sx = fcNaniqr(x); 

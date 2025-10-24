@@ -167,6 +167,17 @@
 	
 %	Fit annual sine curve 
 	
+  fid = fopen('mlog.txt', 'a');
+  fprintf(fid, '-------------\n');
+    fprintf(fid, 'mt shape = %d\n', shape(mt));
+    fprintf(fid, 'mt = %s\n', mat2str(mt, 4));
+
+    fprintf(fid, 'Cp shape = %d\n', shape(Cp));
+    fprintf(fid, 'Cp = %s\n', mat2str(Cp, 4));
+
+    fprintf(fid, 'iSelect shape = %d\n', shape(iSelect));
+    fprintf(fid, 'iSelect = %s\n', mat2str(iSelect, 4));
+  
 	bSine=[1,1,1]; 
 	[bSine]=nlinfit(mt(iSelect),Cp(iSelect),'fcEqnAnnualSine',bSine); 
 	yHat=fcEqnAnnualSine(bSine,mt(iSelect)); r2=fcr2Calc(Cp(iSelect),yHat); 
@@ -176,6 +187,10 @@
 	bSine(3)=mod(bSine(3),365.25); 
 	sSine=[fcx2rowvec(bSine) r2]; 
 	
+  fid = fopen('mlog.txt', 'a');
+  fprintf(fid, 'sSine = %d\n', mat2str(sSine, 4));
+  fclose(fid);
+
 %	=======================================================================
 %	=======================================================================
 	

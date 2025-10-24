@@ -1,7 +1,8 @@
 from oneflux_steps.ustar_cp_python.utilities import size, jsondecode, ndims
 import numpy as np
 
-def fcReadFields(s : str | dict, field_name : str, *vargs) -> np.ndarray:
+
+def fcReadFields(s: str | dict, field_name: str, *vargs) -> np.ndarray:
     """
     Extracts the specified field from a structured array or JSON string.
 
@@ -12,25 +13,28 @@ def fcReadFields(s : str | dict, field_name : str, *vargs) -> np.ndarray:
     Returns:
     np.ndarray: Array containing the values of the specified field.
     """
-    # Decode the JSON string 
+    # Decode the JSON string
     if isinstance(s, str):
-      s_decoded = jsondecode(s)
+        s_decoded = jsondecode(s)
     else:
-      s_decoded = s
+        s_decoded = s
     # Computer the number of dimension (minimum 2)
     nd = ndims(s_decoded)
     # Compute the size
-    ns = size(s_decoded, b = 0, nargout=2)
+    ns = size(s_decoded, b=0, nargout=2)
+    if field_name == "Cp":
+        with open("plog.txt", "a") as f:
+            f.write(f"fcReadFields: {field_name} {ns} {nd}\n")
 
     # if s is not a structure array or list then wrap it up into a structured array
     # corresponding to the dimensionality
     if not isinstance(s_decoded, np.ndarray) and not isinstance(s_decoded, list):
         if nd == 2:
-          s_struct = np.array([[s_decoded]])
+            s_struct = np.array([[s_decoded]])
         elif nd == 3:
-          s_struct = np.array([[[s_decoded]]])
+            s_struct = np.array([[[s_decoded]]])
         else:
-          s_struct = s_decoded
+            s_struct = s_decoded
     else:
         s_struct = s_decoded
 

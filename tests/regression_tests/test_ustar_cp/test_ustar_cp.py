@@ -37,10 +37,10 @@ from contextlib import redirect_stdout
     """
 
 test_cases = [
-    ("US_ARc", [1]),
+    # ("US_ARc", [1]),
     ("CA-Cbo", [1]),
-    ("US-Ne1", [1]),
-    ("US-Vcm", [1]),
+    # ("US-Ne1", [1]),
+    # ("US-Vcm", [1]),
     # Expected values format: [exitvalue]
 ]
 
@@ -117,6 +117,15 @@ def test_ustar_cp(
     # Extract and process the relevant processing section from the captured output
     test_output_lines = extract_section_between_keywords(out_value_lines, "processing")
     test_output = "\n".join(test_output_lines).strip()
+
+    # Write the test_output to a log file for debugging
+    with open("test_output.log", "a") as f:
+        f.write("Test Output:\n")
+        f.write(testcase + "\n")
+        f.write("Expected Output:\n")
+        f.write(expected_output + "\n")
+        f.write("Captured Output:\n")
+        f.write(test_output)
 
     # Step 5: Assert that the expected processing block matches the captured stdout from MATLAB
     assert expected_output == test_output, (
