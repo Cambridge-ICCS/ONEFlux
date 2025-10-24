@@ -409,6 +409,9 @@ def fitAnnualSineCurve(mt, Cp, iSelect):
     # Prepare the data
     xdata = np.array(mt)[iSelect]
     ydata = np.array(Cp)[iSelect]
+    # Reshape to row vectors
+    xdata = xdata.reshape(-1)
+    ydata = ydata.reshape(-1)
 
     # Initial guess for [offset, amplitude, phase]
     initial_guess = [1.0, 1.0, 1.0]
