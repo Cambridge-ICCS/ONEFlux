@@ -805,3 +805,55 @@ def parse_testcase(test_case: dict, path_to_artifacts: str):
                     outputs[key] = value
 
     return inputs, outputs
+
+
+def validate_against_site_data(
+    test_engine, fun_name, input_names, output_names, artifacts_dir, inner_function
+):
+    """
+    Test a function against site data stored in CSV files.
+    Args:
+        input_names (list): List of input variable names.
+        output_names (list): List of output variable names.
+        artifacts_dir (str): Path to the directory containing site data.
+        inner_function (function): The function to be tested.
+    """
+    # Get all directories within artifacts_dir
+    for site_year in os.listdir(artifacts_dir):
+        # print(site_year)
+        if os.path.isdir(f"{artifacts_dir}/{site_year}"):
+            input_data = {}
+            for name in input_names:
+                path_to_data = f"{artifacts_dir}/{site_year}/input_{name}.csv"
+                # check if the file is zero bytes or not
+                if os.path.getsize(path_to_data) != 0:
+                    column = (
+                        pd.read_csv(path_to_data, header=None).iloc[:, :].to_numpy()
+                    )
+                    input_data[name] = test_engine.convert(
+                        column.tolist(), fromFile=True
+                    )
+                else:
+                    input_data[name] = test_engine.convert([])
+
+            output_data = {}
+            for name in output_names:
+                path_to_data = f"{artifacts_dir}/{site_year}/output_{name}.csv"
+                # check if the file is zero bytes or not
+                if os.path.getsize(path_to_data) != 0:
+                    column = (
+                        pd.read_csv(path_to_data, header=None).iloc[:, :].to_numpy()
+                    )
+                    output_data[name] = test_engine.convert(column.tolist())
+                else:
+                    output_data[name] = test_engine.convert([])
+
+            # Run the function
+            result = inner_function(input_data)
+
+            if len(output_names) == 1:
+                result = [result]
+            for i, name in enumerate(output_names):
+                assert test_engine.equal(result[i], output_data[name]), (
+                    f"For {fun_name}, mismatch in {name} for site {site_year}"
+                )
