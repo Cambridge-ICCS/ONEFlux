@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+from tests.conftest import parse_testcase, validate_against_site_data
 
 
 @pytest.mark.parametrize(
@@ -56,3 +57,21 @@ def test_computeStandardizedScores(test_engine, input_data, expected_xNormX):
     )
 
     assert test_engine.equal(xNormX, test_engine.convert(expected_xNormX))
+
+
+def test_against_testcases(test_engine):
+    input_names = ["regressionMatrix"]
+    output_names = ["standardizedScores"]
+    artifacts_dir = "tests/test_artifacts/computeStandardizedScores_artifacts/"
+
+    def inner_function(input_data):
+        return test_engine.computeStandardizedScores(input_data["regressionMatrix"])
+
+    validate_against_site_data(
+        test_engine,
+        "computeStandardizedScores",
+        input_names,
+        output_names,
+        artifacts_dir,
+        inner_function,
+    )
