@@ -844,7 +844,9 @@ def validate_against_site_data(
                     column = (
                         pd.read_csv(path_to_data, header=None).iloc[:, :].to_numpy()
                     )
-                    output_data[name] = test_engine.convert(column.tolist())
+                    output_data[name] = test_engine.convert(
+                        column.tolist(), fromFile=True
+                    )
                 else:
                     output_data[name] = test_engine.convert([])
 
