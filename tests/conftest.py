@@ -156,7 +156,10 @@ class PythonEngine(TestEngine):
             # otherwise
             else:
                 # Handle NaN comparisons
-                return np.allclose(x, y, equal_nan=True)
+                if x.shape != y.shape:
+                    return False
+                else:
+                    return np.allclose(x, y, equal_nan=True)
         elif (isinstance(x, list) and isinstance(y, list)) or (
             isinstance(x, tuple) and isinstance(y, tuple)
         ):
@@ -813,6 +816,8 @@ def validate_against_site_data(
     """
     Test a function against site data stored in CSV files.
     Args:
+        test_engine (TestEngine): The test engine to use for conversions and comparisons.
+        fun_name (str): The name of the function being tested.
         input_names (list): List of input variable names.
         output_names (list): List of output variable names.
         artifacts_dir (str): Path to the directory containing site data.
