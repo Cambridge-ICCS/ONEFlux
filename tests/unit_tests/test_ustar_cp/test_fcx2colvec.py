@@ -19,7 +19,7 @@ import numpy as np
             [[1], [5], [3], [7], [2], [6], [4], [8]],  # Column-major flattening
         ),
         # Case 5: Empty Array
-        ([], []),
+        ([], np.reshape(np.array([]), [0, 1])),
         # Case 6: Single Element
         ([5], [[5]]),
         # Case 7: NaN Data
