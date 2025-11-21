@@ -23,5 +23,6 @@ function xNormX = computeStandardizedScores(x)
     mx = nanmedian(x); 
     sx = fcNaniqr(x); 
     xNorm = (x - mx) ./ sx; 
+    % returns a column vector containing the maximum value of each row.
     xNormX = max(abs(xNorm), [], 2); 
 end

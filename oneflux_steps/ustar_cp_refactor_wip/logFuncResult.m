@@ -27,7 +27,7 @@ function varargout = logFuncResult(filename, f, metadata, varargin)
 
     % cpdFindChangePoint does not take cSitreYr in as an argument, so could be passed in using varargin.
 
-    % Uusage. Replace
+    % Usage. Replace
 
     %   [xCp2,xStats2, xCp3,xStats3] = ...
   	% cpdEvaluateUStarTh4Season20100901 ...

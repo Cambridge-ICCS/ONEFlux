@@ -413,6 +413,9 @@ def computeStandardizedScores(x):
     mx = np.nanmedian(x, axis=0)  # Compute median ignoring NaNs
     iqr = fcNaniqr(x)
     x_norm = (x - mx) / iqr  # Standardize
+    with open("plog.txt", "a") as f:
+        f.write(str(x))
+        f.write(f"All NaNs in x: {x_norm.shape} rows\n")
 
     # if x is all nans write to a file called plog.txt the number of nans
     # and the number of rows
@@ -420,9 +423,14 @@ def computeStandardizedScores(x):
         with open("plog.txt", "a") as f:
             f.write(f"All NaNs in x_norm: {x.shape} rows\n")
 
-    return np.nanmax(
-        np.abs(x_norm), axis=1, keepdims=True
-    )  # Max absolute standardized score per row
+    # return a column vector of the maximum absolute standardized score for each row
+    # preserving NaNs
+
+    res = np.nanmax(np.abs(x_norm), axis=1, keepdims=True)
+    with open("plog.txt", "a") as f:
+        f.write(f"res shape: {res.shape} rows\n")
+
+    return res  # Max absolute standardized score per row
 
 
 def fitAnnualSineCurve(mt, Cp, iSelect):

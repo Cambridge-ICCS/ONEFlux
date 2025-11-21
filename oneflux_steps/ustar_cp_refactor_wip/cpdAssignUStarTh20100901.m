@@ -132,7 +132,19 @@ else
 end
 
 % Exclude Outliers
-standardizedScores = computeStandardizedScores(regressionMatrix);
+metadata = struct();
+metadata.siteFile = 'US-Cbo'; % Site file name
+metadata.oneFluxDir = '/Users/dorchard/Documents/iccs/ONEFlux';
+metadata.relArtifactsDir = 'tests/test_artifacts';
+metadata.frequency = 10; % Log every 10th call
+metadata.offset = 0; % Start logging from the first call
+
+%standardizedScores = computeStandardizedScores(regressionMatrix);
+
+metadata.inputNames = {'regressionMatrix'};
+metadata.outputNames = {'standardizedScores'};
+standardizedScores = logFuncResult('log.json', @computeStandardizedScores, metadata, regressionMatrix)
+
 [outlierFlag, outlierIndices] = identifyOutliers(standardizedScores, 5);
 
 [selectedIndices, numSelected, selectedPointsFlag] = ...

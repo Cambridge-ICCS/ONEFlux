@@ -12,7 +12,6 @@ from tests.conftest import parse_testcase, validate_against_site_data
             [[1, 2, 3], [4, 5, 6]],
             [[np.nan], [np.nan]],
         ),
-        #
         # Test 2: 3x3 matrix, no NaNs
         (
             [

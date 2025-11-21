@@ -861,6 +861,12 @@ def validate_against_site_data(
             if len(output_names) == 1:
                 result = [result]
             for i, name in enumerate(output_names):
+                with open("plog.txt", "a") as f:
+                    f.write(f"{result[i]}\n")
+                    f.write(f"{output_data[name]}\n")
+                    f.write(
+                        test_engine.equal(result[i], output_data[name]).__str__() + "\n"
+                    )
                 assert test_engine.equal(result[i], output_data[name]), (
                     f"For {fun_name}, mismatch in {name} for site {site_year}"
                 )
