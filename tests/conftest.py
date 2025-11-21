@@ -160,9 +160,13 @@ class PythonEngine(TestEngine):
                     # If x and y are either column vectors or row vectors, i.e.
                     # 2 dimension but of size 1 in one dimension, then use
                     # all close
-                    if (len(x.shape) == 2 and len(y.shape) == 2) and (
-                        (1 in x.shape)
-                        and (1 in y.shape)
+                    if (
+                        len(x.shape) == 2
+                        and len(y.shape) == 2
+                        and (
+                            ((1 in x.shape) and (1 in y.shape))
+                            or ((1 in y.shape) and (1 in x.shape))
+                        )
                         and (max(x.shape) == max(y.shape))
                     ):
                         return np.allclose(x.flatten(), y.flatten(), equal_nan=True)
