@@ -419,7 +419,7 @@ def to_matlab_type(data: Any) -> Any:
         if data.dtype == bool:
             return matlab.logical(data.tolist())
         elif np.isreal(data).all():
-            return matlab.double(data.tolist())
+            return matlab.double(data.astype(np.float64))
         else:
             return data.tolist()  # Convert non-numeric arrays to lists
     elif isinstance(data, list):
