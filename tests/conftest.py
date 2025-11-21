@@ -462,10 +462,14 @@ def compare_matlab_arrays(result, expected):
             return False
 
     if isinstance(result, matlab.double):
-        return np.allclose(result, expected, equal_nan=True)
+        if np.array(result).shape != np.array(expected).shape:
+            return False
+        else:
+            return np.allclose(result, expected, equal_nan=True)
 
     # Recursive case
-    return all(compare_matlab_arrays(r, e) for r, e in zip(result, expected))
+    else:
+        return all(compare_matlab_arrays(r, e) for r, e in zip(result, expected))
 
 
 # </MATLAB>
