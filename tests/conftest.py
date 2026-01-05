@@ -106,7 +106,17 @@ class PythonEngine(TestEngine):
         return "Python Test Engine"
 
     def convert(self, x, index="to_matlab", fromFile=False):
-        """Convert input to a compatible type."""
+        """Convert input to a compatible type.
+
+        Args:
+            x: Input data to be converted.
+            index (str): Direction of conversion, either "to_matlab" or "to_python", where
+              "to_python" converts from MATLAB-style 1-based indexing to Python-style 0-based indexing.
+              The default is "to_matlab".
+
+            fromFile (bool): Indicates if the data is being read from a file, affecting
+                             how lists are handled (transposition for MATLAB layout).
+        """
         if x is None:
             raise ValueError("Input cannot be None")
         if index == "to_python":
