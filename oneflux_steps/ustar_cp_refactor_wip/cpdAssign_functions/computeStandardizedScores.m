@@ -6,6 +6,7 @@ function xNormX = computeStandardizedScores(x)
     %    - mx = nanmedian(x)   -> 1 x M median (column-wise)
     %    - sx = fcNaniqr(x)    -> 1 x M IQR (column-wise)
     %    - xNorm = (x - mx) ./ sx
+    % Result is
     %    - xNormX = max(abs(xNorm), [], 2) -> N x 1 
     %
     % By default, if a row has a NaN in one of its columns, that
@@ -15,6 +16,7 @@ function xNormX = computeStandardizedScores(x)
     % and the number of rows in x
     if all(isnan(x))
          fid = fopen('mlog.txt', 'a');
+         fprintf(fid, "computerstandardizedScores: All NaNs in x\n");
          fprintf(fid, 'All NaNs in x: %d rows\n', size(x));
          fclose(fid);
     end

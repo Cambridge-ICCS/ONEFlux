@@ -22,9 +22,10 @@ def fcReadFields(s: str | dict, field_name: str, *vargs) -> np.ndarray:
     nd = ndims(s_decoded)
     # Compute the size
     ns = size(s_decoded, b=0, nargout=2)
-    if field_name == "Cp":
-        with open("plog.txt", "a") as f:
-            f.write(f"fcReadFields: {field_name} {ns} {nd}\n")
+    # TODO: remove
+    # if field_name == "Cp":
+    #     with open("plog.txt", "a") as f:
+    #         f.write(f"fcReadFields: {field_name} {ns} {nd}\n")
 
     # if s is not a structure array or list then wrap it up into a structured array
     # corresponding to the dimensionality

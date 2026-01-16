@@ -270,10 +270,11 @@ def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
     # -------------------------------------------------------------------------
     # 11) Configure Regression Matrix
 
-    with open("plog.txt", "a") as f:
-        f.write(f"changePoint: {changePoint.shape} rows\n")
-        f.write(f"b1: {b1.shape} rows\n")
-        f.write(f"cib1: {cib1.shape} rows\n")
+    # TODO: remove
+    # with open("plog.txt", "a") as f:
+    #     f.write(f"changePoint: {changePoint.shape} rows\n")
+    #     f.write(f"b1: {b1.shape} rows\n")
+    #     f.write(f"cib1: {cib1.shape} rows\n")
     if numParameters == 2:
         regressionMatrix = np.column_stack([Cp, b1, cib1])
     else:
@@ -398,24 +399,32 @@ def computeStandardizedScores(x):
     returns the maximum absolute standardized score for each row.
 
     Args:
-        x (np.ndarray): Input data matrix of shape (n, m).
+        x (np.ndarray): Input data matrix of shape (m, n).
 
     Returns:
-        numpy.ndarray: A (n, 1) column vector containing the maximum absolute
+        numpy.ndarray: A (1, n) row vector containing the maximum absolute
         standardised score for each row."""
 
     # if x is all nans write to a file called plog.txt the number of nans
     # and the number of rows
     if np.all(np.isnan(x)):
         with open("plog.txt", "a") as f:
+            f.write("computeStandardizedScores called\n")
             f.write(f"All NaNs in x: {x.shape} rows\n")
 
-    mx = np.nanmedian(x, axis=0)  # Compute median ignoring NaNs
+    # mx is a 1-dimensional matrix of size n
+    # mx.shape = (n,)
+    mx = np.nanmedian(x, axis=1)  # Compute median ignoring NaNs
+    with open("plog.txt", "a") as f:
+        f.write(f"mx shape is= {mx.shape}")
     iqr = fcNaniqr(x)
+    # make mx into a 2-dimensional matrix
+    # mx.shape = (n,1)
+    mx = mx[:, np.newaxis]
     x_norm = (x - mx) / iqr  # Standardize
     with open("plog.txt", "a") as f:
         f.write(str(x))
-        f.write(f"All NaNs in x: {x_norm.shape} rows\n")
+        f.write(f"x_norm x: {x_norm.shape} rows\n")
 
     # if x is all nans write to a file called plog.txt the number of nans
     # and the number of rows
@@ -454,10 +463,11 @@ def fitAnnualSineCurve(mt, Cp, iSelect):
         A 1D array of length 4:
           [offset, amplitude, phase, rSquared]
     """
-    with open("plog.txt", "a") as f:
-        f.write(f"-----\n mt shape: {mt.shape}\nmt: {mt} rows\n")
-        f.write(f"Cp shape: {Cp.shape}\n Cp: {Cp}\n")
-        f.write(f"iSelect shape: {iSelect.shape}\n iSelect: {iSelect} rows\n")
+    # TODO: remove
+    # with open("plog.txt", "a") as f:
+    #     f.write(f"-----\n mt shape: {mt.shape}\nmt: {mt} rows\n")
+    #     f.write(f"Cp shape: {Cp.shape}\n Cp: {Cp}\n")
+    #     f.write(f"iSelect shape: {iSelect.shape}\n iSelect: {iSelect} rows\n")
     # Prepare the data
     xdata = np.array(mt)[iSelect]
     ydata = np.array(Cp)[iSelect]
@@ -469,14 +479,16 @@ def fitAnnualSineCurve(mt, Cp, iSelect):
     initial_guess = [1.0, 1.0, 1.0]
 
     # Perform the fit via non-linear regression
-    with open("plog.txt", "a") as f:
-        f.write(f"xdata shape: {xdata.shape}\nxdata: {xdata} rows\n")
-        f.write(f"ydata shape: {ydata.shape}\nydata: {ydata} rows\n")
+    # TODO: remove
+    # with open("plog.txt", "a") as f:
+    #     f.write(f"xdata shape: {xdata.shape}\nxdata: {xdata} rows\n")
+    #     f.write(f"ydata shape: {ydata.shape}\nydata: {ydata} rows\n")
     popt = nlinfit(xdata, ydata, fcEqnAnnualSine, initial_guess)
     # matlab_engine.nlinfit(xdata, ydata, "fcEqnAnnualSine", initial_guess)
 
-    with open("plog.txt", "a") as f:
-        f.write(f"-----\npopt.shape: {popt.shape}\npopt: {popt} rows-------\n")
+    # TODO: remove
+    # with open("plog.txt", "a") as f:
+    #     f.write(f"-----\npopt.shape: {popt.shape}\npopt: {popt} rows-------\n")
 
     # Compute predicted values for the fitted parameters
     predictedCp = fcEqnAnnualSine(np.asarray(popt), xdata)
@@ -490,8 +502,9 @@ def fitAnnualSineCurve(mt, Cp, iSelect):
     # Return fitted coefficients plus the R-squared value
     # List containing ndarray to make output format match matlab for comparative testing
     sSine = np.array([[popt[0], popt[1], popt[2], r2]], dtype=float)
-    with open("plog.txt", "a") as f:
-        f.write(f"sSine: {sSine}\n")
+    # TODO: remove
+    # with open("plog.txt", "a") as f:
+    #     f.write(f"sSine: {sSine}\n")
     return sSine
 
 

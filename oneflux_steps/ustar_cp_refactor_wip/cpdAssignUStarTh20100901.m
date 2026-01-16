@@ -77,11 +77,12 @@ end
 validMeasurementIndices = find(~isnan(mt)); 
 numValidMeasurements = length(validMeasurementIndices); 
 
-fid = fopen('mlog.txt', 'a');
-fprintf(fid, '* Cp = %d\n', size(Cp));
-fprintf(fid, '* b1 = %d\n', size(b1));
-fprintf(fid, '* c2 = %d\n', size(c2));
-fclose(fid);
+% TODO: remove
+% fid = fopen('mlog.txt', 'a');
+% fprintf(fid, '* Cp = %d\n', size(Cp));
+% fprintf(fid, '* b1 = %d\n', size(b1));
+% fprintf(fid, '* c2 = %d\n', size(c2));
+% fclose(fid);
 nonSignificantIndices = find(significantFlag == 0 & ~isnan(b1 + c2 + Cp)); 
 numNonSignificant = length(nonSignificantIndices); 
 

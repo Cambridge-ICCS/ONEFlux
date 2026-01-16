@@ -13,12 +13,13 @@
 		end
 	
 	nd=ndims(s); ns=size(s); x=NaN*ones(ns); 
-	if (FieldName == "Cp")
-    fid = fopen('mlog.txt', 'a');
-    fprintf(fid, 'nd = %d\n', nd);
-    fprintf(fid, 'ns = %d\n', ns);
-    fclose(fid);
-  end
+  % TODO: remove
+	% if (FieldName == "Cp")
+  %   fid = fopen('mlog.txt', 'a');
+  %   fprintf(fid, 'nd = %d\n', nd);
+  %   fprintf(fid, 'ns = %d\n', ns);
+  %   fclose(fid);
+  % end
 	switch nd; 
 		case 2; 
 			for i=1:ns(1); 
