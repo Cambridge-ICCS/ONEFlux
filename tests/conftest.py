@@ -165,20 +165,11 @@ class PythonEngine(TestEngine):
                 )
             # otherwise
             else:
-                # Handle NaN comparisons
                 if x.shape != y.shape:
-                    # If x and y are either column vectors or row vectors, i.e.
-                    # 2 dimension but of size 1 in one dimension, then use
-                    # all close
-                    if (
-                        len(x.shape) == 2
-                        and len(y.shape) == 2
-                        and (
-                            ((1 in x.shape) and (1 in y.shape))
-                            or ((1 in y.shape) and (1 in x.shape))
-                        )
-                        and (max(x.shape) == max(y.shape))
-                    ):
+                    # Handle 1D vs 2D comparison (e.g., (n,) vs (1, n) or (n, 1))
+                    # Flatten both and compare if they have the same number of elements
+                    # TODO: still need to work out whether this is always a good idea
+                    if x.size == y.size:
                         return np.allclose(x.flatten(), y.flatten(), equal_nan=True)
                     else:
                         return False
@@ -345,7 +336,7 @@ class MatlabEngine:
                     elif isinstance(x, list):
                         x = np.asarray(x) + 1
                     print("After conversion: ", x)
-                return to_matlab_type(x)
+                return to_matlab_type(x, fromFile=fromFile)
 
             def _unconvert(x):
                 if isinstance(x, matlab.double):
@@ -357,6 +348,66 @@ class MatlabEngine:
 
             def _equal(x, y):
                 return compare_matlab_arrays(x, y)
+
+            # Helper function to compare MATLAB double arrays element-wise, handling NaN comparisons
+            def compare_matlab_arrays(result, expected):
+                if isinstance(result, float):
+                    # Floating point equality using numpy
+                    return np.isclose(result, expected, equal_nan=True)
+
+                if not hasattr(result, "__len__") or not hasattr(expected, "__len__"):
+                    return np.allclose(result, expected, equal_nan=True)
+
+                if isinstance(result, dict):
+                    if not isinstance(expected, dict):
+                        return False
+                    if set(result.keys()) != set(expected.keys()):
+                        return False
+                    return all(
+                        compare_matlab_arrays(result[k], expected[k])
+                        for k in result.keys()
+                    )
+
+                if len(result) != len(expected):
+                    # log the shapes to file mtestlog.txt
+                    with open("mtestlog.txt", "a") as log_file:
+                        log_file.write(
+                            f"Lengths not the same result {len(result)}, expected {len(expected)}"
+                        )
+                    # Potentially we are in the situation where the MATLAB is wrapped in an extra layer of array
+                    if isinstance(result, matlab.double) and len(result) == 1:
+                        result = result[0]
+                        return all(
+                            compare_matlab_arrays(r, e)
+                            for r, e in zip(result, expected)
+                        )
+                    else:
+                        return False
+
+                if isinstance(result, matlab.double):
+                    # log the shapes to file mtestlog.txt
+                    with open("mtestlog.txt", "a") as log_file:
+                        log_file.write(
+                            f"Comparing shapes: result {np.array(result).shape}, expected {np.array(expected).shape}\n"
+                        )
+                    if np.array(result).shape != np.array(expected).shape:
+                        return False
+                    else:
+                        return np.allclose(result, expected, equal_nan=True)
+
+                # Recursive case
+                else:
+                    # log the shapes to file mtestlog.txt
+                    with open("mtestlog.txt", "a") as log_file:
+                        log_file.write(
+                            f"result type = {type(result)}, expected type = {type(expected)}\n"
+                        )
+                        log_file.write(
+                            f"FALL THROUGH: Comparing shapes: result {np.array(result).shape}, expected {np.array(expected).shape}\n"
+                        )
+                    return all(
+                        compare_matlab_arrays(r, e) for r, e in zip(result, expected)
+                    )
 
             def _language():
                 return "matlab"
@@ -406,7 +457,7 @@ def mf_factory(cls, *args, **kwargs):
 MatlabFunc.__new__ = mf_factory
 
 
-def to_matlab_type(data: Any) -> Any:
+def to_matlab_type(data: Any, fromFile=False) -> Any:
     """
     Converts various Python data types to their MATLAB equivalents.
 
@@ -426,6 +477,10 @@ def to_matlab_type(data: Any) -> Any:
             )  # Recursively handle nested structures
         return matlab_struct
     elif isinstance(data, np.ndarray):
+        # Transponse np arrays when they are not coming from afile
+        if not (fromFile):
+            data = np.transpose(data)
+
         if data.dtype == bool:
             return matlab.logical(data.tolist())
         elif np.isreal(data).all():
@@ -433,9 +488,16 @@ def to_matlab_type(data: Any) -> Any:
         else:
             return data.tolist()  # Convert non-numeric arrays to lists
     elif isinstance(data, list):
+        # For non-file data, transpose first
+        if not (fromFile):
+            np_array = np.array(data)
+            np_array = np.transpose(np_array)
+            data = np_array.tolist()
+
         # Convert Python list to MATLAB double array if all elements are numbers
         if all(isinstance(elem, (bool)) for elem in flatten(data)):
             return matlab.logical(data)
+
         elif all(isinstance(elem, (int, float)) for elem in flatten(data)):
             return matlab.double(data)
         else:
@@ -445,41 +507,6 @@ def to_matlab_type(data: Any) -> Any:
         return matlab.double([data])  # Convert single numbers
     else:
         return data  # If the data type is already MATLAB-compatible
-
-
-# Helper function to compare MATLAB double arrays element-wise, handling NaN comparisons
-def compare_matlab_arrays(result, expected):
-    if isinstance(result, float):
-        # Floating point equality using numpy
-        return np.isclose(result, expected, equal_nan=True)
-
-    if not hasattr(result, "__len__") or not hasattr(expected, "__len__"):
-        return np.allclose(result, expected, equal_nan=True)
-
-    if isinstance(result, dict):
-        if not isinstance(expected, dict):
-            return False
-        if set(result.keys()) != set(expected.keys()):
-            return False
-        return all(compare_matlab_arrays(result[k], expected[k]) for k in result.keys())
-
-    if len(result) != len(expected):
-        # Potentially we are in the situation where the MATLAB is wrapped in an extra layer of array
-        if isinstance(result, matlab.double) and len(result) == 1:
-            result = result[0]
-            return all(compare_matlab_arrays(r, e) for r, e in zip(result, expected))
-        else:
-            return False
-
-    if isinstance(result, matlab.double):
-        if np.array(result).shape != np.array(expected).shape:
-            return False
-        else:
-            return np.allclose(result, expected, equal_nan=True)
-
-    # Recursive case
-    else:
-        return all(compare_matlab_arrays(r, e) for r, e in zip(result, expected))
 
 
 # </MATLAB>
@@ -889,12 +916,6 @@ def validate_against_site_data(
             if len(output_names) == 1:
                 result = [result]
             for i, name in enumerate(output_names):
-                with open("plog.txt", "a") as f:
-                    f.write(f"{result[i]}\n")
-                    f.write(f"{output_data[name]}\n")
-                    f.write(
-                        test_engine.equal(result[i], output_data[name]).__str__() + "\n"
-                    )
                 assert test_engine.equal(result[i], output_data[name]), (
                     f"For {fun_name}, mismatch in {name} for site {site_year}"
                 )
