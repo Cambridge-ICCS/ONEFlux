@@ -6,10 +6,13 @@ import numpy as np
 import pandas as pd
 import copy
 from oneflux_steps.ustar_cp_python.utilities import transpose
-from oneflux_steps.ustar_cp_python.cpdBootstrap import cpdBootstrapUStarTh4Season20100901
 from oneflux_steps.ustar_cp_python.cpdAssignUStarTh import cpdAssignUStarTh20100901
+from oneflux_steps.ustar_cp_python.cpdBootstrap import (
+    cpdBootstrapUStarTh4Season20100901,
+)
 import argparse
 import sys
+
 
 def launch(input_folder: str, output_folder: str) -> int:
     """
@@ -18,13 +21,13 @@ def launch(input_folder: str, output_folder: str) -> int:
     This function:
     - Calls checkPath to ensure the input and output folder paths are valid.
     - Searches for input files matching '*_qca_ustar_*.csv' in input_folder.
-    - For each file, reads header info, parses data, checks if PPFD is valid or 
-      needs to be derived from SW_IN, replaces missing values with NaN, ensures 
-      key columns aren't empty, then computes time array and calls further 
-      bootstrapping/assigning routines (cpdBootstrapUStarTh4Season20100901, 
+    - For each file, reads header info, parses data, checks if PPFD is valid or
+      needs to be derived from SW_IN, replaces missing values with NaN, ensures
+      key columns aren't empty, then computes time array and calls further
+      bootstrapping/assigning routines (cpdBootstrapUStarTh4Season20100901,
       cpdAssignUStarTh20100901, etc.).
     - Saves results and updates an error code if any step fails.
-    
+
     Parameters
     ----------
     :param input_folder: Path to the folder containing input files.
@@ -46,7 +49,7 @@ def launch(input_folder: str, output_folder: str) -> int:
     PPFD_INDEX = 3
     RG_INDEX = 4
 
-    input_columns_names = ['USTAR', 'NEE', 'TA', 'PPFD_IN', 'SW_IN']
+    input_columns_names = ["USTAR", "NEE", "TA", "PPFD_IN", "SW_IN"]
 
     print("\n\nUstar Threshold Computation by Alan Barr")
     print(f"input in {input_folder}")
@@ -58,14 +61,12 @@ def launch(input_folder: str, output_folder: str) -> int:
 
     print(f"{len(d)} files founded.\n")
 
-    
     for n in range(len(d)):
-
-        print(f"processing n.{(n+1):02d}, {os.path.basename(d[n])}...", end="")
+        print(f"processing n.{(n + 1):02d}, {os.path.basename(d[n])}...", end="")
 
         # Try to open the file
         try:
-            with open(d[n], 'r') as fid:
+            with open(d[n], "r") as fid:
                 # Read all lines
                 dataset = fid.read().splitlines()
         except OSError:
@@ -74,36 +75,46 @@ def launch(input_folder: str, output_folder: str) -> int:
             continue
 
         # Parse the header
-        errorCode, site, year, lat, lon, timezone, htower, timeres, sc_negl, notes = notValidHeader(dataset)
+        errorCode, site, year, lat, lon, timezone, htower, timeres, sc_negl, notes = (
+            notValidHeader(dataset)
+        )
         if errorCode == 1:
             exitcode = 1
             continue
 
         i = 9
+        notes = [notes]
         while True:
             if i >= len(dataset):
                 break
             # Check if the line starts with "notes" (case-insensitive, first 5 chars)
-            if not dataset[i].lower().startswith('notes'):
+            if not dataset[i].lower().startswith("notes"):
                 break
-            temp = dataset[i].replace('notes,', '')
+            temp = dataset[i].replace("notes,", "")
             # Prepending in a list context
-            notes = temp + notes
+            # notes = temp + notes # TODO: Remove this line
+            notes.append(temp)
             i += 1
 
         filename = os.path.basename(d[n])
 
         # Load the data
-        header, data, columns_index = loadData(input_folder, filename, notes, input_columns_names)
+        header, data, columns_index = loadData(
+            input_folder, filename, notes, input_columns_names
+        )
 
         # Map column names to indices
-        errorCode, columns_index = mapColumnNamesToIndices(header, input_columns_names, notes, columns_index)
+        errorCode, columns_index = mapColumnNamesToIndices(
+            header, input_columns_names, notes, columns_index
+        )
         if errorCode == 1:
             exitcode = 1
             continue
 
         # Check if PPFD column exists (or is derived from RG)
-        ppfd_from_rg, errorCode = ppfdColExists(PPFD_INDEX, columns_index, input_columns_names)
+        ppfd_from_rg, errorCode = ppfdColExists(
+            PPFD_INDEX, columns_index, input_columns_names
+        )
         if errorCode == 1:
             exitcode = 1
             continue
@@ -113,9 +124,16 @@ def launch(input_folder: str, output_folder: str) -> int:
         NEE = data.iloc[:, columns_index[NEE_INDEX]]
         Ta = data.iloc[:, columns_index[TA_INDEX]]
         Rg = data.iloc[:, columns_index[RG_INDEX]]
+        # print(uStar) # TODO: Remove this line
+        uStar = uStar.to_numpy()
+        NEE = NEE.to_numpy()
+        Ta = Ta.to_numpy()
+        Rg = Rg.to_numpy()
 
         # Check if all PPFD values are invalid
-        PPFD, ppfd_from_rg = areAllPpfdValuesInvalid(ppfd_from_rg, columns_index, PPFD_INDEX, data)
+        PPFD, ppfd_from_rg = areAllPpfdValuesInvalid(
+            ppfd_from_rg, columns_index, PPFD_INDEX, data
+        )
 
         # If PPFD should be derived from Rg
         if ppfd_from_rg == 1:
@@ -132,10 +150,12 @@ def launch(input_folder: str, output_folder: str) -> int:
         if errorCode == 1:
             exitcode = 1
             continue
-
+        # print(uStar) # TODO: Remove this line
+        # print(len(uStar)) # TODO: Remove this line
         # Create time array
         t = createTimeArray(uStar)
-
+        # print(t) # TODO: Remove this line
+        # print(len(t)) # TODO: Remove this line
         # Flag nighttime periods
         fNight = Rg < 5
 
@@ -156,12 +176,23 @@ def launch(input_folder: str, output_folder: str) -> int:
             t, NEE, uStar, T, fNight, fPlot, cSiteYr, nBoot
         )
 
-        Cp, n_val, tW, CpW, cMode, cFailure, fSelect, sSine, FracSig, FracModeD, FracSelect = \
-            cpdAssignUStarTh20100901(Stats2, fPlot, cSiteYr)
-
+        (
+            Cp,
+            n_val,
+            tW,
+            CpW,
+            cMode,
+            cFailure,
+            fSelect,
+            sSine,
+            FracSig,
+            FracModeD,
+            FracSelect,
+        ) = cpdAssignUStarTh20100901(Stats2, fPlot, cSiteYr)
         # Save result
         # Pass Python's current time now using `datetime`
         from datetime import datetime
+
         current_time = datetime.now()
         error_str, cSiteYr, errorCode = saveResult(
             cFailure, cSiteYr, output_folder, site, year, Cp, current_time, notes
@@ -171,11 +202,34 @@ def launch(input_folder: str, output_folder: str) -> int:
             continue
 
         # Clear references to variables at the end of iteration
-        del (uStar, cFailure, cMode, cSiteYr, fNight, fPlot, fSelect, n_val,
-             nBoot, sSine, t, tW, Cp3, CpW, FracModeD, FracSelect, FracSig,
-             NEE, PPFD, Rg, Stats2, Stats3, T, Ta, Cp, Cp2)
-
-        print("done.")
+        del (
+            uStar,
+            cFailure,
+            cMode,
+            cSiteYr,
+            fNight,
+            fPlot,
+            fSelect,
+            n_val,
+            nBoot,
+            sSine,
+            t,
+            tW,
+            Cp3,
+            CpW,
+            FracModeD,
+            FracSelect,
+            FracSig,
+            NEE,
+            PPFD,
+            Rg,
+            Stats2,
+            Stats3,
+            T,
+            Ta,
+            Cp,
+            Cp2,
+        )
 
     # End of for loop
     return exitcode
@@ -252,7 +306,9 @@ def checkPath(input_folder: str, output_folder: str) -> Tuple[str, str]:
     return input_folder_fixed, output_folder_fixed
 
 
-def notValidHeader(dataset: List[str]) -> Tuple[int, str, str, str, str, str, str, str, str, str]:
+def notValidHeader(
+    dataset: List[str],
+) -> Tuple[int, str, str, str, str, str, str, str, str, str]:
     """
     notValidHeader
 
@@ -301,7 +357,6 @@ def notValidHeader(dataset: List[str]) -> Tuple[int, str, str, str, str, str, st
     (0, 'MySite', '2021', '52.0', '113.0', 'UTC+7', '20m', '30min', 'True', 'Some notes here')
     """
 
-
     # Initialize errorCode
     errorCode = 0
 
@@ -314,7 +369,17 @@ def notValidHeader(dataset: List[str]) -> Tuple[int, str, str, str, str, str, st
         return (errorCode, *extractedValues)
 
     # List of (required prefix, error message) for each line
-    fields = ["site", "year", "lat", "lon", "timezone", "htower", "timeres", "sc_negl", "notes"]
+    fields = [
+        "site",
+        "year",
+        "lat",
+        "lon",
+        "timezone",
+        "htower",
+        "timeres",
+        "sc_negl",
+        "notes",
+    ]
 
     # Use a list comprehension to build the (prefix, error message) pairs
     fieldInfo = [(field, f"{field} keyword not found.") for field in fields]
@@ -327,7 +392,7 @@ def notValidHeader(dataset: List[str]) -> Tuple[int, str, str, str, str, str, st
         index: int,
         prefix: str,
         errorMsg: str,
-        errorFlag: List[int]
+        errorFlag: List[int],
     ) -> str:
         """
         Extracts and returns the substring after prefix in dataList[index].
@@ -349,10 +414,11 @@ def notValidHeader(dataset: List[str]) -> Tuple[int, str, str, str, str, str, st
 
         return parts[1]
 
-
     # Extract each field in a loop
     for i, (prefix, errMsg) in enumerate(fieldInfo):
-        extractedValues[i] = _extractFieldAtIndex(dataset, i, prefix, errMsg, errorState)
+        extractedValues[i] = _extractFieldAtIndex(
+            dataset, i, prefix, errMsg, errorState
+        )
         if errorState[0] == 1:
             errorCode = 1
             return (errorCode, *extractedValues)
@@ -366,7 +432,7 @@ def loadData(
     filename: str,
     notes: List[str],
     input_columns_names: List[str],
-    *args
+    *args,
 ) -> Tuple[List[str], np.ndarray, np.ndarray]:
     """
     loadData
@@ -404,6 +470,7 @@ def loadData(
     """
 
     # Calculate how many lines to skip
+
     header_rows = 9 + len(notes)
     data_path = os.path.join(input_folder, filename)
 
@@ -415,8 +482,11 @@ def loadData(
     num_columns = len(columns.tolist())
 
     # Read the header
-    header = pd.read_csv(data_path, names=range(num_columns), nrows=header_rows, header=None)
- 
+    # Read the header
+    header = pd.read_csv(
+        data_path, names=range(num_columns + 100), nrows=header_rows, header=None
+    ).iloc[:, :num_columns]
+
     # Initialize columns_index to -1
     columns_index = np.full(len(input_columns_names), -1)
 
@@ -428,18 +498,18 @@ def mapColumnNamesToIndices(
     input_column_names: List[str],
     notes: List[str],  # Currently unused, but kept for future extension
     columns_index: List[int],
-    *args: Any
+    *args: Any,
 ) -> Tuple[int, List[int]]:
     """
     Maps column names from a header DataFrame to their respective indices.
 
-    This function searches the last row of the `header` DataFrame for matches 
-    against the list of `input_column_names`. If a match is found (case-insensitive), 
+    This function searches the last row of the `header` DataFrame for matches
+    against the list of `input_column_names`. If a match is found (case-insensitive),
     the corresponding element in `columns_index` is set to the index of that column in `header`.
-    
-    A special case is handled by prepending 'itp' to `input_column_names` 
+
+    A special case is handled by prepending 'itp' to `input_column_names`
     for case-insensitive matching as well (e.g., 'NEE' matches 'NEE' or 'itpNEE').
-    
+
     Parameters
     ----------
     header : pd.DataFrame
@@ -449,27 +519,27 @@ def mapColumnNamesToIndices(
     notes : str
         Currently unused, but included for potential future needs.
     columns_index : List[int]
-        A list of indices corresponding to each `input_column_name`. 
-        Initially, each element is typically set to -1, indicating the column 
+        A list of indices corresponding to each `input_column_name`.
+        Initially, each element is typically set to -1, indicating the column
         has not been found yet.
     *args : Any
         Additional arguments (currently unused).
-    
+
     Returns
     -------
     Tuple[int, List[int]]
-        A tuple where the first element is an error code (0 if successful, 
-        1 if a duplicate is detected) and the second element is the updated 
-        `columns_index` list, mapping each `input_column_name` to its index 
+        A tuple where the first element is an error code (0 if successful,
+        1 if a duplicate is detected) and the second element is the updated
+        `columns_index` list, mapping each `input_column_name` to its index
         in the header.
 
     Notes
     -----
-    - If any column in `input_column_names` is found multiple times in the header, 
-      the function prints a message about duplication, sets `errorCode` to 1, 
+    - If any column in `input_column_names` is found multiple times in the header,
+      the function prints a message about duplication, sets `errorCode` to 1,
       and returns immediately (with `columns_index` in its last valid state).
-    - The function performs a case-insensitive comparison. If an input column 
-      name is, for example, 'NEE', it will match 'NEE' or 'nee'. It will 
+    - The function performs a case-insensitive comparison. If an input column
+      name is, for example, 'NEE', it will match 'NEE' or 'nee'. It will
       also match 'itpNEE' if 'itp' is prefixed in the header.
     """
 
@@ -483,8 +553,10 @@ def mapColumnNamesToIndices(
         # Compare with the list of input_column_names
         for j, input_col_name in enumerate(input_column_names):
             # Case-insensitive match. Also check 'itp' prefix.
-            if (input_col_name.lower() == column_name.lower() or 
-                f'itp{input_col_name.lower()}' == column_name.lower()):
+            if (
+                input_col_name.lower() == column_name.lower()
+                or f"itp{input_col_name.lower()}" == column_name.lower()
+            ):
                 # If columns_index[j] is already set, it's a duplicate
                 if columns_index[j] != -1:
                     print(f"The column '{input_col_name}' is duplicated.")
@@ -498,17 +570,15 @@ def mapColumnNamesToIndices(
 
 
 def ppfdColExists(
-    PPFD_INDEX: int,
-    columns_index: List[int],
-    input_columns_names: List[str]
+    PPFD_INDEX: int, columns_index: List[int], input_columns_names: List[str]
 ) -> Tuple[int, int]:
     """
     Checks whether the PPFD column exists based on the given column indices.
-    
-    If a column index is -1 and it corresponds to the PPFD_INDEX, this function 
-    sets ppfd_from_rg to 1. If a column index is -1 and does not correspond 
+
+    If a column index is -1 and it corresponds to the PPFD_INDEX, this function
+    sets ppfd_from_rg to 1. If a column index is -1 and does not correspond
     to PPFD_INDEX, it reports that the column is not found and sets an error code.
-    
+
     Parameters
     ----------
     :param PPFD_INDEX: Index of the PPFD column.
@@ -528,7 +598,6 @@ def ppfdColExists(
     ppfd_from_rg = 0
 
     for i in range(len(columns_index_copy)):
-
         if columns_index_copy[i] == -1:
             if i == PPFD_INDEX:
                 ppfd_from_rg = 1
@@ -550,11 +619,11 @@ def areAllPpfdValuesInvalid(
 ) -> Tuple[Union[str, pd.Series], int]:
     """
     Checks if all PPFD values in the specified column are invalid (less than -9990).
-    
-    If ppfd_from_rg is 0, the function attempts to retrieve the PPFD column from the data 
-    using the provided columns_index[PPFD_INDEX]. If all values in that column are invalid 
+
+    If ppfd_from_rg is 0, the function attempts to retrieve the PPFD column from the data
+    using the provided columns_index[PPFD_INDEX]. If all values in that column are invalid
     (i.e., below -9990), ppfd_from_rg is set to 1.
-    
+
     Parameters
     ----------
     :param ppfd_from_rg: Indicator whether PPFD is retrieved from RG (0 means not yet).
@@ -571,7 +640,7 @@ def areAllPpfdValuesInvalid(
 
     # Make shallow copies of inputs
     columns_index = columns_index.flatten()
-    PPFD = ''
+    PPFD = ""
 
     if ppfd_from_rg == 0:
         # Retrieve the PPFD column using 0-based indexing
@@ -586,12 +655,14 @@ def areAllPpfdValuesInvalid(
     return PPFD, ppfd_from_rg
 
 
-def derivePpfdColFromRg(Rg: Union[pd.Series, np.ndarray]) -> Union[pd.Series, np.ndarray]:
+def derivePpfdColFromRg(
+    Rg: Union[pd.Series, np.ndarray],
+) -> Union[pd.Series, np.ndarray]:
     """
-    Derives the PPFD column from Rg using the formula PPFD = Rg * 2.24. 
+    Derives the PPFD column from Rg using the formula PPFD = Rg * 2.24.
     It prints a message indicating that PPFD is derived from SW_IN.
     Any values corresponding to Rg < -9990 are set to -9999 in PPFD.
-    
+
     Parameters
     ----------
     :param Rg: A pandas Series or NumPy array containing Rg data.
@@ -613,11 +684,7 @@ def derivePpfdColFromRg(Rg: Union[pd.Series, np.ndarray]) -> Union[pd.Series, np
 
 
 def setMissingDataNan(
-    uStar: np.ndarray,
-    NEE: np.ndarray,
-    Ta: np.ndarray,
-    PPFD: np.ndarray,
-    Rg: np.ndarray
+    uStar: np.ndarray, NEE: np.ndarray, Ta: np.ndarray, PPFD: np.ndarray, Rg: np.ndarray
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Replaces -9999 with NaN in each provided NumPy array.
@@ -654,7 +721,7 @@ def setMissingDataNan(
     # Loop over each array, copy it, and replace -9999 with np.nan
     for arr in arrays:
         # Create a copy of the array to avoid modifying the original
-        arr_copy = arr.copy()
+        arr_copy = np.array(arr.copy(), dtype=float)
         # Replace all occurrences of -9999 with np.nan
         arr_copy[arr_copy == -9999] = np.nan
         modified_arrays.append(arr_copy)
@@ -667,7 +734,7 @@ def anyColumnsEmpty(
     uStar: Union[np.ndarray, pd.Series],
     NEE: Union[np.ndarray, pd.Series],
     Ta: Union[np.ndarray, pd.Series],
-    Rg: Union[np.ndarray, pd.Series]
+    Rg: Union[np.ndarray, pd.Series],
 ) -> int:
     """
     Checks for empty or entirely NaN columns and returns an error code if any are found.
@@ -676,7 +743,7 @@ def anyColumnsEmpty(
     - If all values in uStar are NaN, prints a message and sets errorCode = 1.
     - If Ta is empty (length == 0), prints a message and sets errorCode = 1.
     - If Rg is empty (length == 0), prints a message and sets errorCode = 1.
-    
+
     :param uStar: Array/Series of uStar values.
     :param NEE: Array/Series of NEE values.
     :param Ta: Array/Series of Ta values.
@@ -716,7 +783,7 @@ def createTimeArray(uStar: Union[np.ndarray, pd.Series]) -> np.ndarray:
     """
     Creates an array 't' whose length is the same as the length of 'uStar'.
     It first determines 'nrPerDay' using len(uStar) % 365. If that result is 0,
-    it instead uses len(uStar) % 364. The first value of t is set to 
+    it instead uses len(uStar) % 364. The first value of t is set to
     1 + (1 / nrPerDay), and each subsequent value increments by (1 / nrPerDay).
 
     Parameters
@@ -747,6 +814,7 @@ def createTimeArray(uStar: Union[np.ndarray, pd.Series]) -> np.ndarray:
 
     return t
 
+
 def saveResult(
     cFailure: str,
     cSiteYr: str,
@@ -755,7 +823,7 @@ def saveResult(
     year: str,
     Cp: Union[np.ndarray, list],
     clock_str: str,
-    notes: List[str]
+    notes: List[str],
 ) -> Tuple[str, str, int]:
     """
     Save results to a text file.
@@ -787,7 +855,7 @@ def saveResult(
         Possibly modified cSiteYr (e.g., stripped of ".csv").
     errorCode : int
         0 if the file is saved successfully, 1 if cFailure is non-empty.
-    
+
     Notes
     -----
     - If cFailure is empty, writes Cp to a text file named "<output_folder><site>_uscp_<year>.txt".
@@ -826,24 +894,24 @@ def saveResult(
 
     return error_str, cSiteYr, errorCode
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="Perform U* threshold computation by Alan Barr."
     )
     parser.add_argument(
-        "input_folder",
-        help="Path to the folder containing input files"
+        "input_folder", help="Path to the folder containing input files"
     )
     parser.add_argument(
-        "output_folder",
-        help="Path to the folder where output files will be saved"
+        "output_folder", help="Path to the folder where output files will be saved"
     )
-    
+
     args = parser.parse_args()
-    
+
     exit_code = launch(args.input_folder, args.output_folder)
 
     sys.exit(exit_code)
+
 
 if __name__ == "__main__":
     main()

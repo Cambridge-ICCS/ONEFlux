@@ -59,6 +59,7 @@ for i = 1:numVariables
     eval([variableName ' = fcx2colvec(' variableName ');']); 
 end
 
+
 % Identify Significant Change Points
 significanceThreshold = 0.05; 
 significantFlag = p <= significanceThreshold; 
@@ -76,6 +77,12 @@ end
 validMeasurementIndices = find(~isnan(mt)); 
 numValidMeasurements = length(validMeasurementIndices); 
 
+% TODO: remove
+% fid = fopen('mlog.txt', 'a');
+% fprintf(fid, '* Cp = %d\n', size(Cp));
+% fprintf(fid, '* b1 = %d\n', size(b1));
+% fprintf(fid, '* c2 = %d\n', size(c2));
+% fclose(fid);
 nonSignificantIndices = find(significantFlag == 0 & ~isnan(b1 + c2 + Cp)); 
 numNonSignificant = length(nonSignificantIndices); 
 
@@ -111,8 +118,7 @@ modeEFlag(modeEIndices) = 1;
 
 fractionSignificant = numSignificant / numValidMeasurements; 
 fractionModeD = numModeD / numSignificant; 
-fractionSelected = numSelected / numValidMeasurements; 
-
+fractionSelected = numSelected / numValidMeasurements;
 % Abort if Too Few Selections
 if fractionSelected < 0.10
     failureMessage = 'Less than 10% successful detections.';
@@ -127,7 +133,19 @@ else
 end
 
 % Exclude Outliers
-standardizedScores = computeStandardizedScores(regressionMatrix);
+metadata = struct();
+metadata.siteFile = 'US-Cbo'; % Site file name
+metadata.oneFluxDir = '/Users/dorchard/Documents/iccs/ONEFlux';
+metadata.relArtifactsDir = 'tests/test_artifacts';
+metadata.frequency = 10; % Log every 10th call
+metadata.offset = 0; % Start logging from the first call
+
+%standardizedScores = computeStandardizedScores(regressionMatrix);
+
+metadata.inputNames = {'regressionMatrix'};
+metadata.outputNames = {'standardizedScores'};
+standardizedScores = logFuncResult('log.json', @computeStandardizedScores, metadata, regressionMatrix)
+
 [outlierFlag, outlierIndices] = identifyOutliers(standardizedScores, 5);
 
 [selectedIndices, numSelected, selectedPointsFlag] = ...

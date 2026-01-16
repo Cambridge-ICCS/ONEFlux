@@ -33,9 +33,9 @@ def test_generate_statsMT(test_engine):
 
     # Ensure all expected fields exist and are NaN
     for field in expected_fields:
-        assert (
-            field in StatsMT
-        ), f"Missing field: {field}"  # Access fields like dict keys
+        assert field in StatsMT, (
+            f"Missing field: {field}"
+        )  # Access fields like dict keys
         assert np.isnan(StatsMT[field]), f"Field {field} is not NaN"
 
 
@@ -71,10 +71,12 @@ stats_entry = {
             2,
             2,
             (
-                [
-                    [[stats_entry, stats_entry], [stats_entry, stats_entry]],
-                    [[stats_entry, stats_entry], [stats_entry, stats_entry]],
-                ]
+                np.array(
+                    [
+                        [[stats_entry, stats_entry], [stats_entry, stats_entry]],
+                        [[stats_entry, stats_entry], [stats_entry, stats_entry]],
+                    ]
+                )
             ),
         ),
         # TODO: check whether we need these tests

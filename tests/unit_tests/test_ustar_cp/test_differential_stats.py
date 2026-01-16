@@ -40,10 +40,12 @@ stats_entry = {
             2,
             2,
             (
-                [
-                    [[stats_entry, stats_entry], [stats_entry, stats_entry]],
-                    [[stats_entry, stats_entry], [stats_entry, stats_entry]],
-                ]
+                np.array(
+                    [
+                        [[stats_entry, stats_entry], [stats_entry, stats_entry]],
+                        [[stats_entry, stats_entry], [stats_entry, stats_entry]],
+                    ]
+                )
             ),
         ),
         # TODO: check whether we need these tests
@@ -63,10 +65,10 @@ def test_setup_Stats_differential(
 
     Stats_python = cpdBootstrap.setup_Stats(nBoot, nSeasons, nStrataX)
 
-    assert_dicts_with_nan_equal(Stats_python, expected_shape)
+    assert_dicts_with_nan_equal(test_engine, Stats_python, expected_shape)
 
 
-def assert_dicts_with_nan_equal(obj1, obj2) -> None:
+def assert_dicts_with_nan_equal(test_engine, obj1, obj2) -> None:
     """
     Recursively assert equality between dictionaries, lists of dictionaries, or nested lists containing dictionaries,
     considering NaN values.
@@ -83,16 +85,16 @@ def assert_dicts_with_nan_equal(obj1, obj2) -> None:
         for key in obj1:
             val1, val2 = obj1[key], obj2[key]
             if isinstance(val1, float) and isinstance(val2, float):
-                assert (
-                    np.isnan(val1) and np.isnan(val2) or val1 == val2
-                ), f"Mismatch at key {key}: {val1} != {val2}"
+                assert np.isnan(val1) and np.isnan(val2) or val1 == val2, (
+                    f"Mismatch at key {key}: {val1} != {val2}"
+                )
             else:
-                assert_dicts_with_nan_equal(val1, val2)
+                assert_dicts_with_nan_equal(test_engine, val1, val2)
 
     elif isinstance(obj1, list) and isinstance(obj2, list):
         assert len(obj1) == len(obj2), "Lists have different lengths."
         for item1, item2 in zip(obj1, obj2):
-            assert_dicts_with_nan_equal(item1, item2)
+            assert_dicts_with_nan_equal(test_engine, item1, item2)
 
     else:
-        assert obj1 == obj2, f"Mismatch in items: {obj1} != {obj2}"
+        assert test_engine.equal(obj1, obj2), f"Mismatch in items: {obj1} != {obj2}"

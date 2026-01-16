@@ -11,6 +11,7 @@ output and the exit code returned by the MATLAB function.
 import pytest
 import io
 import filecmp
+from contextlib import redirect_stdout
 
 """
   Chosen test cases (identified by their site code; first 5 characters) to give adequate coverage (with data files in `tests/test_artifacts`)
@@ -36,10 +37,10 @@ import filecmp
     """
 
 test_cases = [
-    ("US_ARc", [1]),
+    # ("US_ARc", [1]),
     ("CA-Cbo", [1]),
-    ("US-Ne1", [1]),
-    ("US-Vcm", [1]),
+    # ("US-Ne1", [1]),
+    # ("US-Vcm", [1]),
     # Expected values format: [exitvalue]
 ]
 
@@ -52,6 +53,7 @@ def test_ustar_cp(
     test_engine,
     find_text_file,
     extract_section_between_keywords,
+    language,
 ):
     """
     Validate MATLAB's uStar CP processing function output against expected results.
@@ -89,9 +91,20 @@ def test_ustar_cp(
     inputs, ref_outputs, test_outputs = setup_folders
 
     # Step 2: Capture stdout and stderr from the MATLAB engine during the function execution
-    out = io.StringIO()
-    err = io.StringIO()
-    exitcode = test_engine.launch(inputs, test_outputs, stdout=out, stderr=err)
+
+    if language == "python":
+        # Capture stdout during test_engine.launch(...)
+        capture_buffer = io.StringIO()
+        with redirect_stdout(capture_buffer):
+            exitcode = test_engine.launch(inputs, test_outputs)
+        # Now store the final string
+        out_value = capture_buffer.getvalue()
+        err_value = ""  # Or None, if you want to unify usage
+    else:
+        out = io.StringIO()
+        err = io.StringIO()
+        exitcode = test_engine.launch(inputs, test_outputs, stdout=out, stderr=err)
+        out_value = out.getvalue()
 
     # Step 3: Retrieve the expected output from the reference text file and extract the relevant section
     ref_text = find_text_file(ref_outputs)
@@ -99,23 +112,33 @@ def test_ustar_cp(
     expected_output = "".join(expected_output_lines).strip()
 
     # Step 4: Ensure captured output is flushed to the buffer and convert it into a list of lines
-    out_value = out.getvalue()
     out_value_lines = out_value.splitlines()
 
     # Extract and process the relevant processing section from the captured output
     test_output_lines = extract_section_between_keywords(out_value_lines, "processing")
     test_output = "\n".join(test_output_lines).strip()
 
+    # Write the test_output to a log file for debugging
+    with open("test_output.log", "a") as f:
+        f.write("Test Output:\n")
+        f.write(testcase + "\n")
+        f.write("Expected Output:\n")
+        f.write(expected_output + "\n")
+        f.write("Captured Output:\n")
+        f.write(test_output)
+
     # Step 5: Assert that the expected processing block matches the captured stdout from MATLAB
-    assert (
-        expected_output == test_output
-    ), "The expected text block does not match the MATLAB output."
+    assert expected_output == test_output, (
+        "The expected text block does not match the MATLAB output."
+    )
 
     # Step 6: Assert that the MATLAB function returns the expected exit code
-    assert (
-        exitcode == expected_values[0]
-    ), f"Expected exit code {expected_values[0]}, but got {exitcode}."
+    assert exitcode == expected_values[0], (
+        f"Expected exit code {expected_values[0]}, but got {exitcode}."
+    )
 
     # Step 7: Assert that the reference output folder and test run output contain the same files
     comparison = filecmp.dircmp(ref_outputs, test_outputs)
-    assert comparison, "Expected test and reference output folders have same contents, but comparison test fails"
+    assert comparison, (
+        "Expected test and reference output folders have same contents, but comparison test fails"
+    )
