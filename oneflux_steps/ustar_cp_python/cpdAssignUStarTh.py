@@ -434,8 +434,8 @@ def computeStandardizedScores(x):
 
     # return a column vector of the maximum absolute standardized score for each row
     # preserving NaNs
-
-    res = np.nanmax(np.abs(x_norm), axis=1, keepdims=True)
+    # res.shape = (1,m)
+    res = np.nanmax(np.abs(x_norm), axis=0, keepdims=True)
     with open("plog.txt", "a") as f:
         f.write(f"res shape: {res.shape} rows\n")
 
