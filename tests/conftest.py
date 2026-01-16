@@ -12,7 +12,6 @@ Contents:
     Helper_functions:
         process_std_out
         compare_text_blocks
-        to_matlab_type
         read_csv_with_csv_module
         read_file
         parse_testcase
@@ -301,6 +300,144 @@ class MatlabEngine:
     def _repr_pretty_(self, *args):
         return "MATLAB"
 
+    # Internal definitions that then get routed to via __call__
+    def _convert(x, index="to_python", fromFile=False):
+        # Internal helper function to convert data types
+        def to_matlab_type(data: Any, fromFile=False) -> Any:
+            """
+            Converts various Python data types to their MATLAB equivalents.
+
+            Args:
+                data (Any): The input data to be converted.
+
+            Returns:
+                Any: The converted data in a MATLAB-compatible format.
+            """
+            if isinstance(data, dict):
+                # Convert a Python dictionary to a MATLAB struct
+                # TODO: the following doesn't actually work but is not yet used
+                matlab_struct = matlab.struct()
+                for key, value in data.items():
+                    matlab_struct[key] = to_matlab_type(
+                        value
+                    )  # Recursively handle nested structures
+                return matlab_struct
+
+            elif isinstance(data, np.ndarray):
+                # Transponse np arrays when they are not coming from a file
+                if not (fromFile):
+                    data = np.transpose(data)
+
+                if data.dtype == bool:
+                    return matlab.logical(data.tolist())
+                elif np.isreal(data).all():
+                    return matlab.double(data.astype(np.float64))
+                else:
+                    return data.tolist()  # Convert non-numeric arrays to lists
+            elif isinstance(data, list):
+                # For non-file data, transpose first
+                if not (fromFile):
+                    np_array = np.array(data)
+                    np_array = np.transpose(np_array)
+                    data = np_array.tolist()
+
+                # Convert Python list to MATLAB double array if all elements are numbers
+                if all(isinstance(elem, (bool)) for elem in flatten(data)):
+                    return matlab.logical(data)
+
+                elif all(isinstance(elem, (int, float)) for elem in flatten(data)):
+                    return matlab.double(data)
+                else:
+                    # Create a cell array for lists containing non-numeric data
+                    return [[to_matlab_type(elem)] for elem in data]
+
+            elif isinstance(data, (int, float)):
+                return matlab.double([[data]])  # Convert single numbers
+            else:
+                return data  # If the data type is already MATLAB-compatible
+
+        if (
+            index == "to_matlab"
+        ):  # Add 1 for index conversion to MATLAB, types: int, ndarray, list
+            print("Before conversion: ", x)
+            if isinstance(x, (int, float, np.ndarray)):
+                x = x + 1
+            elif isinstance(x, list):
+                x = np.asarray(x) + 1
+            print("After conversion: ", x)
+        return to_matlab_type(x, fromFile=fromFile)
+
+    def _unconvert(x):
+        if isinstance(x, matlab.double):
+            x = np.array(x)
+        if hasattr(x, "len") and len(x) == 1:
+            return np.array(x[0])
+        else:
+            return x
+
+    def _equal(x, y):
+        # Helper function to compare MATLAB double arrays element-wise, handling NaN comparisons
+        def compare_matlab_arrays(result, expected):
+            if isinstance(result, float):
+                # Floating point equality using numpy
+                return np.isclose(result, expected, equal_nan=True)
+
+            if not hasattr(result, "__len__") or not hasattr(expected, "__len__"):
+                return np.allclose(result, expected, equal_nan=True)
+
+            if isinstance(result, dict):
+                if not isinstance(expected, dict):
+                    return False
+                if set(result.keys()) != set(expected.keys()):
+                    return False
+                return all(
+                    compare_matlab_arrays(result[k], expected[k]) for k in result.keys()
+                )
+
+            # TODO: remove or reinstate - not sure when this is needed
+            # if len(result) != len(expected):
+            #     # log the shapes to file mtestlog.txt
+            #     with open("mtestlog.txt", "a") as log_file:
+            #         log_file.write(
+            #             f"Lengths not the same result {len(result)}, expected {len(expected)}\n"
+            #         )
+            #     # Potentially we are in the situation where the MATLAB is wrapped in an extra layer of array
+            #     if isinstance(result, matlab.double) and len(result) == 1:
+            #         result = result[0]
+            #         return all(
+            #             compare_matlab_arrays(r, e)
+            #             for r, e in zip(result, expected)
+            #         )
+            #     else:
+            #         return False
+
+            if isinstance(result, matlab.double):
+                # log the shapes to file mtestlog.txt
+                with open("mtestlog.txt", "a") as log_file:
+                    log_file.write(
+                        f"Comparing shapes: result {np.array(result).shape}, expected {np.array(expected).shape}\n"
+                    )
+                if np.array(result).shape != np.array(expected).shape:
+                    return False
+                else:
+                    return np.allclose(result, expected, equal_nan=True)
+
+            # Recursive case
+            else:
+                # log the shapes to file mtestlog.txt
+                with open("mtestlog.txt", "a") as log_file:
+                    log_file.write(
+                        f"result type = {type(result)}, expected type = {type(expected)}\n"
+                    )
+                    log_file.write(
+                        f"FALL THROUGH: Comparing shapes: result {np.array(result).shape}, expected {np.array(expected).shape}\n"
+                    )
+                return all(
+                    compare_matlab_arrays(r, e) for r, e in zip(result, expected)
+                )
+
+        return compare_matlab_arrays(x, y)
+
     def __call__(self, *args, jsonencode=(), jsondecode=(), **kwargs):
         """
         Call the wrapped function with optional JSON encoding/decoding to handle the issue that non-scalar structs (arrays of structs) cannot be returned from MATLAB functions to Python.
@@ -317,114 +454,31 @@ class MatlabEngine:
             # Overload attempts to pretty print matlab engines (e.g., by hypothesis)
             return "MATLAB"
 
-        # For `convert` and `equal` we need to handle these directly here since
-        # we have overriden `call`.
-        if (
-            (self.func._name == "convert")
-            | (self.func._name == "unconvert")
-            | (self.func._name == "equal")
-            | (self.func._name == "language")
-        ):
-            # Locally scoped definitions
-            def _convert(x, index="to_python", fromFile=False):
-                if (
-                    index == "to_matlab"
-                ):  # Add 1 for index conversion to MATLAB, types: int, ndarray, list
-                    print("Before conversion: ", x)
-                    if isinstance(x, (int, float, np.ndarray)):
-                        x = x + 1
-                    elif isinstance(x, list):
-                        x = np.asarray(x) + 1
-                    print("After conversion: ", x)
-                return to_matlab_type(x, fromFile=fromFile)
-
-            def _unconvert(x):
-                if isinstance(x, matlab.double):
-                    x = np.array(x)
-                if len(x) == 1:
-                    return np.array(x[0])
-                else:
-                    return x
-
-            def _equal(x, y):
-                return compare_matlab_arrays(x, y)
-
-            # Helper function to compare MATLAB double arrays element-wise, handling NaN comparisons
-            def compare_matlab_arrays(result, expected):
-                if isinstance(result, float):
-                    # Floating point equality using numpy
-                    return np.isclose(result, expected, equal_nan=True)
-
-                if not hasattr(result, "__len__") or not hasattr(expected, "__len__"):
-                    return np.allclose(result, expected, equal_nan=True)
-
-                if isinstance(result, dict):
-                    if not isinstance(expected, dict):
-                        return False
-                    if set(result.keys()) != set(expected.keys()):
-                        return False
-                    return all(
-                        compare_matlab_arrays(result[k], expected[k])
-                        for k in result.keys()
-                    )
-
-                if len(result) != len(expected):
-                    # log the shapes to file mtestlog.txt
-                    with open("mtestlog.txt", "a") as log_file:
-                        log_file.write(
-                            f"Lengths not the same result {len(result)}, expected {len(expected)}"
-                        )
-                    # Potentially we are in the situation where the MATLAB is wrapped in an extra layer of array
-                    if isinstance(result, matlab.double) and len(result) == 1:
-                        result = result[0]
-                        return all(
-                            compare_matlab_arrays(r, e)
-                            for r, e in zip(result, expected)
-                        )
-                    else:
-                        return False
-
-                if isinstance(result, matlab.double):
-                    # log the shapes to file mtestlog.txt
-                    with open("mtestlog.txt", "a") as log_file:
-                        log_file.write(
-                            f"Comparing shapes: result {np.array(result).shape}, expected {np.array(expected).shape}\n"
-                        )
-                    if np.array(result).shape != np.array(expected).shape:
-                        return False
-                    else:
-                        return np.allclose(result, expected, equal_nan=True)
-
-                # Recursive case
-                else:
-                    # log the shapes to file mtestlog.txt
-                    with open("mtestlog.txt", "a") as log_file:
-                        log_file.write(
-                            f"result type = {type(result)}, expected type = {type(expected)}\n"
-                        )
-                        log_file.write(
-                            f"FALL THROUGH: Comparing shapes: result {np.array(result).shape}, expected {np.array(expected).shape}\n"
-                        )
-                    return all(
-                        compare_matlab_arrays(r, e) for r, e in zip(result, expected)
-                    )
-
-            def _language():
-                return "matlab"
-
+        # For standard Engine interface methods, we route to internal definitions
+        if self.func._name in [
+            "convert",
+            "unconvert",
+            "equal",
+            "language",
+            "_repr_pretty_",
+        ]:
             # Choose which function to call
             if self.func._name == "convert":
-                return _convert(*args, **kwargs)
+                return MatlabEngine._convert(*args, **kwargs)
             elif self.func._name == "equal":
-                return _equal(*args, **kwargs)
+                return MatlabEngine._equal(*args, **kwargs)
             elif self.func._name == "unconvert":
-                return _unconvert(*args, **kwargs)
+                return MatlabEngine._unconvert(*args, **kwargs)
             elif self.func._name == "language":
-                return _language(*args, **kwargs)
+                return "matlab"
 
         else:
             # Calls mostly going through to the MATLAB engine
-            args = list(args)
+
+            # Convert arguments
+            args = [MatlabEngine._convert(arg) for arg in list(args)]
+
+            # Handle json encode/decode
             if jsonencode:
                 args.append(["jsonencode"] + [i + 1 for i in jsonencode])
             if jsondecode:
@@ -434,6 +488,8 @@ class MatlabEngine:
             out = kwargs.pop("stdout", self.out)
             err = kwargs.pop("stderr", self.err)
             ret = self.func(*args, **kwargs, stdout=out, stderr=err)
+            # Unconvert result
+            ret = MatlabEngine._unconvert(ret)
             if jsonencode:
                 nargout = kwargs.get("nargout", 1)
                 if nargout <= 1:
@@ -455,59 +511,6 @@ def mf_factory(cls, *args, **kwargs):
 
 
 MatlabFunc.__new__ = mf_factory
-
-
-def to_matlab_type(data: Any, fromFile=False) -> Any:
-    """
-    Converts various Python data types to their MATLAB equivalents.
-
-    Args:
-        data (Any): The input data to be converted.
-
-    Returns:
-        Any: The converted data in a MATLAB-compatible format.
-    """
-    if isinstance(data, dict):
-        # Convert a Python dictionary to a MATLAB struct
-        # TODO: the following doesn't actually work but is not yet used
-        matlab_struct = matlab.struct()
-        for key, value in data.items():
-            matlab_struct[key] = to_matlab_type(
-                value
-            )  # Recursively handle nested structures
-        return matlab_struct
-    elif isinstance(data, np.ndarray):
-        # Transponse np arrays when they are not coming from afile
-        if not (fromFile):
-            data = np.transpose(data)
-
-        if data.dtype == bool:
-            return matlab.logical(data.tolist())
-        elif np.isreal(data).all():
-            return matlab.double(data.astype(np.float64))
-        else:
-            return data.tolist()  # Convert non-numeric arrays to lists
-    elif isinstance(data, list):
-        # For non-file data, transpose first
-        if not (fromFile):
-            np_array = np.array(data)
-            np_array = np.transpose(np_array)
-            data = np_array.tolist()
-
-        # Convert Python list to MATLAB double array if all elements are numbers
-        if all(isinstance(elem, (bool)) for elem in flatten(data)):
-            return matlab.logical(data)
-
-        elif all(isinstance(elem, (int, float)) for elem in flatten(data)):
-            return matlab.double(data)
-        else:
-            # Create a cell array for lists containing non-numeric data
-            return [to_matlab_type(elem) for elem in data]
-    elif isinstance(data, (int, float)):
-        return matlab.double([data])  # Convert single numbers
-    else:
-        return data  # If the data type is already MATLAB-compatible
-
 
 # </MATLAB>
 
