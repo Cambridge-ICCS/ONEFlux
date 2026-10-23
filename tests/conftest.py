@@ -125,10 +125,7 @@ class PythonEngine(TestEngine):
                 if x != -1:
                     x = x - 1
             elif isinstance(x, np.ndarray):
-                print("Before conversion: ", x)
-                x = np.asarray(x)
                 x = np.where(x != -1, x - 1, x)
-                print("After conversion: ", x)
         if isinstance(x, list):
             # Transpose to capture MATLAB data layout
             # when the data has been serialised from MATLAB
@@ -359,12 +356,10 @@ class MatlabEngine:
         if (
             index == "to_matlab"
         ):  # Add 1 for index conversion to MATLAB, types: int, ndarray, list
-            print("Before conversion: ", x)
             if isinstance(x, (int, float, np.ndarray)):
                 x = x + 1
             elif isinstance(x, list):
                 x = np.asarray(x) + 1
-            print("After conversion: ", x)
         return to_matlab_type(x, fromFile=fromFile)
 
     def _unconvert(x):

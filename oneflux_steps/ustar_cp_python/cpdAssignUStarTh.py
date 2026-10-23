@@ -10,31 +10,6 @@ import json
 from numpy.typing import NDArray
 from oneflux_steps.ustar_cp_python.fcBin import fcBin
 from oneflux_steps.ustar_cp_python.utilities import index_or_mark_array_update, nlinfit
-# import matlab.engine
-# import os
-# eng = matlab.engine.start_matlab()
-# current_dir = os.getcwd()
-# code_path = (
-#     "oneflux_steps/ustar_cp_refactor_wip/"
-#     if refactored
-#     else "oneflux_steps/ustar_cp"
-# )
-
-# # Add the directory containing your MATLAB functions to the MATLAB path
-# matlab_function_path = os.path.join(current_dir, code_path)
-# eng.addpath(matlab_function_path, nargout=0)
-
-# def _add_all_subdirs_to_matlab_path(path, test_engine):
-#     # Recursively find all subdirectories
-#     for root, dirs, files in os.walk(path):
-#         # Add each directory to the MATLAB path
-#         test_engine.addpath(root, nargout=0)  # nargout=0 suppresses output
-
-#     return
-
-# # Add the base directory and all its subdirectories to MATLAB path
-# _add_all_subdirs_to_matlab_path(matlab_function_path, eng)
-# matlab_engine = eng
 
 
 def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
@@ -270,11 +245,6 @@ def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
     # -------------------------------------------------------------------------
     # 11) Configure Regression Matrix
 
-    # TODO: remove
-    # with open("plog.txt", "a") as f:
-    #     f.write(f"changePoint: {changePoint.shape} rows\n")
-    #     f.write(f"b1: {b1.shape} rows\n")
-    #     f.write(f"cib1: {cib1.shape} rows\n")
     if numParameters == 2:
         regressionMatrix = np.column_stack([Cp, b1, cib1])
     else:
@@ -405,39 +375,19 @@ def computeStandardizedScores(x):
         numpy.ndarray: A (1, n) row vector containing the maximum absolute
         standardised score for each row."""
 
-    # if x is all nans write to a file called plog.txt the number of nans
-    # and the number of rows
-    if np.all(np.isnan(x)):
-        with open("plog.txt", "a") as f:
-            f.write("computeStandardizedScores called\n")
-            f.write(f"All NaNs in x: {x.shape} rows\n")
-
     # mx is a 1-dimensional matrix of size n
     # mx.shape = (n,)
     mx = np.nanmedian(x, axis=1)  # Compute median ignoring NaNs
-    with open("plog.txt", "a") as f:
-        f.write(f"mx shape is= {mx.shape}")
     iqr = fcNaniqr(x)
     # make mx into a 2-dimensional matrix
     # mx.shape = (n,1)
     mx = mx[:, np.newaxis]
     x_norm = (x - mx) / iqr  # Standardize
-    with open("plog.txt", "a") as f:
-        f.write(str(x))
-        f.write(f"x_norm x: {x_norm.shape} rows\n")
-
-    # if x is all nans write to a file called plog.txt the number of nans
-    # and the number of rows
-    if np.all(np.isnan(x_norm)):
-        with open("plog.txt", "a") as f:
-            f.write(f"All NaNs in x_norm: {x.shape} rows\n")
 
     # return a column vector of the maximum absolute standardized score for each row
     # preserving NaNs
     # res.shape = (1,m)
     res = np.nanmax(np.abs(x_norm), axis=0, keepdims=True)
-    with open("plog.txt", "a") as f:
-        f.write(f"res shape: {res.shape} rows\n")
 
     return res  # Max absolute standardized score per row
 
@@ -463,11 +413,6 @@ def fitAnnualSineCurve(mt, Cp, iSelect):
         A 1D array of length 4:
           [offset, amplitude, phase, rSquared]
     """
-    # TODO: remove
-    # with open("plog.txt", "a") as f:
-    #     f.write(f"-----\n mt shape: {mt.shape}\nmt: {mt} rows\n")
-    #     f.write(f"Cp shape: {Cp.shape}\n Cp: {Cp}\n")
-    #     f.write(f"iSelect shape: {iSelect.shape}\n iSelect: {iSelect} rows\n")
     # Prepare the data
     xdata = np.array(mt)[iSelect]
     ydata = np.array(Cp)[iSelect]
@@ -484,11 +429,6 @@ def fitAnnualSineCurve(mt, Cp, iSelect):
     #     f.write(f"xdata shape: {xdata.shape}\nxdata: {xdata} rows\n")
     #     f.write(f"ydata shape: {ydata.shape}\nydata: {ydata} rows\n")
     popt = nlinfit(xdata, ydata, fcEqnAnnualSine, initial_guess)
-    # matlab_engine.nlinfit(xdata, ydata, "fcEqnAnnualSine", initial_guess)
-
-    # TODO: remove
-    # with open("plog.txt", "a") as f:
-    #     f.write(f"-----\npopt.shape: {popt.shape}\npopt: {popt} rows-------\n")
 
     # Compute predicted values for the fitted parameters
     predictedCp = fcEqnAnnualSine(np.asarray(popt), xdata)
@@ -502,9 +442,6 @@ def fitAnnualSineCurve(mt, Cp, iSelect):
     # Return fitted coefficients plus the R-squared value
     # List containing ndarray to make output format match matlab for comparative testing
     sSine = np.array([[popt[0], popt[1], popt[2], r2]], dtype=float)
-    # TODO: remove
-    # with open("plog.txt", "a") as f:
-    #     f.write(f"sSine: {sSine}\n")
     return sSine
 
 
