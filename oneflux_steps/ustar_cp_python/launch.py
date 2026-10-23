@@ -673,7 +673,7 @@ def derivePpfdColFromRg(
     :return: A pandas Series or NumPy array containing the derived PPFD values.
     """
 
-    print("(PPFD_IN from SW_IN)...")
+    print("(PPFD_IN from SW_IN)...", end="")
     PPFD = Rg * 2.24  # Create the PPFD array/Series
 
     # Identify indices where Rg is invalid
