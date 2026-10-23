@@ -64,20 +64,26 @@ def test_nlinfit_differential(test_engine, xdata, ydata):
     # Define model function and initial guess
     initial_guess = [1.0, 1.0, 1.0]
 
+    # MATLAB engine takes the function name as a string; Python engine takes the callable
+    if test_engine.language() == "matlab":
+        model_function_for_engine = "fcEqnAnnualSine"
+    else:
+        model_function_for_engine = fcEqnAnnualSine
+
     # Call nlinfit on MATLAB engine
     result_matlab = test_engine.nlinfit(
         test_engine.convert(xdata),
         test_engine.convert(ydata),
-        "fcEqnAnnualSine",
+        model_function_for_engine,
         test_engine.convert(initial_guess),
     )
 
     # Call nlinfit on Python engine
     result_python = python_nlinfit(xdata, ydata, fcEqnAnnualSine, initial_guess)
 
-    # Check if the results from both engines are close
+    # Check if the results from both engines are close (NaN == NaN)
     assert np.allclose(
-        test_engine.unconvert(result_matlab), result_python, rtol=1e-4
+        test_engine.unconvert(result_matlab), result_python, rtol=1e-4, equal_nan=True
     ), f"MATLAB result {result_matlab} differs from Python result {result_python}"
 
 
