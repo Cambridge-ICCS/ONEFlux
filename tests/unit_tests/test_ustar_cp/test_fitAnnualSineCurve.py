@@ -73,13 +73,14 @@ def test_fit_real_data(test_engine):
             dtype=float,
         )
     )
-    # iselect
+    # iselect (MATLAB-generated file uses 1-based indices; convert to 0-based)
     iSelect = test_engine.convert(
         np.loadtxt(
             "tests/unit_tests/test_ustar_cp/data/test_fitAnnualSineCurve_iSelect.txt",
             delimiter=",",
             dtype=int,
-        )
+        ),
+        index="to_python",
     )
 
     # Expected output from MATLAB function
