@@ -14,7 +14,7 @@ import argparse
 import sys
 
 
-def launch(input_folder: str, output_folder: str) -> int:
+def launch(input_folder: str, output_folder: str, seed: int | None = None) -> int:
     """
     Main function to perform U* threshold computation by Alan Barr.
 
@@ -36,6 +36,15 @@ def launch(input_folder: str, output_folder: str) -> int:
     Returns
     -------
     :return: exitcode (0 if successful, 1 if any file failed to process).
+
+    Notes
+    -----
+    :param seed: Optional base seed for the bootstrap RNG. When provided,
+        each input file is bootstrapped with its own RandomState derived
+        deterministically from ``seed`` and the file's position in the
+        sorted file list, so per-year RNG streams are reproducible across
+        runs and insensitive to processing order. When ``None`` (default),
+        the global NumPy RNG is used unseeded.
     """
     exitcode = 0
 
@@ -174,8 +183,17 @@ def launch(input_folder: str, output_folder: str) -> int:
         nBoot = 100
 
         # 4-season analysis
+        random_state = None if seed is None else np.random.RandomState(seed + n)
         Cp2, Stats2, Cp3, Stats3 = cpdBootstrapUStarTh4Season20100901(
-            t, NEE, uStar, T, fNight, fPlot, cSiteYr, nBoot
+            t,
+            NEE,
+            uStar,
+            T,
+            fNight,
+            fPlot,
+            cSiteYr,
+            nBoot,
+            random_state=random_state,
         )
 
         (

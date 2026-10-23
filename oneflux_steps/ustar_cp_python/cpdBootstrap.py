@@ -16,6 +16,7 @@ def cpdBootstrapUStarTh4Season20100901(
     fPlot: int,
     cSiteYr: str,
     nBoot: int,
+    random_state: np.random.RandomState | None = None,
 ) -> Tuple[
     np.ndarray,
     List[List[List[Dict[str, float]]]],
@@ -114,7 +115,7 @@ def cpdBootstrapUStarTh4Season20100901(
     if ntNee >= ntN:
         # Boot-strapping
         for iBoot in range(nBoot):
-            it = generate_rand_int_array(nt)
+            it = generate_rand_int_array(nt, random_state=random_state)
             # Old comment: ntNee=sum(ismember(it,itNee));
             if iBoot > 0:
                 fPlot = 0
@@ -165,19 +166,26 @@ def generate_statsMT() -> Dict[str, float]:
     return stats_mt
 
 
-def generate_rand_int_array(n: int) -> np.ndarray:
+def generate_rand_int_array(
+    n: int,
+    random_state: np.random.RandomState | None = None,
+) -> np.ndarray:
     """
     Generate a random integer array of size n,
-    sorted in ascending order, with numbrers
+    sorted in ascending order, with numbers
     ranging between 0 and (n-1)
 
     Args:
         n (int): Size of the array.
+        random_state (np.random.RandomState | None): Optional dedicated
+            RandomState to draw from. When ``None``, the global NumPy RNG
+            is used (matching the previous unseeded behaviour).
 
     Returns:
         np.ndarray: Random integer array.
     """
-    return np.sort(np.random.randint(0, n, n))
+    rng = random_state if random_state is not None else np.random
+    return np.sort(rng.randint(0, n, n))
 
 
 def setup_Stats(
