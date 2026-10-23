@@ -123,18 +123,18 @@ def test_cpdFindChangePoint20100901_site_data(test_engine, year, iteration):
                 pd.read_csv(path_to_artifacts, header=None).iloc[:, 0].to_numpy()
             )
 
-    assert test_engine.equal(
-        np.asarray(list(s2.values())), output_data["xs2"]
-    ), f'Expected s2: {output_data["xs2"]}, but got: {s2.values()}'
-    assert test_engine.equal(
-        np.asarray(list(s3.values())), output_data["xs3"]
-    ), f'Expected s3: {output_data["xs3"]}, but got: {s3.values()}'
-    assert test_engine.equal(
-        Cp2, output_data["xCp2"]
-    ), f'Expected Cp2: {output_data["Cp2"]}, but got: {Cp2}'
-    assert test_engine.equal(
-        Cp3, output_data["xCp3"]
-    ), f'Expected Cp3: {output_data["Cp3"]}, but got: {Cp3}'
+    assert test_engine.equal(np.asarray(list(s2.values())), output_data["xs2"]), (
+        f"Expected s2: {output_data['xs2']}, but got: {s2.values()}"
+    )
+    assert test_engine.equal(np.asarray(list(s3.values())), output_data["xs3"]), (
+        f"Expected s3: {output_data['xs3']}, but got: {s3.values()}"
+    )
+    assert test_engine.equal(Cp2, output_data["xCp2"]), (
+        f"Expected Cp2: {output_data['Cp2']}, but got: {Cp2}"
+    )
+    assert test_engine.equal(Cp3, output_data["xCp3"]), (
+        f"Expected Cp3: {output_data['Cp3']}, but got: {Cp3}"
+    )
 
 
 def test_cpdFindChangePoint20100901(test_engine, test_data):
@@ -196,12 +196,12 @@ def test_cpdFindChangePoint_insufficient_data(test_engine):
     )
 
     # Assertions
-    assert test_engine.equal(
-        Cp2, float("nan")
-    ), "Cp2 should be NaN for insufficient data"
-    assert test_engine.equal(
-        Cp3, float("nan")
-    ), "Cp2 should be NaN for insufficient data"
+    assert test_engine.equal(Cp2, float("nan")), (
+        "Cp2 should be NaN for insufficient data"
+    )
+    assert test_engine.equal(Cp3, float("nan")), (
+        "Cp2 should be NaN for insufficient data"
+    )
 
 
 def test_initValues(test_engine):
@@ -245,20 +245,20 @@ testcase_removeNans = [
     (
         np.array([1, 2, 3]),
         np.array([np.nan, np.nan, np.nan]),
-        np.array([]),
-        np.array([]),
+        np.reshape(np.array([]), [0, 1]),
+        np.reshape(np.array([]), [0, 1]),
     ),  # yy has all nans
     (
         np.array([np.nan, np.nan, np.nan]),
         np.array([1, 2, 3]),
-        np.array([]),
-        np.array([]),
+        np.reshape(np.array([]), [0, 1]),
+        np.reshape(np.array([]), [0, 1]),
     ),  # xx has all nans
     (
         np.array([np.nan, np.nan, np.nan]),
         np.array([np.nan, np.nan, np.nan]),
-        np.array([]),
-        np.array([]),
+        np.reshape(np.array([]), [0, 1]),
+        np.reshape(np.array([]), [0, 1]),
     ),  # xx and yy have all nans
     (
         np.array([np.nan, 2, 3]),

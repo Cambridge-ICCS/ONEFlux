@@ -4,11 +4,12 @@ from oneflux_steps.ustar_cp_python.fcReadFields import fcReadFields
 from oneflux_steps.ustar_cp_python.fcNaniqr import fcNaniqr
 from oneflux_steps.ustar_cp_python.fcEqnAnnualSine import fcEqnAnnualSine
 from oneflux_steps.ustar_cp_python.fcr2Calc import fcr2Calc
+from oneflux_steps.ustar_cp_python.fcx2colvec import fcx2colvec
 from typing import Tuple
+import json
 from numpy.typing import NDArray
 from oneflux_steps.ustar_cp_python.fcBin import fcBin
-from oneflux_steps.ustar_cp_python.utilities import index_or_mark_array_update
-import json
+from oneflux_steps.ustar_cp_python.utilities import index_or_mark_array_update, nlinfit
 
 
 def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
@@ -138,14 +139,16 @@ def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
 
     variableNames = ["mt", "Cp", "b1", "c2", "cib1", "cic2", "p"]
     # We'll store them in a dictionary by field name.
-    b1 = fcReadFields(Stats, "b1")
-    c2 = fcReadFields(Stats, "c2")
-    cib1 = fcReadFields(Stats, "cib1")
-    cic2 = fcReadFields(Stats, "cic2")
-    p = fcReadFields(Stats, "p")
+    b1 = fcx2colvec(fcReadFields(Stats, "b1"))
+    c2 = fcx2colvec(fcReadFields(Stats, "c2"))
+    cib1 = fcx2colvec(fcReadFields(Stats, "cib1"))
+    cic2 = fcx2colvec(fcReadFields(Stats, "cic2"))
+    p = fcx2colvec(fcReadFields(Stats, "p"))
 
     measurementTime = fcReadFields(Stats, "mt")
+    mt = fcx2colvec(measurementTime)
     changePoint = fcReadFields(Stats, "Cp")
+    Cp = fcx2colvec(changePoint)
 
     # -------------------------------------------------------------------------
     # 7) Identify Significant Change Points
@@ -170,8 +173,8 @@ def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
     # 9) Classify Significant Change Points:
 
     # Indices that are valid (not NaN in b1+c2+Cp):
-    validMask = ~np.isnan(b1 + c2 + changePoint)
-    validIndices = np.where(~np.isnan(measurementTime))[0]
+    validMask = ~np.isnan(b1 + c2 + Cp)
+    validIndices = np.where(~np.isnan(mt))[0]
     numValidMeasurements = len(validIndices)
 
     # Non-significant
@@ -220,8 +223,10 @@ def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
 
     # -------------------------------------------------------------------------
     # 10) Abort if Too Few Selections
-
-    if fractionSelected < 0.10:
+    # This first if clause is to replciate the case where 0 divided by zero evaluates to Nan and farctionSlected is never evaluatedfractionSelected
+    if numSelected == 0 and numValidMeasurements == 0:
+        pass
+    elif fractionSelected < 0.10:
         failureMessage = "Less than 10% successful detections."
         return (
             annualChangePoint,
@@ -241,9 +246,9 @@ def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
     # 11) Configure Regression Matrix
 
     if numParameters == 2:
-        regressionMatrix = np.column_stack([changePoint, b1, cib1])
+        regressionMatrix = np.column_stack([Cp, b1, cib1])
     else:
-        regressionMatrix = np.column_stack([changePoint, b1, c2, cib1, cic2])
+        regressionMatrix = np.column_stack([Cp, b1, c2, cib1, cic2])
 
     # -------------------------------------------------------------------------
     # 12) Exclude Outliers Based on Standardized Scores
@@ -306,8 +311,8 @@ def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
     # 15) Aggregate Seasonal Means
 
     seasonalTimeWindow, seasonalChangePoint = aggregateSeasonalMeans(
-        measurementTime,
-        changePoint,
+        mt,
+        Cp,
         measurementTime,
         selectedIndices,
         numWindows,
@@ -318,7 +323,7 @@ def cpdAssignUStarTh20100901(Stats, plotFlag, siteYearText, *args):
     # -------------------------------------------------------------------------
     # 16) Fit Annual Sine Curve
 
-    sineCurve = fitAnnualSineCurve(measurementTime, changePoint, selectedIndices)
+    sineCurve = fitAnnualSineCurve(mt, Cp, selectedIndices)
 
     # -------------------------------------------------------------------------
     # Return All Outputs in the Same Order as the MATLAB Code
@@ -364,18 +369,27 @@ def computeStandardizedScores(x):
     returns the maximum absolute standardized score for each row.
 
     Args:
-        x (np.ndarray): Input data matrix of shape (n, m).
+        x (np.ndarray): Input data matrix of shape (m, n).
 
     Returns:
-        numpy.ndarray: A (n, 1) column vector containing the maximum absolute
+        numpy.ndarray: A (1, n) row vector containing the maximum absolute
         standardised score for each row."""
-    mx = np.nanmedian(x, axis=0)  # Compute median ignoring NaNs
+
+    # mx is a 1-dimensional matrix of size n
+    # mx.shape = (n,)
+    mx = np.nanmedian(x, axis=1)  # Compute median ignoring NaNs
     iqr = fcNaniqr(x)
+    # make mx into a 2-dimensional matrix
+    # mx.shape = (n,1)
+    mx = mx[:, np.newaxis]
     x_norm = (x - mx) / iqr  # Standardize
 
-    return np.nanmax(
-        np.abs(x_norm), axis=1, keepdims=True
-    )  # Max absolute standardized score per row
+    # return a column vector of the maximum absolute standardized score for each row
+    # preserving NaNs
+    # res.shape = (1,m)
+    res = np.nanmax(np.abs(x_norm), axis=0, keepdims=True)
+
+    return res  # Max absolute standardized score per row
 
 
 def fitAnnualSineCurve(mt, Cp, iSelect):
@@ -402,17 +416,24 @@ def fitAnnualSineCurve(mt, Cp, iSelect):
     # Prepare the data
     xdata = np.array(mt)[iSelect]
     ydata = np.array(Cp)[iSelect]
-
-    # Define a local function for curve_fit: curve_fit expects
-    # a callable f(t, b0, b1, b2) with first arg = x, subsequent = params
-    def _annual_sine_for_curve_fit(t, b0, b1, b2):
-        return fcEqnAnnualSine(np.asarray([b0, b1, b2]), t)
+    # Reshape to row vectors
+    xdata = xdata.reshape(-1)
+    ydata = ydata.reshape(-1)
+    # Drop NaN pairs (MATLAB's nlinfit tolerates NaNs in the inputs;
+    # scipy's optimizer used by nlinfit does not).
+    valid = ~np.isnan(xdata) & ~np.isnan(ydata)
+    xdata = xdata[valid]
+    ydata = ydata[valid]
 
     # Initial guess for [offset, amplitude, phase]
     initial_guess = [1.0, 1.0, 1.0]
 
     # Perform the fit via non-linear regression
-    popt, _ = curve_fit(_annual_sine_for_curve_fit, xdata, ydata, p0=initial_guess)
+    # TODO: remove
+    # with open("plog.txt", "a") as f:
+    #     f.write(f"xdata shape: {xdata.shape}\nxdata: {xdata} rows\n")
+    #     f.write(f"ydata shape: {ydata.shape}\nydata: {ydata} rows\n")
+    popt = nlinfit(xdata, ydata, fcEqnAnnualSine, initial_guess)
 
     # Compute predicted values for the fitted parameters
     predictedCp = fcEqnAnnualSine(np.asarray(popt), xdata)

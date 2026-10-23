@@ -1,5 +1,4 @@
 import pytest
-from tests.conftest import to_matlab_type, compare_matlab_arrays
 from oneflux_steps.ustar_cp_python.fcx2colvec import fcx2colvec
 import numpy as np
 
@@ -19,7 +18,7 @@ import numpy as np
             [[1], [5], [3], [7], [2], [6], [4], [8]],  # Column-major flattening
         ),
         # Case 5: Empty Array
-        ([], []),
+        ([], np.reshape(np.array([]), [0, 1])),
         # Case 6: Single Element
         ([5], [[5]]),
         # Case 7: NaN Data
@@ -33,7 +32,9 @@ def test_fcx2colvec(test_engine, input_data, expected):
     """
     Test fcx2colvec function with various inputs and expected results.
     """
-    result = test_engine.fcx2colvec(test_engine.convert(input_data))
+    input_data = np.array(input_data)
+    expected = np.array(expected)
+    result = test_engine.fcx2colvec(input_data)
 
     # Test outcomes
-    assert test_engine.equal(result, test_engine.convert(expected))
+    assert test_engine.equal(result, expected)

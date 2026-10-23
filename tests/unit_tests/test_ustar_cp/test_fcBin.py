@@ -7,12 +7,7 @@
 import pytest
 import numpy as np
 import pandas as pd
-from tests.conftest import (
-    compare_matlab_arrays,
-    to_matlab_type,
-    process_std_out,
-    compare_text_blocks,
-)
+from tests.conftest import validate_against_site_data
 
 from hypothesis import given, settings, HealthCheck
 from hypothesis.strategies import floats, lists, integers
@@ -132,17 +127,17 @@ def test_singleton_bins_2D_data(dataIn, scale, row, translate, test_engine):
     datacomb = [
         data1[i][j] + data2[i][j] for j in range(row) for i in range(len(data1))
     ]
-    assert nBins == (
-        len(datacomb) - sum([np.isnan(item) for item in datacomb])
-    ), f"nBins = {nBins}, datacomb = {datacomb}"
+    assert nBins == (len(datacomb) - sum([np.isnan(item) for item in datacomb])), (
+        f"nBins = {nBins}, datacomb = {datacomb}"
+    )
 
     # Helper routine to check results
     def check(ys, data):
         # If the result was a singleton float, it should be in the original data
         if isinstance(ys, float):
-            assert np.any(
-                [np.isclose(ys, item, equal_nan=True) for item in data]
-            ), f"ys = {ys}, data = {data}"
+            assert np.any([np.isclose(ys, item, equal_nan=True) for item in data]), (
+                f"ys = {ys}, data = {data}"
+            )
         else:
             for bin in ys:
                 # every bin is of size 1
@@ -325,47 +320,16 @@ def test_cpdBin_sitedata(test_engine):
     input_names = ["x", "y", "dx", "nPerBin"]
     output_names = ["nBins", "mx", "my"]
     artifacts_dir = "tests/test_artifacts/fcBin_artifacts"
-    # Get all directories within artifacts_dir
-    for site_year in os.listdir(artifacts_dir):
-        # print(site_year)
-        if os.path.isdir(f"{artifacts_dir}/{site_year}"):
-            input_data = {}
-            for name in input_names:
-                path_to_data = f"{artifacts_dir}/{site_year}/input_{name}.csv"
-                # check if the file is zero bytes or not
-                if os.path.getsize(path_to_data) != 0:
-                    column = (
-                        pd.read_csv(path_to_data, header=None).iloc[:, :].to_numpy()
-                    )
-                    input_data[name] = test_engine.convert(
-                        column.tolist(), fromFile=True
-                    )
-                else:
-                    input_data[name] = test_engine.convert([])
 
-            output_data = {}
-            for name in output_names:
-                path_to_data = f"{artifacts_dir}/{site_year}/output_{name}.csv"
-                # check if the file is zero bytes or not
-                if os.path.getsize(path_to_data) != 0:
-                    column = (
-                        pd.read_csv(path_to_data, header=None).iloc[:, :].to_numpy()
-                    )
-                    output_data[name] = test_engine.convert(column.tolist())
-                else:
-                    output_data[name] = test_engine.convert([])
+    def inner(input_data):
+        return test_engine.fcBin(
+            input_data["x"],
+            input_data["y"],
+            input_data["dx"],
+            input_data["nPerBin"],
+            nargout=3,
+        )
 
-            # Apply fcBin
-            nBins, mx, my = test_engine.fcBin(
-                input_data["x"],
-                input_data["y"],
-                input_data["dx"],
-                input_data["nPerBin"],
-                nargout=3,
-            )
-
-            assert test_engine.equal(mx, output_data["mx"]), f"mx for {site_year}"
-            assert test_engine.equal(my, output_data["my"]), f"my for {site_year}"
-            assert test_engine.equal(
-                nBins, output_data["nBins"]
-            ), f"nBins for {site_year}"
+    validate_against_site_data(
+        test_engine, "fcBin", input_names, output_names, artifacts_dir, inner
+    )
