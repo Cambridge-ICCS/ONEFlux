@@ -419,6 +419,11 @@ def fitAnnualSineCurve(mt, Cp, iSelect):
     # Reshape to row vectors
     xdata = xdata.reshape(-1)
     ydata = ydata.reshape(-1)
+    # Drop NaN pairs (MATLAB's nlinfit tolerates NaNs in the inputs;
+    # scipy's optimizer used by nlinfit does not).
+    valid = ~np.isnan(xdata) & ~np.isnan(ydata)
+    xdata = xdata[valid]
+    ydata = ydata[valid]
 
     # Initial guess for [offset, amplitude, phase]
     initial_guess = [1.0, 1.0, 1.0]
