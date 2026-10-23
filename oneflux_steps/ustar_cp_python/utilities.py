@@ -344,14 +344,20 @@ def nlinfit(xdata, ydata, f, initial_guess=None):
     if initial_guess is None:
         initial_guess = [1.0, 1.0, 1.0]
 
-    # Perform the fit via non-linear regression
-    popt, _ = curve_fit(
-        _fun_to_fit,
-        xdata,
-        ydata,
-        p0=initial_guess,
-        nan_policy="omit",
-        method="trf",
-    )
+    # Perform the fit via non-linear regression; if the optimizer cannot
+    # converge (e.g. degenerate data), return an array of NaN of the same
+    # length as the initial guess — matching MATLAB nlinfit's behaviour of
+    # failing gracefully rather than raising.
+    try:
+        popt, _ = curve_fit(
+            _fun_to_fit,
+            xdata,
+            ydata,
+            p0=initial_guess,
+            nan_policy="omit",
+            method="trf",
+        )
+    except Exception:
+        popt = np.full(len(initial_guess), np.nan)
 
     return popt
