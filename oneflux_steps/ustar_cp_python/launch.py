@@ -55,8 +55,10 @@ def launch(input_folder: str, output_folder: str) -> int:
     print(f"input in {input_folder}")
     print(f"output in {output_folder}\n")
 
-    # Find files matching the pattern "*_qca_ustar_*.csv"
-    d = glob.glob(os.path.join(input_folder, "*_qca_ustar_*.csv"))
+    # Find files matching the pattern "*_qca_ustar_*.csv" and sort them so
+    # that the processing order is deterministic (matching the reference
+    # MATLAB output, which is chronological by filename).
+    d = sorted(glob.glob(os.path.join(input_folder, "*_qca_ustar_*.csv")))
     error_str = []
 
     print(f"{len(d)} files founded.\n")
