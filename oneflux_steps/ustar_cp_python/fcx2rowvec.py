@@ -1,11 +1,19 @@
 import numpy as np
 
+
 def fcx2rowvec(x: np.ndarray) -> np.ndarray:
     """
-    Converts an input array `x` to a 1 x n row vector using MATLAB-style column-major order.
+    Converts an input array `x` to a 1 x n row vector.
 
-    This function reshapes the input array into a two-dimensional array with
-    a single row, preserving all elements of the original array in column-major order.
+    Design note (row-major vs column-major)
+    ---------------------------------------
+    The project-wide design rules state that Python code should work in
+    row-major order. However, this function intentionally flattens in
+    **column-major (Fortran) order** to replicate MATLAB's linear-indexing
+    convention. The function is used to mirror MATLAB's ``x(:)'`` idiom in
+    code paths that still reason about the data as a MATLAB-style linear
+    stream. See the longer note in ``fcx2colvec`` for why these two must
+    be kept consistent and when they could be migrated to row-major.
 
     Args:
         x (np.ndarray): Input array to be reshaped.
@@ -19,4 +27,4 @@ def fcx2rowvec(x: np.ndarray) -> np.ndarray:
         >>> fcx2rowvec(x)
         array([[1, 3, 2, 4]])
     """
-    return np.reshape(x, (1, -1), order='F')
+    return np.reshape(x, (1, -1), order="F")
